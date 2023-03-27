@@ -1,0 +1,6 @@
+w17x17.h5 filter=lfs diff=lfs merge=lfs -text
+x1.arc.h5 filter=lfs diff=lfs merge=lfs -text
+x2.arc.h5 filter=lfs diff=lfs merge=lfs -text
+ge10x10-8.h5 filter=lfs diff=lfs merge=lfs -text
+mox_w17x17.h5 filter=lfs diff=lfs merge=lfs -text
+vver440.h5 filter=lfs diff=lfs merge=lfs -text
