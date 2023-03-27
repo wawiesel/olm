@@ -1,0 +1,65 @@
+{
+    "properties": {
+        "sequence": {
+            "items": {
+                "type": "object"
+            },
+            "title": "Sequence",
+            "type": "array"
+        },
+        "dry_run": {
+            "default": null,
+            "title": "Dry Run",
+            "type": "boolean"
+        },
+        "_type": {
+            "const": "scale.olm.check:sequencer",
+            "title": "Olm Redirect Type"
+        }
+    },
+    "required": [
+        "sequence",
+        "_type"
+    ],
+    "title": "sequencer",
+    "type": "object",
+    "$$description": [
+        "Specified with :code:`\"_type\": \"scale.olm.check:sequencer\"` in **config.olm.json**.",
+        "",
+        ".. collapse:: Example input in config.olm.json/check",
+        "",
+        "    .. code:: JSON",
+        "",
+        "",
+        "        {",
+        "            \"_type\": \"scale.olm.check:sequencer\",",
+        "            \"sequence\": [",
+        "                {",
+        "                    \"eps0\": 0.0001,",
+        "                    \"_type\": \"scale.olm.check:GridGradient\"",
+        "                },",
+        "                {",
+        "                    \"_type\": \"scale.olm.check:LowOrderConsistency\",",
+        "                    \"name\": \"loc\",",
+        "                    \"template\": \"model/origami/system-uox.jt.inp\",",
+        "                    \"target_q1\": 0.7,",
+        "                    \"target_q2\": 0.95,",
+        "                    \"eps0\": 1e-12,",
+        "                    \"epsa\": 1e-06,",
+        "                    \"epsr\": 0.001,",
+        "                    \"nuclide_compare\": [",
+        "                        \"0092235\",",
+        "                        \"0094239\"",
+        "                    ]",
+        "                }",
+        "            ]",
+        "        }",
+        "",
+        ".. only::latex",
+        "",
+        "    END Example input in config.olm.json/check",
+        "",
+        "",
+        "See also: :obj:`scale.olm.check.sequencer`"
+    ]
+}

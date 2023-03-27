@@ -1,0 +1,85 @@
+{
+    "properties": {
+        "density": {
+            "anyOf": [
+                {
+                    "type": "number"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "default": null,
+            "title": "Density"
+        },
+        "_type": {
+            "const": "scale.olm.generate.comp:uo2_nuregcr5625",
+            "title": "Olm Redirect Type"
+        }
+    },
+    "required": [
+        "_type"
+    ],
+    "title": "uo2_nuregcr5625",
+    "type": "object",
+    "$$description": [
+        "Specified with :code:`\"_type\": \"scale.olm.generate.comp:uo2_nuregcr5625\"` in **config.olm.json**.",
+        "",
+        ".. collapse:: Example input in config.olm.json/generate/comp",
+        "",
+        "    .. code:: JSON",
+        "",
+        "",
+        "        {",
+        "            \"_type\": \"scale.olm.generate.comp:uo2_nuregcr5625\"",
+        "        }",
+        "",
+        ".. only::latex",
+        "",
+        "    END Example input in config.olm.json/generate/comp",
+        "",
+        "",
+        "",
+        ".. collapse:: Args passed to Python function: scale.olm.generate.comp.uo2_nuregcr5625",
+        "",
+        "    .. code:: JSON",
+        "",
+        "",
+        "        {",
+        "            \"_type\": \"scale.olm.generate.comp:uo2_nuregcr5625\",",
+        "            \"state\": {",
+        "                \"enrichment\": 4.95",
+        "            }",
+        "        }",
+        "",
+        ".. only::latex",
+        "",
+        "    END Args passed to Python function: scale.olm.generate.comp.uo2_nuregcr5625",
+        "",
+        "",
+        "",
+        ".. collapse:: Data available in template: comp",
+        "",
+        "    .. code:: JSON",
+        "",
+        "",
+        "        {",
+        "            \"density\": 0.0,",
+        "            \"uo2\": {",
+        "                \"iso\": {",
+        "                    \"u235\": 4.95,",
+        "                    \"u238\": 94.983175,",
+        "                    \"u234\": 0.044055000000000004,",
+        "                    \"u236\": 0.022770000000000002",
+        "                }",
+        "            }",
+        "        }",
+        "",
+        ".. only::latex",
+        "",
+        "    END Data available in template: comp",
+        "",
+        "",
+        "See also: :obj:`scale.olm.generate.comp.uo2_nuregcr5625`"
+    ]
+}

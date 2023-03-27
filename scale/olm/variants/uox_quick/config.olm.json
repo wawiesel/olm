@@ -1,0 +1,107 @@
+{
+    "model": {
+        "name": "uox_quick",
+        "description": "A 2D t-depl pin cell of W17x17 type.",
+        "sources":
+        {
+            "1":"Characteristics of Spent Fuel, High-Level Waste, and other Radioactive Wastes which May Require Long-Term Isolation, Appendix 2A. Physical Descriptions of LWR Fuel Assemblies, DOE/RW-0184, Volume 3 of 6, U.S. DOE Office of Civilian Radioactive Waste Management, 1987.",
+            "2": "SCALE: A Comprehensive Modeling and Simulation Suite for Nuclear Safety Analysis and Design, ORNL/TM-2005/39, Version 6.1, Oak Ridge National Laboratory, Oak Ridge, Tennessee, June 2011.",
+            "3": "H. Smith, J. Peterson, and J. Hu, Fuel Assembly Modeling for the Modeling and Simulation Toolset, ORNL/LTR-2012-555 Rev. 1, Oak Ridge National Laboratory, 2013."
+        },
+        "revision":
+        [
+            "Unknown authorship",
+            "2014 - Ported into SLIG by B. R. Betzler",
+            "2023 - Ported into OLM by W. A. Wieselquist"
+        ],
+        "notes":
+        [
+            "Fuel density, gap gas pressure from Appendix 2A of Reference [1_].",
+            "Temperatures, moderator density, boron concentration from Table D1.A.2 of Reference [2_].",
+            "All other dimensions, materials, etc. from Reference [3_]."
+        ]
+    },
+    "generate": {
+        "_type": "scale.olm.generate.root:jt_expander",
+        "template": "model.jt.inp",
+        "comp": {
+            "fuel":{
+                "_type": "scale.olm.generate.comp:uo2_nuregcr5625",
+                "density": 10.4
+            }
+        },
+        "static": {
+            "_type": "scale.olm.generate.static:pass_through",
+            "addnux": 2,
+            "xslib": "v7-56",
+            "pitch": 1.26,
+            "fuelr": 0.4095,
+            "cladr": 0.4750
+        },
+        "states": {
+            "_type": "scale.olm.generate.states:full_hypercube",
+            "coolant_density": [
+                0.70,
+                0.72,
+                0.74
+            ],
+            "enrichment": [
+                0.5,
+                3,
+                5,
+                7
+            ],
+            "specific_power": [
+                40
+            ],
+            "boron_ppm": [ 600 ]
+        },
+        "time": {
+            "_type": "scale.olm.generate.time:constpower_burndata",
+            "gwd_burnups": [
+                0.0,
+                1.0,
+                10.0,
+                25.0,
+                50.0,
+                70.0,
+                90.0
+            ]
+        }
+    },
+    "run": {
+        "_type": "scale.olm.run:makefile",
+        "dry_run": false
+    },
+    "assemble": {
+        "_type": "scale.olm.assemble:arpdata_txt",
+        "fuel_type": "UOX",
+        "dim_map":
+        {
+            "enrichment": "enrichment",
+            "mod_dens": "coolant_density"
+        },
+        "keep_every": 1
+    },
+    "check": {
+        "_type": "scale.olm.check:sequencer",
+        "sequence":
+        [{
+            "_type": "scale.olm.check:LowOrderConsistency",
+            "name": "loc",
+            "template": "model/origami/system-uox.jt.inp",
+            "target_q1": 0.70,
+            "target_q2": 0.95,
+            "eps0": 1e-12,
+            "epsa": 1e-6,
+            "epsr": 1e-3,
+            "nuclide_compare": ["u235","pu239","pu240","pu241","pu242","am241",
+                "pu239", "u234", "u238", "cs134", "cs137","nd148","eu154",
+                "am242m","am243", "cm242", "cm244"]
+        }]
+    },
+    "report": {
+        "_type": "scale.olm.report:rst2pdf",
+        "template": "report.jt.rst"
+    }
+}

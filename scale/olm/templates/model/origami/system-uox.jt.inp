@@ -1,0 +1,33 @@
+=shell
+olm link -p {{_.env.work_dir}} {{_.model.name}}
+end
+
+=origami
+
+libs=[ {{_.model.name}} ]
+
+options{ ft71=all mtu={{history.initialhm}} }
+
+fuelcomp{
+    % uox(fuel){ enrich={{_arpinfo.interpvars.enrichment}} }
+    stdcomp(fuel){ base=uo2
+        iso[
+            92234={{comp.system.uo2.iso.u234}}
+            92235={{comp.system.uo2.iso.u235}}
+            92236={{comp.system.uo2.iso.u236}}
+            92238={{comp.system.uo2.iso.u238}}
+        ]
+    }
+    mix(1){ comps[fuel=100] }
+}
+
+modz = [ {{_arpinfo.interpvars.mod_dens}} ]
+pz = [ 1.0 ]
+
+hist[
+  {%- for pb in history.burndata %}
+  cycle{ power={{pb.power}} burn={{pb.burn}} nlib=1 }
+  {%- endfor %}
+]
+
+end

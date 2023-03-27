@@ -1,0 +1,7 @@
+.ipynb_checkpoints
+scale_olm.egg-info
+dist
+venv
+**/__pycache__
+.DS_Store
+**/_work

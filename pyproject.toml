@@ -1,0 +1,42 @@
+[project]
+name = "scale-olm"
+version = "0.11.1"
+description = "ORIGEN Library Manager: A tool for building and managing ORIGEN reactor data libraries"
+authors = [
+    { name = "William Wieselquist", email = "ww5@ornl.gov" },
+]
+readme = "README.md"
+license = { file = "LICENSE" }
+keywords = ["SCALE", "ORIGEN", "Library"]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Programming Language :: Python :: 3 :: Only",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "click",
+    "matplotlib",
+    "scipy",
+    "numpy",
+    "pytest",
+    "pydantic",
+]
+requires-python = ">=3.9"
+
+[project.urls]
+documentation = "https://scale-olm.readthedocs.io"
+bug-tracker = "https://github.com/wawiesel/olm/issues"
+source = "https://github.com/wawiesel/olm"
+
+[project.scripts]
+olm = "scale.olm.__main__:olm"
+
+[tool.setuptools.packages.find]
+include = ["scale.*"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"

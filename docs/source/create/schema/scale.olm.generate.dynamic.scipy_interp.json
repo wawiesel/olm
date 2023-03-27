@@ -1,0 +1,136 @@
+{
+    "$defs": {
+        "ScipyInterpMethod": {
+            "enum": [
+                "linear",
+                "pchip"
+            ],
+            "title": "ScipyInterpMethod",
+            "type": "string"
+        }
+    },
+    "properties": {
+        "state_var": {
+            "title": "State Var",
+            "type": "string"
+        },
+        "data_pairs": {
+            "items": {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                    {
+                        "type": "number"
+                    },
+                    {
+                        "type": "number"
+                    }
+                ],
+                "type": "array"
+            },
+            "title": "Data Pairs",
+            "type": "array"
+        },
+        "method": {
+            "allOf": [
+                {
+                    "$ref": "#/$defs/ScipyInterpMethod"
+                }
+            ],
+            "default": null
+        },
+        "_type": {
+            "const": "scale.olm.generate.dynamic:scipy_interp",
+            "title": "Olm Redirect Type"
+        }
+    },
+    "required": [
+        "state_var",
+        "data_pairs",
+        "_type"
+    ],
+    "title": "scipy_interp",
+    "type": "object",
+    "$$description": [
+        "Specified with :code:`\"_type\": \"scale.olm.generate.dynamic:scipy_interp\"` in **config.olm.json**.",
+        "",
+        ".. collapse:: Example input in config.olm.json/generate/dynamic",
+        "",
+        "    .. code:: JSON",
+        "",
+        "",
+        "        {",
+        "            \"_type\": \"scale.olm.generate.dynamic:scipy_interp\",",
+        "            \"state_var\": \"coolant_density\",",
+        "            \"data_pairs\": [",
+        "                [",
+        "                    0.3,",
+        "                    0.4",
+        "                ],",
+        "                [",
+        "                    0.7,",
+        "                    0.5",
+        "                ],",
+        "                [",
+        "                    1.1,",
+        "                    0.6",
+        "                ]",
+        "            ],",
+        "            \"method\": \"pchip\"",
+        "        }",
+        "",
+        ".. only::latex",
+        "",
+        "    END Example input in config.olm.json/generate/dynamic",
+        "",
+        "",
+        "",
+        ".. collapse:: Args passed to Python function: scale.olm.generate.dynamic.scipy_interp",
+        "",
+        "    .. code:: JSON",
+        "",
+        "",
+        "        {",
+        "            \"_type\": \"scale.olm.generate.dynamic:scipy_interp\",",
+        "            \"state_var\": \"coolant_density\",",
+        "            \"data_pairs\": [",
+        "                [",
+        "                    0.3,",
+        "                    0.4",
+        "                ],",
+        "                [",
+        "                    0.7,",
+        "                    0.5",
+        "                ],",
+        "                [",
+        "                    1.1,",
+        "                    0.6",
+        "                ]",
+        "            ],",
+        "            \"state\": {",
+        "                \"coolant_density\": 0.67",
+        "            },",
+        "            \"method\": \"pchip\"",
+        "        }",
+        "",
+        ".. only::latex",
+        "",
+        "    END Args passed to Python function: scale.olm.generate.dynamic.scipy_interp",
+        "",
+        "",
+        "",
+        ".. collapse:: Data available in template: dynamic",
+        "",
+        "    .. code:: JSON",
+        "",
+        "",
+        "        0.4925",
+        "",
+        ".. only::latex",
+        "",
+        "    END Data available in template: dynamic",
+        "",
+        "",
+        "See also: :obj:`scale.olm.generate.dynamic.scipy_interp`"
+    ]
+}

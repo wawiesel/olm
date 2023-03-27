@@ -1,0 +1,166 @@
+{
+    "model": {
+        "name": "abb8x8-1"
+    },
+    "generate": {
+        "_type": "scale.olm.generate.root:jt_expander",
+        "template": "model.inp",
+        "comp": {
+            "_type": "scale.olm.generate.comp:uo2_simple",
+            "density": 10.31619
+        },
+        "static": {
+            "_type": "scale.olm.generate.static:pass_through",
+            "addnux": 4,
+            "xslib": "xn252"
+        },
+        "dynamic": {
+            "dancoff1": {
+                "_type": "scale.olm.generate.dynamic:scipy_interp",
+                "state_var": "coolant_density",
+                "data_pairs": [
+                    [
+                        0.1,
+                        0.4569
+                    ],
+                    [
+                        0.3,
+                        0.328
+                    ],
+                    [
+                        0.5,
+                        0.2483
+                    ],
+                    [
+                        0.7,
+                        0.1942
+                    ],
+                    [
+                        0.9,
+                        0.1553
+                    ]
+                ],
+                "method": "linear"
+            },
+            "dancoff2": {
+                "_type": "scale.olm.generate.dynamic:scipy_interp",
+                "state_var": "coolant_density",
+                "data_pairs": [
+                    [
+                        0.1,
+                        0.2942
+                    ],
+                    [
+                        0.3,
+                        0.2138
+                    ],
+                    [
+                        0.5,
+                        0.1634
+                    ],
+                    [
+                        0.7,
+                        0.1287
+                    ],
+                    [
+                        0.9,
+                        0.1036
+                    ]
+                ],
+                "method": "linear"
+            }
+        },
+        "states": {
+            "_type": "scale.olm.generate.states:full_hypercube",
+            "coolant_density": [
+                0.1,
+                0.3,
+                0.5,
+                0.7,
+                0.9
+            ],
+            "enrichment": [
+                0.5,
+                1.5,
+                2.0,
+                3.0,
+                4.0,
+                5.0,
+                6.0,
+                7.0,
+                8.0,
+                8.5
+            ],
+            "wtpt_gd": [
+                2.0
+            ],
+            "specific_power": [
+                25.0
+            ]
+        },
+        "time": {
+            "_type": "scale.olm.generate.time:constpower_burndata",
+            "gwd_burnups": [
+                0.0,
+                0.025,
+                0.525,
+                1.5,
+                2.5,
+                3.75,
+                5.25,
+                6.75,
+                8.25,
+                9.75,
+                11.25,
+                12.75,
+                14.25,
+                15.75,
+                17.25,
+                18.75,
+                20.25,
+                22.5,
+                25.5,
+                28.5,
+                31.5,
+                34.5,
+                37.5,
+                40.5,
+                43.5,
+                46.5,
+                49.5,
+                52.5,
+                55.5,
+                58.5,
+                61.5,
+                64.5,
+                67.5,
+                70.5,
+                73.5,
+                76.5,
+                79.5,
+                82.5
+            ]
+        }
+    },
+    "run": {
+        "_type": "scale.olm.run:makefile",
+        "dry_run": false
+    },
+    "assemble": {
+        "_type": "scale.olm.assemble:arpdata_txt",
+        "fuel_type": "UOX"
+    },
+    "check": {
+        "_type": "scale.olm.check:sequencer",
+        "sequence": [
+            {
+                "eps0": 0.0001,
+                "_type": "scale.olm.check:GridGradient"
+            }
+        ]
+    },
+    "report": {
+        "_type": "scale.olm.report:rst2pdf",
+        "template": "report.rst"
+    }
+}
