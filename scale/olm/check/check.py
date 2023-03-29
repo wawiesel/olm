@@ -15,8 +15,8 @@ def run(archive,method,options):
 	
 	return method(archive,options)
 	
-def c1_continuity(archive,options):	
-	print('c1_continuity')
+def grid_gradient(archive,options):	
+	print('grid_gradient')
 
 	rel_axes=list()
 	for x_list in archive.axes_values:
@@ -40,7 +40,11 @@ def c1_continuity(archive,options):
 		for i in range(n):
 			max0 = np.amax( yp[i,...] )
 			min0 = np.amin( yp[i,...] )
-			ypr = yp[i,...]/(y+options.eps0)
+			eps0 = options.eps0
+			max_y = np.amax(y)
+			if max_y<=0:
+				max_y = options.eps0
+			ypr = yp[i,...]/max_y
 			rmax0 = np.amax( ypr )
 			rmin0 = np.amin( ypr )
 			diff_list=list()
@@ -67,15 +71,20 @@ def c1_continuity(archive,options):
 	info.epsa = options.epsa
 	info.eps0 = options.eps0
 	info.epsr = options.epsr
-	info.q = ((ahist<=options.epsa).sum()+(rhist<=options.epsr).sum())/(2*len(ahist))
+	info.wa = np.logical_and( (ahist>options.epsa), (rhist>options.epsr)).sum()
+	info.wr = (rhist>options.epsr).sum()
 	info.m = len(ahist)
+	info.q1 = 1.0 - info.wr/info.m 
+	info.q2 = 1.0 - 0.9*info.wa/info.m - 0.1*info.wr/info.m
 
 	return info
 
-def plot_c1_continuity_hist(info):
-	ind = (info.rhist>info.epsr) | (info.ahist>info.epsa)
-	h=plt.hist2d(np.log10(info.rhist),np.log10(info.ahist),bins=np.linspace(-40,20,100),cmin=1,alpha=1.0)
-	#plt.hist2d(np.log10(info.rhist[ind]),np.log10(info.ahist[ind]),bins=np.linspace(-40,20,100),cmin=1,alpha=1.0)
+def plot_grid_gradient_hist(info):
+	plt.hist2d(np.log10(info.rhist),np.log10(info.ahist),bins=np.linspace(-40,20,100),cmin=1,alpha=0.2)
+	ind1 = (info.rhist>info.epsr) & (info.ahist>info.epsa)
+	h=plt.hist2d(np.log10(info.rhist[ind1]),np.log10(info.ahist[ind1]),bins=np.linspace(-40,20,100),cmin=1,alpha=1.0)
+	ind2 = (info.rhist>info.epsr)
+	plt.hist2d(np.log10(info.rhist[ind2]),np.log10(info.ahist[ind2]),bins=np.linspace(-40,20,100),cmin=1,alpha=0.6)
 	plt.colorbar(h[3])
 	plt.xlabel(r'$\log \tilde{h}_{ijk}$')
 	plt.ylabel(r'$\log h_{ijk}$')

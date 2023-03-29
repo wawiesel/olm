@@ -2,17 +2,19 @@ import sys
 import h5py
 import numpy as np
 from tqdm import tqdm,tqdm_notebook
-    
+import check as check
+
 def main(args):
     mode = args[0]
+    print('main')
     try:
         this_module = sys.modules[__name__]
         mode_module = getattr(this_module,mode)
         archive,directives = parse(args[1:])
         p = 0
         for d in directives:
-            info = mode_module.run(archive,*d)
-            print(info)
+            info = mode_module.run(archive,d['method'],d['options'])
+            print('q1:',info.q1,'q2:',info.q2)
             if not info.test_pass:
                 p = 1
         return p
@@ -21,9 +23,14 @@ def main(args):
         return str(ve)
 
 def parse(args):
-    # fake directive list
-    return 'my.arc.h5',[ ('c1_continuity',dict()),
-                     ('nonnegative_interp',dict())]
+    print('parse')
+    options = type('', (), {})()
+    options.eps0=1e-20
+    options.epsa=1e-1
+    options.epsr=1e-1
+    
+    gg={'method': 'grid_gradient', 'options': options}
+    return Archive(args[-1]),[gg]
 
 def get_indices(axes_names,axes_values,point_data):
     y=[0]*len(point_data)
