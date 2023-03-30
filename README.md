@@ -5,27 +5,33 @@ Structure from
 https://realpython.com/python-application-layouts/#command-line-application-layouts
 
 ```
+❯ tree .
 .
 ├── LICENSE
 ├── README.md
-├── bin
-│   └── olm.py
 ├── data
-│   ├── x1.arc.h5
-│   └── x2.arc.h5
+│   ├── ge10x10-8.h5
+│   ├── mox_w17x17.h5
+│   ├── vver440.h5
+│   └── w17x17.h5
+├── debug.ipynb
 ├── docs
 │   └── index.rst
-├── olm
-│   ├── __init__.py
-│   ├── check
-│   │   ├── __init__.py
-│   │   ├── check.py
-│   │   └── helpers.py
-│   ├── link
-│   │   ├── __init__.py
-│   │   ├── helpers.py
-│   │   └── link.py
-│   └── runner.py
+├── scale
+│   └── olm
+│       ├── Archive.py
+│       ├── __init__.py
+│       ├── __main__.py
+│       ├── check
+│       │   ├── CheckInfo.py
+│       │   ├── __init__.py
+│       │   ├── check.py
+│       │   └── helpers.py
+│       ├── link
+│       │   ├── __init__.py
+│       │   ├── helpers.py
+│       │   └── link.py
+│       └── olm.py
 └── tests
     ├── check
     │   ├── check_tests.py
@@ -34,7 +40,7 @@ https://realpython.com/python-application-layouts/#command-line-application-layo
         ├── helpers_tests.py
         └── link_tests.py
 
-9 directories, 18 files
+9 directories, 23 files
 ```
 
 In order to create data/w17x17.h5 do this:
