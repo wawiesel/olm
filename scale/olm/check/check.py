@@ -15,6 +15,35 @@ def run(archive,method,options):
 
 	return method(archive,options)
 
+def calc_grid_gradient_kernel(rel_axes,yreshape,eps0):
+	n=len(rel_axes)
+	ncoeff = np.shape(yreshape)[0]
+	rhist=np.zeros(n*n*ncoeff)
+	ahist=np.zeros(n*n*ncoeff)
+	khist=np.zeros(n*n*ncoeff)
+
+	for k in tqdm(range(ncoeff)):
+		y=yreshape[k,...]
+		max_y = np.amax(y)
+		if max_y<=0:
+			max_y = eps0
+		yp=np.asarray(np.gradient(y,*rel_axes))
+
+		for i in range(n):
+			ypi = yp[i,...]
+			for j in range(n):
+				iu = k*n*n + i*n + j
+
+				ydr = np.absolute(np.diff(ypi,axis=j))/max_y
+				rhist[iu]=np.amax(ydr)
+
+				yda = np.absolute(np.diff(ypi,axis=j))
+				ahist[iu]=np.amax(yda)
+
+				khist[iu]=k
+
+	return ahist,rhist,khist
+
 def calc_grid_gradient(archive,options):
 	print('calc_grid_gradient')
 
@@ -26,40 +55,16 @@ def calc_grid_gradient(archive,options):
 		for x in x_list:
 			z.append((x-x0)/dx)
 		rel_axes.append(z)
-	print(rel_axes)
 
-	n=len(archive.axes_shape)
-	rhist=np.zeros(n*n*archive.ncoeff)
-	ahist=np.zeros(n*n*archive.ncoeff)
-	khist=np.zeros(n*n*archive.ncoeff)
-	iu=0
 	yreshape=np.moveaxis(archive.coeff,[-1],[0])
-	for k in tqdm(range(archive.ncoeff)):
-		y=yreshape[k,...]
-		max_y = np.amax(y)
-		if max_y<=0:
-			max_y = options.eps0
-		yp=np.asarray(np.gradient(y,*rel_axes))
-		for i in range(n):
-			ypi = yp[i,...]
-			for j in range(n):
-				ydr = np.absolute(np.diff(ypi,axis=j))/max_y
-				yd = np.absolute(np.diff(ypi,axis=j))
-				vr = np.amax(ydr)
-				va = np.amax(yd)
-				rhist[iu]=vr
-				ahist[iu]=va
-				khist[iu]=k
-				iu+=1
 
 	info = CheckInfo()
-	info.ahist = ahist
-	info.rhist = rhist
-	info.khist = khist
 	info.rel_axes = rel_axes
 	info.epsa = options.epsa
 	info.eps0 = options.eps0
 	info.epsr = options.epsr
+
+	info.ahist,info.rhist,info.khist = calc_grid_gradient_kernel(rel_axes,yreshape,info.eps0)
 
 	return info
 
