@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm,tqdm_notebook
-    
+
 class CheckInfo:
 	def __init__(self):
 		print('initializing checkinfo')
@@ -12,11 +12,11 @@ def run(archive,method,options):
 
 	this_module = sys.modules[__name__]
 	method = getattr(this_module, method)
-	
+
 	return method(archive,options)
-	
-def grid_gradient(archive,options):	
-	print('grid_gradient')
+
+def calc_grid_gradient(archive,options):
+	print('calc_grid_gradient')
 
 	rel_axes=list()
 	for x_list in archive.axes_values:
@@ -28,41 +28,30 @@ def grid_gradient(archive,options):
 		rel_axes.append(z)
 	print(rel_axes)
 
-	deriv=list()
-	rhist=list()
-	ahist=list()
-	khist=list()
+	n=len(archive.axes_shape)
+	rhist=np.zeros(n*n*archive.ncoeff)
+	ahist=np.zeros(n*n*archive.ncoeff)
+	khist=np.zeros(n*n*archive.ncoeff)
+	iu=0
+	yreshape=np.moveaxis(archive.coeff,[-1],[0])
 	for k in tqdm(range(archive.ncoeff)):
-		y=archive.coeff[...,k]
+		y=yreshape[k,...]
+		max_y = np.amax(y)
+		if max_y<=0:
+			max_y = options.eps0
 		yp=np.asarray(np.gradient(y,*rel_axes))
-		n=len(archive.axes_shape)
-		pack=[None]*n
 		for i in range(n):
-			max0 = np.amax( yp[i,...] )
-			min0 = np.amin( yp[i,...] )
-			eps0 = options.eps0
-			max_y = np.amax(y)
-			if max_y<=0:
-				max_y = options.eps0
-			ypr = yp[i,...]/max_y
-			rmax0 = np.amax( ypr )
-			rmin0 = np.amin( ypr )
-			diff_list=list()
+			ypi = yp[i,...]
 			for j in range(n):
-				ydr = np.absolute(np.diff(ypr,axis=j))
-				yd = np.absolute(np.diff(yp[i,...],axis=j))
+				ydr = np.absolute(np.diff(ypi,axis=j))/max_y
+				yd = np.absolute(np.diff(ypi,axis=j))
 				vr = np.amax(ydr)
-				diff_list.append( vr )
-				rhist.append( vr )
 				va = np.amax(yd)
-				ahist.append( va )
-				khist.append( k )
-			pack[i]={'min':min0,'max':max0,'rmin':rmin0,'rmax':rmax0, 'diff': diff_list}
-		deriv.append(pack)
-	ahist = np.asarray(ahist)
-	rhist = np.asarray(rhist)
-	khist = np.asarray(khist)
-	
+				rhist[iu]=vr
+				ahist[iu]=va
+				khist[iu]=k
+				iu+=1
+
 	info = CheckInfo()
 	info.ahist = ahist
 	info.rhist = rhist
@@ -71,10 +60,16 @@ def grid_gradient(archive,options):
 	info.epsa = options.epsa
 	info.eps0 = options.eps0
 	info.epsr = options.epsr
-	info.wa = np.logical_and( (ahist>options.epsa), (rhist>options.epsr)).sum()
-	info.wr = (rhist>options.epsr).sum()
-	info.m = len(ahist)
-	info.q1 = 1.0 - info.wr/info.m 
+
+	return info
+
+def grid_gradient(archive,options):
+	info = calc_grid_gradient(archive,options)
+
+	info.wa = np.logical_and( (info.ahist>info.epsa), (info.rhist>info.epsr)).sum()
+	info.wr = (info.rhist>info.epsr).sum()
+	info.m = len(info.ahist)
+	info.q1 = 1.0 - info.wr/info.m
 	info.q2 = 1.0 - 0.9*info.wa/info.m - 0.1*info.wr/info.m
 
 	return info
