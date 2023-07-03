@@ -5,24 +5,60 @@ import json
 import structlog
 
 
+# ---------------------------------------------------------------------------------------
+# OLM
+# ---------------------------------------------------------------------------------------
+#
+# This is the entry point to run OLM as a command line interface.
+#
 @click.group()
 def cli():
     pass
 
 
-# ---------------------
-import scale.olm.link as l
+# ---------------------------------------------------------------------------------------
+# OLM LINK
+# ---------------------------------------------------------------------------------------
+#
+# This is the entry point to run OLM LINK command.
+#
+import scale.olm.link as link
 
 
-@click.command()
-def link():
-    click.echo("link")
-    l.parse()
+@click.command(name="link")
+@click.argument("name", metavar="LIB-NAME")
+@click.option(
+    "--path",
+    "-p",
+    type=click.Path(exists=True),
+    help="path to prepend to SCALE_OLM_PATH",
+)
+@click.option(
+    "--env",
+    "-e",
+    type=bool,
+    default=True,
+    help="whether to allow using the environment variable SCALE_OLM_PATH or not",
+)
+@click.option(
+    "--dest",
+    "-d",
+    type=click.Path(exists=True),
+    help="destination directory (default: current)",
+)
+def command_link(name, path, env, dest):
+    link.parse()
 
 
-cli.add_command(link)
+cli.add_command(command_link)
 
-# ---------------------
+
+# ---------------------------------------------------------------------------------------
+# OLM CHECK
+# ---------------------------------------------------------------------------------------
+#
+# This is the entry point to run OLM CHECK command.
+#
 import scale.olm.check as check
 
 
@@ -58,7 +94,7 @@ def methods_help(*methods):
     multiple=True,
     help=methods_help(check.GridGradient, check.Continuity),
 )
-def mode_check(archive_file, output_file, method):
+def command_check(archive_file, output_file, method):
     try:
         # Process all the input.
         run_list = []
@@ -101,4 +137,4 @@ def mode_check(archive_file, output_file, method):
         return str(ve)
 
 
-cli.add_command(mode_check)
+cli.add_command(command_check)

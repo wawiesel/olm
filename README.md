@@ -56,6 +56,17 @@ virtualenv venv
 which python
 ```
 
+### Install requirements
+
+```
+pip install -r requirements-dev.txt
+```
+
+### Nice video on using Click for CLI
+
+https://www.youtube.com/watch?v=kNke39OZ2k0
+
+
 ### Local install for testing
 
 ```
@@ -68,7 +79,7 @@ which olm
 ### See if you can use as a module
 
 ```
-python3 test.py
+import scale.olm
 ```
 
 

@@ -1,2 +1,5 @@
+import scale.olm.common as common
+
+
 def parse():
-    print("parsing")
+    common.logger.info("Doing link parsing!")
