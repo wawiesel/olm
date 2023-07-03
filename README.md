@@ -47,3 +47,37 @@ In order to create data/w17x17.h5 do this:
 ```
 obiwan convert -alias=w17x17 -format=hdf5 ${DATA}/arpdata.txt
 ```
+
+### Enable virtual environment
+
+```
+virtualenv venv
+. venv/bin/activate
+which python
+```
+
+### Local install for testing
+
+```
+pip install --editable .
+olm
+which olm
+```
+
+
+### See if you can use as a module
+
+```
+python3 test.py
+```
+
+
+### Run an example
+
+```
+olm check -m GridGradient '{}' data/w17x17.h5
+```
+
+### Local formatting on commit
+
+Use the black formatter, https://medium.com/gousto-engineering-techbrunch/automate-python-code-formatting-with-black-and-pre-commit-ebc69dcc5e03

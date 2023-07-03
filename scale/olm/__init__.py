@@ -1,3 +1,3 @@
-from .olm import Archive,main
-from .check import check
-print('initialized scale.olm')
+import scale.olm.common as common
+
+common.logger.info("Initialized " + __name__)
