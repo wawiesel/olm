@@ -52,6 +52,7 @@ import scale.olm.link as link
     "--format",
     "-f",
     type=str,
+    default="archive",
     help="destination format for the libraries (arpdata.txt, archive)",
 )
 @click.option(
@@ -62,13 +63,13 @@ import scale.olm.link as link
 def command_link(name, paths, env, dest, format, dry_run):
     try:
         registry = common.create_registry(paths, env)
+
         if not name in registry:
             raise ValueError("name={} not found in provided paths!".format(name))
+
         libinfo = registry[name]
-        #     	if libinfo.format==format:
-        #     		link.copy(dry_run, libinfo, dest)
-        #     	else:
-        #     		link.convert(dry_run, libinfo, format, dest)
+        link.make_available(dry_run, libinfo, dest, format)
+
         return 0
 
     except ValueError as ve:

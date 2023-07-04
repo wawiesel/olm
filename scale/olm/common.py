@@ -19,7 +19,7 @@ def parse_arpdata(path):
     with open(path, "r") as f:
         for line in f.readlines():
             if line.startswith("!"):
-                names.append(line[1:])
+                names.append(line[1:].strip())
     return names
 
 
@@ -56,7 +56,7 @@ def update_registry(registry, path):
                     libinfo.format = "arpdata.txt"
                     libinfo.name = n
                     libinfo.path = p
-                    registry[p] = libinfo
+                    registry[n] = libinfo
 
     # Look for archive version at ${path}/*/olm.json
 
