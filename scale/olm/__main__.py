@@ -30,24 +30,49 @@ import scale.olm.link as link
 @click.option(
     "--path",
     "-p",
+    "paths",
+    multiple=True,
     type=click.Path(exists=True),
     help="path to prepend to SCALE_OLM_PATH",
 )
 @click.option(
-    "--env",
-    "-e",
-    type=bool,
+    "--env/--noenv",
     default=True,
     help="whether to allow using the environment variable SCALE_OLM_PATH or not",
 )
 @click.option(
     "--dest",
     "-d",
+    default=os.cwd(),
     type=click.Path(exists=True),
     help="destination directory (default: current)",
 )
-def command_link(name, path, env, dest):
-    link.parse()
+@click.option(
+    "--format",
+    "-f",
+    type=str,
+    help="destination format for the libraries (arpdata.txt, archive)",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="just emit commands without running them",
+)
+def command_link(name, paths, env, dest, format, dry_run):
+    try:
+        registry = common.create_registry(paths, env)
+        if not name in registry:
+            raise ValueError("name={} not found in provided paths!".format(name))
+        libinfo = registry[name]
+        #     	if libinfo.format==format:
+        #     		link.copy(dry_run, libinfo, dest)
+        #     	else:
+        #     		link.convert(dry_run, libinfo, format, dest)
+        return 0
+
+    except ValueError as ve:
+        common.logger.error("Finished with exception\n{}".format(str(ve)))
+        return str(ve)
 
 
 cli.add_command(command_link)

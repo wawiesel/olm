@@ -3,8 +3,69 @@ from tqdm import tqdm, tqdm_notebook
 import numpy as np
 import structlog
 import json
+from pathlib import Path
 
 logger = structlog.getLogger(__name__)
+
+
+class LibInfo:
+    def __init__(self):
+        self.format = "arpdata.txt"
+
+
+def update_registry(registry, path):
+    """Update a registry of library names using all the paths"""
+
+    p = Path(path)
+    logger.info("searching path={}".format(p))
+
+    # Look for arpdata.txt version.
+    q1 = p / "arpdata.txt"
+    q1.resolve()
+    if q1.exists:
+        r = p / "arplibs"
+        r.resolve()
+        if not r.exists:
+            logger.warning(
+                "{} exists but the paired arplibs/ directory at {} does not--disregarding libraries".format(
+                    q1, r
+                )
+            )
+        else:
+            logger.info("found arpdata.txt!")
+            for n in parse_arpdata(q1):
+                libinfo = LibInfo()
+                libinfo.format = "arpdata.txt"
+                libinfo.name = n
+                libinfo.path = p
+                if p in registry:
+                    logger.warning(
+                        "library name {} has already been registered at path={} ignoring same name found at {}".format(
+                            n, registry[p]
+                        )
+                    )
+                else:
+                    logger.info("found library name {} in {}!".format(n, p))
+                    registry[p] = libinfo
+
+    # Look for archive version at ${path}/*/olm.json
+
+
+def create_registry(paths, env):
+    """Search for a library 'name', at every path in 'paths', optionally using
+    environment variable SCALE_OLM_PATH"""
+    registry = dict()
+
+    logger.info("searching provided paths ...")
+    for path in paths:
+        update_registry(registry, path)
+
+    logger.info("searching SCALE_OLM_PATH ...")
+    if env and "SCALE_OLM_PATH" in os.environ:
+        for path in os.environ["SCALE_OLM_PATH"].split(":"):
+            update_registry(registry, path)
+
+    return registry
 
 
 def plot_hist(info):
