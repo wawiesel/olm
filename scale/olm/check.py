@@ -49,6 +49,7 @@ class GridGradient:
         # After calc the self.ahist, rhist, khist, and rel_axes variables are ready to
         # compute metrics.
         info = CheckInfo()
+        info.name = "GridGradient"
         info.eps0 = self.eps0
         info.epsa = self.epsa
         info.epsr = self.epsr

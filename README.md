@@ -89,6 +89,12 @@ import scale.olm
 olm check -m GridGradient '{}' data/w17x17.h5
 ```
 
+### Run the tests
+
+```
+pytest .
+```
+
 ### Local formatting on commit
 
 Use the black formatter, https://medium.com/gousto-engineering-techbrunch/automate-python-code-formatting-with-black-and-pre-commit-ebc69dcc5e03
