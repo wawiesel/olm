@@ -66,13 +66,14 @@ def create_registry(paths, env):
     environment variable SCALE_OLM_PATH"""
     registry = dict()
 
-    logger.info("searching provided paths ...")
+    logger.info("searching provided paths ({})...".format(len(paths)))
     for path in paths:
         update_registry(registry, path)
 
-    logger.info("searching SCALE_OLM_PATH ...")
     if env and "SCALE_OLM_PATH" in os.environ:
-        for path in os.environ["SCALE_OLM_PATH"].split(":"):
+        env_paths = os.environ["SCALE_OLM_PATH"].split(":")
+        logger.info("searching SCALE_OLM_PATH paths ({})...".format(len(env_paths)))
+        for path in env_paths:
             update_registry(registry, path)
 
     return registry
