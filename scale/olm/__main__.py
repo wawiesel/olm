@@ -3,6 +3,7 @@ import sys
 import scale.olm.common as common
 import json
 import structlog
+import os
 
 
 # ---------------------------------------------------------------------------------------
@@ -43,7 +44,7 @@ import scale.olm.link as link
 @click.option(
     "--dest",
     "-d",
-    default=os.cwd(),
+    default=os.getcwd(),
     type=click.Path(exists=True),
     help="destination directory (default: current)",
 )
@@ -71,7 +72,7 @@ def command_link(name, paths, env, dest, format, dry_run):
         return 0
 
     except ValueError as ve:
-        common.logger.error("Finished with exception\n{}".format(str(ve)))
+        common.logger.error(str(ve))
         return str(ve)
 
 
@@ -158,7 +159,7 @@ def command_check(archive_file, output_file, method):
         return p
 
     except ValueError as ve:
-        common.logger.error("Finished with exception\n{}".format(str(ve)))
+        common.logger.error(str(ve))
         return str(ve)
 
 

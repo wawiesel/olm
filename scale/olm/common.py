@@ -4,6 +4,7 @@ import numpy as np
 import structlog
 import json
 from pathlib import Path
+import os
 
 logger = structlog.getLogger(__name__)
 
@@ -11,6 +12,15 @@ logger = structlog.getLogger(__name__)
 class LibInfo:
     def __init__(self):
         self.format = "arpdata.txt"
+
+
+def parse_arpdata(path):
+    names = list()
+    with open(path, "r") as f:
+        for line in f.readlines():
+            if line.startswith("!"):
+                names.append(line[1:])
+    return names
 
 
 def update_registry(registry, path):
@@ -22,10 +32,10 @@ def update_registry(registry, path):
     # Look for arpdata.txt version.
     q1 = p / "arpdata.txt"
     q1.resolve()
-    if q1.exists:
+    if q1.exists():
         r = p / "arplibs"
         r.resolve()
-        if not r.exists:
+        if not r.exists():
             logger.warning(
                 "{} exists but the paired arplibs/ directory at {} does not--disregarding libraries".format(
                     q1, r
@@ -34,18 +44,18 @@ def update_registry(registry, path):
         else:
             logger.info("found arpdata.txt!")
             for n in parse_arpdata(q1):
-                libinfo = LibInfo()
-                libinfo.format = "arpdata.txt"
-                libinfo.name = n
-                libinfo.path = p
-                if p in registry:
+                if n in registry:
                     logger.warning(
                         "library name {} has already been registered at path={} ignoring same name found at {}".format(
-                            n, registry[p]
+                            n, registry[n].path, p
                         )
                     )
                 else:
                     logger.info("found library name {} in {}!".format(n, p))
+                    libinfo = LibInfo()
+                    libinfo.format = "arpdata.txt"
+                    libinfo.name = n
+                    libinfo.path = p
                     registry[p] = libinfo
 
     # Look for archive version at ${path}/*/olm.json
