@@ -51,7 +51,13 @@ def cli():
     default=False,
     help="whether to create the report documentation",
 )
-def command_do(config_file, generate, run, build, check, report):
+@click.option(
+    "--nprocs",
+    type=int,
+    required=False,
+    help="how many processes to use",
+)
+def command_do(config_file, generate, run, build, check, report, nprocs):
     # Cycle through these modes.
     modes = []
     if generate:
@@ -69,6 +75,10 @@ def command_do(config_file, generate, run, build, check, report):
     with open(config_file, "r") as f:
         data = json.load(f)
     data["model"]["config_file"] = config_file
+
+    # If nprocs is present, override.
+    if nprocs:
+        data["run"]["nprocs"] = nprocs
 
     # Update paths in the model block.
     model = common.update_model(data["model"])

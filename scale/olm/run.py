@@ -1,5 +1,6 @@
 from pathlib import Path
 import scale.olm.common as common
+import subprocess
 
 
 def makefile(model, cmd, nprocs):
@@ -12,6 +13,9 @@ all: $(outputs)
 
 %.out: %.inp
 \t{cmd} $<
+
+clean:
+\trm -f $(outputs)
 """
 
     work_dir = model["work_dir"]
@@ -22,6 +26,17 @@ all: $(outputs)
     command_line = f"cd {work_dir} && make -j {nprocs}"
     common.logger.info(f"Running command_line='{command_line}' ...")
 
-    # subprocess.Popen.capture_output(command_line,shell=True)
+    p = subprocess.Popen(
+        command_line,
+        shell=True,
+        stdout=subprocess.PIPE,
+        universal_newlines=True,
+        encoding="utf-8",
+    )
+    while True:
+        line = p.stdout.readline()
+        common.logger.info(line.strip())
+        if not line:
+            break
 
-    return {"file": str(file)}
+    return {"file": str(file), "command_line": command_line}
