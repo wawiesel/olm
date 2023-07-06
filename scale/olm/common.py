@@ -5,6 +5,9 @@ import structlog
 import json
 from pathlib import Path
 import os
+import matplotlib.pyplot as plt
+import sys
+import os
 
 logger = structlog.getLogger(__name__)
 
@@ -14,7 +17,72 @@ class LibInfo:
         self.format = "arpdata.txt"
 
 
+def update_model(model):
+    """Update the model section with paths."""
+
+    # Main directory is where the config file is.
+    if not "config_file" in model:
+        model["config_file"] = None
+        model["dir"] = os.getcwd()
+    else:
+        config_file = Path(model["config_file"]).resolve()
+        model["config_file"] = str(config_file)
+        model["dir"] = os.path.dirname(config_file)
+    dir = Path(model["dir"])
+    dir = dir.resolve()
+    model["dir"] = str(dir)
+
+    # Working directory for calculations.
+    if not "work_dir" in model:
+        model["work_dir"] = "."
+    work_dir = dir / model["work_dir"]
+    work_dir = work_dir.resolve()
+    work_dir.mkdir(parents=True, exist_ok=True)
+    model["work_dir"] = str(work_dir)
+
+    # Final archive file.
+    archive_file = work_dir / (model["name"] + ".h5")
+    archive_file.resolve()
+    model["archive_file"] = str(archive_file)
+
+    return model
+
+
+def get_function_handle(mod_fn):
+    """Takes module:function like scale.olm.common:fuelcomp_uox_simple and returns
+    the function handle to the function."""
+    mod, fn = mod_fn.split(":")
+    this_module = sys.modules[mod]
+    fn_handle = getattr(this_module, fn)
+    return fn_handle
+
+
+def fn_redirect(x):
+    """Takes a dictionary and uses the '.type' key to find a function handle of that name,
+    then executes with all the keys except that type."""
+    fn_x = get_function_handle(x[".type"])
+    del x[".type"]
+    return fn_x(**x)
+
+
+def pass_through(**x):
+    """Simple pass through used with the olm.json function specification."""
+    return x
+
+
+def execute_repo(model, generate, run, build, check, report):
+    return {
+        "model": fn_redirect(model),
+        "generate": fn_redirect({"model": model, **generate}),
+        "run": fn_redirect({"model": model, **run}),
+        "build": fn_redirect({"model": model, **build}),
+        "check": fn_redirect({"model": model, **check}),
+        "report": fn_redirect({"model": model, **report}),
+    }
+
+
 def parse_arpdata(path):
+    """Get all the library names on an arpdata.txt"""
     names = list()
     with open(path, "r") as f:
         for line in f.readlines():
@@ -79,26 +147,28 @@ def create_registry(paths, env):
     return registry
 
 
-def plot_hist(info):
+def plot_hist(x):
+    """Plot histograms from relative and absolute histogram data (rhist,ahist)."""
+
     plt.hist2d(
-        np.log10(info.rhist),
-        np.log10(info.ahist),
+        np.log10(x.rhist),
+        np.log10(x.ahist),
         bins=np.linspace(-40, 20, 100),
         cmin=1,
         alpha=0.2,
     )
-    ind1 = (info.rhist > info.epsr) & (info.ahist > info.epsa)
+    ind1 = (x.rhist > x.epsr) & (x.ahist > x.epsa)
     h = plt.hist2d(
-        np.log10(info.rhist[ind1]),
-        np.log10(info.ahist[ind1]),
+        np.log10(x.rhist[ind1]),
+        np.log10(x.ahist[ind1]),
         bins=np.linspace(-40, 20, 100),
         cmin=1,
         alpha=1.0,
     )
-    ind2 = info.rhist > info.epsr
+    ind2 = x.rhist > x.epsr
     plt.hist2d(
-        np.log10(info.rhist[ind2]),
-        np.log10(info.ahist[ind2]),
+        np.log10(x.rhist[ind2]),
+        np.log10(x.ahist[ind2]),
         bins=np.linspace(-40, 20, 100),
         cmin=1,
         alpha=0.6,

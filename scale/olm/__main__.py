@@ -4,6 +4,7 @@ import scale.olm.common as common
 import json
 import structlog
 import os
+from pathlib import Path
 
 
 # ---------------------------------------------------------------------------------------
@@ -15,6 +16,73 @@ import os
 @click.group()
 def cli():
     pass
+
+
+# ---------------------------------------------------------------------------------------
+# OLM DO
+# ---------------------------------------------------------------------------------------
+#
+# This is the entry point to run OLM DO command.
+#
+@click.command(name="do")
+@click.argument("config_file", metavar="config-olm.json", type=click.Path(exists=True))
+@click.option(
+    "--generate/--nogenerate",
+    default=False,
+    help="whether to perform input generation",
+)
+@click.option(
+    "--run/--norun",
+    default=False,
+    help="whether to perform runs",
+)
+@click.option(
+    "--build/--nobuild",
+    default=False,
+    help="whether to build the reactor library",
+)
+@click.option(
+    "--check/--nocheck",
+    default=False,
+    help="whether to check the generated library",
+)
+@click.option(
+    "--report/--noreport",
+    default=False,
+    help="whether to create the report documentation",
+)
+def command_do(config_file, generate, run, build, check, report):
+    # Cycle through these modes.
+    modes = []
+    if generate:
+        modes.append("generate")
+    if run:
+        modes.append("run")
+    if build:
+        modes.append("build")
+    if check:
+        modes.append("check")
+    if report:
+        modes.append("report")
+
+    # Load the input data.
+    with open(config_file, "r") as f:
+        data = json.load(f)
+    data["model"]["config_file"] = config_file
+
+    # Update paths in the model block.
+    model = common.update_model(data["model"])
+
+    # Run each enabled mode in sequence.
+    for mode in modes:
+        output = common.fn_redirect({"model": model, **data[mode]})
+        output_file = str(Path(model["work_dir"]) / mode) + ".json"
+        common.logger.info(f"Writing {output_file} ...")
+        with open(output_file, "w") as f:
+            f.write(json.dumps(output, indent=4))
+
+
+cli.add_command(command_do)
 
 
 # ---------------------------------------------------------------------------------------
@@ -90,14 +158,14 @@ import scale.olm.check as check
 
 
 def methods_help(*methods):
-    desc = "run checking method NAME with options OPTS (in JSON format) with the following supported checks: \n\n"
+    desc = "Run checking method NAME with options OPTS in JSON string format. The following checks are supported.\n\n"
     for m in methods:
-        desc += m.__name__ + " '" + json.dumps(m.default_params().__dict__) + "' where "
+        desc += m.__name__ + " '" + json.dumps(m.default_params()) + "' where "
         params = m.describe_params()
         for p in params:
             desc += p + " is " + params[p] + ", "
         desc = desc[:-2]  # remove last comma
-        desc += "\n\n"
+        desc += ".\n\n"  # add period and newlines
     return desc
 
 
@@ -110,58 +178,28 @@ def methods_help(*methods):
     default="check.json",
     type=str,
     metavar="FILE",
-    help="results output file",
+    help="File to write results.",
 )
 @click.option(
-    "--method",
-    "-m",
-    nargs=2,
+    "--sequence",
+    "-s",
+    "text_sequence",
     type=str,
-    metavar="NAME '{OPTS}'",
+    metavar="'{\".type\": NAME, <OPTIONS>}'",
     multiple=True,
     help=methods_help(check.GridGradient, check.Continuity),
 )
-def command_check(archive_file, output_file, method):
-    try:
-        # Process all the input.
-        run_list = []
-        this_module = sys.modules["scale.olm.check"]
-        seq = 0
-        for m in method:
-            name, json_str = m
-            common.logger.info(
-                "Checking method options for method={}, sequence={}".format(name, seq)
-            )
-            seq += 1
-            this_class = getattr(this_module, name)
-            params = json.loads(json_str)
+def command_check(archive_file, output_file, text_sequence):
+    sequence = []
+    for s in text_sequence:
+        sequence.append(json.loads(s))
 
-            run_list.append(this_class(params))
+    model = {"archive_file": archive_file}
+    output = check.sequencer(model, sequence)
 
-        # Read the archive.
-        archive = common.Archive(archive_file)
-
-        # Execute in sequence.
-        p = 0
-        seq = 0
-        output = dict()
-        for r in run_list:
-            common.logger.info("Running checking sequence={}".format(seq))
-            info = r.run(archive)
-            output[str(seq)] = {"name": name, "info": info.__dict__}
-            seq += 1
-            if not info.test_pass:
-                p = 1
-            with open(output_file, "w") as fp:
-                fp.write(json.dumps(output, indent=4))
-            common.logger.info("Updated output file={}".format(output_file))
-        common.logger.info("Finished without exception and status code={}".format(p))
-
-        return p
-
-    except ValueError as ve:
-        common.logger.error(str(ve))
-        return str(ve)
+    common.logger.info(f"Writing {output_file} ...")
+    with open(output_file, "w") as f:
+        f.write(json.dumps(output, indent=4))
 
 
 cli.add_command(command_check)

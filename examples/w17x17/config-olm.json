@@ -1,0 +1,94 @@
+{
+	"model": {
+		"name": "w17x17",
+		"work_dir": "_build"
+	},
+	"generate": {
+		".type": "scale.olm.generate:expander",
+	    "template": "model.inp",
+		"fuelcomp": {
+		    ".type": "scale.olm.generate:fuelcomp_uox_simple",
+		    "nuclide_prefix": "wt_"
+		},
+		"params": {
+			".type": "scale.olm.common:pass_through",
+			"addnux": 2,
+			"xslib": "xn252"
+		},
+		"states": {
+			".type": "scale.olm.generate:all_permutations",
+			"coolant_density": [
+				0.723
+			],
+			"enrichment": [
+				0.5,
+				1.5,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				8.5
+			],
+			"specific_power": [
+				40
+			]
+		},
+		"time": {
+			".type": "scale.olm.generate:triton_constpower_burndata",
+			"gwd_burnups": [
+				0,
+				2,
+				4,
+				6,
+				9,
+				12,
+				15,
+				18,
+				21,
+				24,
+				27,
+				30,
+				33,
+				36,
+				39,
+				42,
+				45,
+				48,
+				51,
+				54,
+				57,
+				60,
+				63,
+				66,
+				69,
+				72,
+				75,
+				78,
+				81
+			]
+		}
+	},
+	"run": {
+		".type": "scale.olm.run:makefile",
+		"cmd": "$(SCALERTE)",
+		"nprocs": 3
+	},
+	"build": {
+		".type": "scale.olm.build:archive"
+	},
+	"check": {
+	    ".type": "scale.olm.check:sequencer",
+	    "sequence": 
+	    [{
+			"eps0": 0.0001,
+			".type": "scale.olm.check:GridGradient"
+		}]
+	},
+	"report": {
+		".type": "scale.olm.common:pass_through",
+		"template": "report.rst"
+	}
+}
