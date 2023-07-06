@@ -4,6 +4,8 @@ import subprocess
 
 
 def makefile(model, nprocs):
+    scalerte = model["scalerte"]
+
     contents = f"""
 outputs = $(patsubst %.inp, %.out, $(wildcard */*.inp))
 
@@ -13,7 +15,7 @@ all: $(outputs)
 
 %.out: %.inp
 \t@rm -f $@.FAILED
-\t{model['scalerte']} $< || echo $< finished
+\t{scalerte} $< || echo $< finished
 \t@grep 'Error' $@ && mv -f $@ $@.FAILED && echo "^^^^^^^^^^^^^^^^ errors from $<" 
 
 clean:
@@ -44,4 +46,4 @@ clean:
         if not line:
             break
 
-    return {"file": str(file), "command_line": command_line}
+    return {"scalerte": scalerte, "file": str(file), "command_line": command_line}
