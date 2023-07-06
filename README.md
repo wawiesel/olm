@@ -1,11 +1,9 @@
 ### ORIGEN Library Manager (OLM)
 
-Structure from 
-
-https://realpython.com/python-application-layouts/#command-line-application-layouts
+Here's the current repo structure. The main code is in `scale/olm/__main__.py`.
 
 ```
-❯ tree .
+tree -I venv -I _build
 .
 ├── LICENSE
 ├── README.md
@@ -14,33 +12,40 @@ https://realpython.com/python-application-layouts/#command-line-application-layo
 │   ├── mox_w17x17.h5
 │   ├── vver440.h5
 │   └── w17x17.h5
-├── debug.ipynb
 ├── docs
 │   └── index.rst
+├── examples
+│   └── w17x17
+│       ├── config-olm.json
+│       └── model.inp
+├── notebooks
+│   └── debug.ipynb
+├── requirements-dev.txt
 ├── scale
 │   └── olm
-│       ├── Archive.py
 │       ├── __init__.py
 │       ├── __main__.py
-│       ├── check
-│       │   ├── CheckInfo.py
-│       │   ├── __init__.py
-│       │   ├── check.py
-│       │   └── helpers.py
-│       ├── link
-│       │   ├── __init__.py
-│       │   ├── helpers.py
-│       │   └── link.py
-│       └── olm.py
-└── tests
-    ├── check
-    │   ├── check_tests.py
-    │   └── helpers_tests.py
-    └── link
-        ├── helpers_tests.py
-        └── link_tests.py
+│       ├── build.py
+│       ├── check.py
+│       ├── common.py
+│       ├── generate.py
+│       ├── link.py
+│       ├── report.py
+│       └── run.py
+├── scale_olm.egg-info
+│   ├── PKG-INFO
+│   ├── SOURCES.txt
+│   ├── dependency_links.txt
+│   ├── entry_points.txt
+│   ├── requires.txt
+│   └── top_level.txt
+├── setup.py
+└── testing
+    ├── check_test.py
+    ├── common_test.py
+    └── generate_test.py
 
-9 directories, 23 files
+9 directories, 30 files
 ```
 
 In order to create data/w17x17.h5 do this:
@@ -62,11 +67,6 @@ which python
 pip install -r requirements-dev.txt
 ```
 
-### Nice video on using Click for CLI
-
-https://www.youtube.com/watch?v=kNke39OZ2k0
-
-
 ### Local install for testing
 
 ```
@@ -75,18 +75,36 @@ olm
 which olm
 ```
 
+### Click for CLI
 
-### See if you can use as a module
+We use the Click python library https://click.palletsprojects.com/en/8.1.x/
+for command line.
+
+Here's a nice video.
+
+https://www.youtube.com/watch?v=kNke39OZ2k0
+
+
+### Run a check
+
+Here's how you run a check from the command line.
 
 ```
-import scale.olm
+olm check -s '{".type": "GridGradient" }' data/w17x17.h5
 ```
 
+### Run from an OLM configuration file.
 
-### Run an example
+This generates the different file permutations.
 
 ```
-olm check -m GridGradient '{}' data/w17x17.h5
+olm do --generate examples/w17x17/config-olm.json
+```
+
+This runs them with 3 local processors.
+
+```
+olm do --run examples/w17x17/config-olm.json --nprocs 3
 ```
 
 ### Run the tests
