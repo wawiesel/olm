@@ -1,7 +1,8 @@
 {
 	"model": {
 		"name": "w17x17",
-		"work_dir": "_build"
+		"work_dir": "_build",
+		"scale_env_var": "SCALE"
 	},
 	"generate": {
 		".type": "scale.olm.generate:expander",
@@ -73,7 +74,6 @@
 	},
 	"run": {
 		".type": "scale.olm.run:makefile",
-		"cmd": "$(SCALERTE)",
 		"nprocs": 3
 	},
 	"build": {

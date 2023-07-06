@@ -32,13 +32,6 @@ tree -I venv -I _build
 │       ├── link.py
 │       ├── report.py
 │       └── run.py
-├── scale_olm.egg-info
-│   ├── PKG-INFO
-│   ├── SOURCES.txt
-│   ├── dependency_links.txt
-│   ├── entry_points.txt
-│   ├── requires.txt
-│   └── top_level.txt
 ├── setup.py
 └── testing
     ├── check_test.py
@@ -63,8 +56,16 @@ which python
 
 ### Install requirements
 
+Enable the virtual environment, then run this command to install dependencies.
+
 ```
 pip install -r requirements-dev.txt
+```
+
+Regenerate the requirements file like this.
+
+```
+pip freeze | grep -v '^\-e'>requirements-dev.txt
 ```
 
 ### Local install for testing
@@ -93,21 +94,47 @@ Here's how you run a check from the command line.
 olm check -s '{".type": "GridGradient" }' data/w17x17.h5
 ```
 
-### Run from an OLM configuration file.
+### Use an OLM configuration file
 
-This generates the different file permutations.
+The configuration file contains all the information to move through all the stages
+of library generation, checking, and reporting. It requires knowing the SCALE 
+install you want to use.
+
+```
+export SCALE=/Applications/SCALE-6.3.0.app/Contents/Resources
+```
+
+The stages are:
+
+1. **generate** inputs
+2. **run** inputs
+3. **build** ORIGEN library from outputs
+4. **check** ORIGEN library
+5. **report** on aspects of the library
+
+See `olm do` help screen for details. For example, this command 
+generates the different file permutations.
 
 ```
 olm do --generate examples/w17x17/config-olm.json
 ```
 
-This runs them with 3 local processors.
+This command runs them with 3 local processors.
 
 ```
 olm do --run examples/w17x17/config-olm.json --nprocs 3
 ```
 
-### Run the tests
+Multiple stages can be run at once.
+
+```
+olm do --generate --run --build examples/w17x17/config-olm.json
+```
+
+### Run the unit tests
+
+Locally for unit tests we use the pytest framework under the `testing` directory.
+All tests can be run simply like this from the root directory.
 
 ```
 pytest .

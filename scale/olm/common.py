@@ -20,6 +20,22 @@ class LibInfo:
 def update_model(model):
     """Update the model section with paths."""
 
+    # Find SCALE and utils.
+    scale_env_var = model["scale_env_var"]
+    if not scale_env_var in os.environ:
+        logger.error(
+            f"Environment variable scale_env_var='{scale_env_var}' must be set!"
+        )
+        raise ValueError
+
+    scale_dir = os.environ[scale_env_var]
+    scalerte = Path(scale_dir) / "bin" / "scalerte"
+    obiwan = Path(scale_dir) / "bin" / "obiwan"
+
+    model["scale_dir"] = str(scale_dir)
+    model["scalerte"] = str(scalerte)
+    model["obiwan"] = str(obiwan)
+
     # Main directory is where the config file is.
     if not "config_file" in model:
         model["config_file"] = None

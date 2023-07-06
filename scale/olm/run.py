@@ -3,7 +3,7 @@ import scale.olm.common as common
 import subprocess
 
 
-def makefile(model, cmd, nprocs):
+def makefile(model, nprocs):
     contents = f"""
 outputs = $(patsubst %.inp, %.out, $(wildcard */*.inp))
 
@@ -12,7 +12,9 @@ outputs = $(patsubst %.inp, %.out, $(wildcard */*.inp))
 all: $(outputs)
 
 %.out: %.inp
-\t{cmd} $<
+\t@rm -f $@.FAILED
+\t{model['scalerte']} $< || echo $< finished
+\t@grep 'Error' $@ && mv -f $@ $@.FAILED && echo "^^^^^^^^^^^^^^^^ errors from $<" 
 
 clean:
 \trm -f $(outputs)
@@ -35,7 +37,10 @@ clean:
     )
     while True:
         line = p.stdout.readline()
-        common.logger.info(line.strip())
+        if "Error" in line:
+            common.logger.error(line.strip())
+        else:
+            common.logger.info(line.strip())
         if not line:
             break
 
