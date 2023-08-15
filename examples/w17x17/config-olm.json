@@ -77,7 +77,8 @@
 		"nprocs": 3
 	},
 	"build": {
-		".type": "scale.olm.build:archive"
+		".type": "scale.olm.build:arpdata_from_tags",
+		"endswith": ".system.f33"
 	},
 	"check": {
 	    ".type": "scale.olm.check:sequencer",

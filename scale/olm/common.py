@@ -15,6 +15,64 @@ logger = structlog.getLogger(__name__)
 class LibInfo:
     def __init__(self):
         self.format = "arpdata.txt"
+        self.files = []
+        self.type = ""
+        self.block = ""
+
+    def parse_block(self, block):
+        self.block = block
+        if self.name.startswith("mox_"):
+            self.type = "MOX"
+        elif self.name.startswith("act_"):
+            self.type = "ACT"
+        else:
+            self.type = "UOX"
+
+        tokens = self.block.split()
+        if self.type == "UOX":
+            ne = int(tokens[0])
+            nc = int(tokens[1])
+            nb = int(tokens[2])
+            s = 3
+            self.enrichments = [float(x) for x in tokens[s : s + ne]]
+            s += ne
+            self.coolant_densities = [float(x) for x in tokens[s : s + nc]]
+            s += nc
+            nf = nc * ne
+            self.files = [str(x) for x in tokens[s : s + nf]]
+            s += nf
+            self.burnups = [float(x) for x in tokens[s : s + nb]]
+
+        elif self.type == "MOX":
+            np = int(tokens[0])
+            nf = int(tokens[1])
+            nd = int(tokens[2])
+            nc = int(tokens[3])
+            nb = int(tokens[4])
+            s = 5
+            self.percent_pu = [float(x) for x in tokens[s : s + np]]
+            s += np
+            self.percent_fiss = [float(x) for x in tokens[s : s + nf]]
+            s += nf
+            s += 1  # Skip dummy entry
+            self.coolant_densities = [float(x) for x in tokens[s : s + nc]]
+            s += nc
+            nf = np * nf * nc
+            self.files = [
+                str(x.replace("'", "").replace('"', "")) for x in tokens[s : s + nf]
+            ]
+            s += nf
+            self.burnups = [float(x) for x in tokens[s : s + nb]]
+
+    def init_uox(name, enrichments, coolant_densities, burnups):
+        # Need to convert from full list to interpolation space.
+        self.enrichments = []
+        self.coolant_densities = []
+        self.burnups = []
+        self.files = []
+        self.block = ""
+        self.type = "UOX"
+        self.format = "arpdata.txt"
 
 
 def update_model(model):
@@ -97,14 +155,19 @@ def execute_repo(model, generate, run, build, check, report):
     }
 
 
-def parse_arpdata(path):
-    """Get all the library names on an arpdata.txt"""
-    names = list()
-    with open(path, "r") as f:
+def parse_arpdata(file):
+    """Simple function to parse the blocks of arpdata.txt"""
+    logger.debug(f"reading {file} ...")
+    blocks = dict()
+    with open(file, "r") as f:
         for line in f.readlines():
             if line.startswith("!"):
-                names.append(line[1:].strip())
-    return names
+                name = line.strip()[1:]
+                logger.debug(f"reading {name} ...")
+                blocks[name] = ""
+            else:
+                blocks[name] += line
+    return blocks
 
 
 def update_registry(registry, path):
@@ -127,7 +190,8 @@ def update_registry(registry, path):
             )
         else:
             logger.info("found arpdata.txt!")
-            for n in parse_arpdata(q1):
+            blocks = parse_arpdata(q1)
+            for n in blocks:
                 if n in registry:
                     logger.warning(
                         "library name {} has already been registered at path={} ignoring same name found at {}".format(
@@ -135,14 +199,14 @@ def update_registry(registry, path):
                         )
                     )
                 else:
-                    logger.info("found library name {} in {}!".format(n, p))
+                    logger.info("found library name {} in {}!".format(n, q1))
                     libinfo = LibInfo()
                     libinfo.format = "arpdata.txt"
                     libinfo.name = n
-                    libinfo.path = p
+                    libinfo.path = q1
+                    libinfo.arplibs_dir = r
+                    libinfo.parse_block(blocks[n])
                     registry[n] = libinfo
-
-    # Look for archive version at ${path}/*/olm.json
 
 
 def create_registry(paths, env):

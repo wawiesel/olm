@@ -52,24 +52,29 @@ def cli():
     help="whether to create the report documentation",
 )
 @click.option(
+    "--all",
+    "do_all",
+    default=False,
+    help="do all modes",
+)
+@click.option(
     "--nprocs",
     type=int,
     required=False,
     help="how many processes to use",
 )
-def command_do(config_file, generate, run, build, check, report, nprocs):
-    # Cycle through these modes.
-    modes = []
-    if generate:
-        modes.append("generate")
-    if run:
-        modes.append("run")
-    if build:
-        modes.append("build")
-    if check:
-        modes.append("check")
-    if report:
-        modes.append("report")
+def command_do(config_file, generate, run, build, check, report, do_all, nprocs):
+    # Set whether we do the modes.
+    do = dict()
+    do["generate"] = generate
+    do["run"] = run
+    do["build"] = build
+    do["check"] = check
+    do["report"] = report
+    all_modes = ["generate", "run", "build", "check", "report"]
+    if do_all:
+        for mode in all_modes:
+            do[mode] = True
 
     # Load the input data.
     with open(config_file, "r") as f:
@@ -84,7 +89,7 @@ def command_do(config_file, generate, run, build, check, report, nprocs):
     model = common.update_model(data["model"])
 
     # Run each enabled mode in sequence.
-    for mode in modes:
+    for mode in all_modes:
         output = common.fn_redirect({"model": model, **data[mode]})
         output_file = str(Path(model["work_dir"]) / mode) + ".json"
         common.logger.info(f"Writing {output_file} ...")
@@ -105,7 +110,7 @@ import scale.olm.link as link
 
 
 @click.command(name="link")
-@click.argument("name", metavar="LIB-NAME")
+@click.argument("names", type=str, nargs=-1, metavar="LIB1 LIB2 ...")
 @click.option(
     "--path",
     "-p",
@@ -127,26 +132,34 @@ import scale.olm.link as link
     help="destination directory (default: current)",
 )
 @click.option(
-    "--format",
-    "-f",
-    type=str,
-    default="archive",
-    help="destination format for the libraries (arpdata.txt, archive)",
+    "--show",
+    default=False,
+    is_flag=True,
+    help="show all the known libraries",
 )
 @click.option(
     "--dry-run",
     is_flag=True,
     help="just emit commands without running them",
 )
-def command_link(name, paths, env, dest, format, dry_run):
+def command_link(names, paths, env, dest, show, dry_run):
     try:
-        registry = common.create_registry(paths, env)
+        # Read all available libraries.
+        registry0 = common.create_registry(paths, env)
+        if show:
+            print("{:40s} {}".format("name", "path"))
+            for name in registry0:
+                print("{:40s} {}".format(name, registry0[name].path))
 
-        if not name in registry:
-            raise ValueError("name={} not found in provided paths!".format(name))
+        # Copy into reduced registry of only things we want.
+        registry = dict()
+        for name in names:
+            if not name in registry0:
+                raise ValueError("name={} not found in provided paths!".format(name))
 
-        libinfo = registry[name]
-        link.make_available(dry_run, libinfo, dest, format)
+            registry[name] = registry0[name]
+
+        link.make_mini_arpdatatxt(dry_run, registry, dest)
 
         return 0
 
