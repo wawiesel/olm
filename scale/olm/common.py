@@ -7,19 +7,43 @@ from pathlib import Path
 import os
 import matplotlib.pyplot as plt
 import sys
-import os
+import copy
+import subprocess
 
 logger = structlog.getLogger(__name__)
 
 
+def run_command(command_line):
+    p = subprocess.Popen(
+        command_line,
+        shell=True,
+        stdout=subprocess.PIPE,
+        universal_newlines=True,
+        encoding="utf-8",
+    )
+    while True:
+        line = p.stdout.readline()
+        if "Error" in line:
+            logger.error(line.strip())
+        else:
+            logger.info(line.rstrip())
+        if not line:
+            break
+
+
 class LibInfo:
     def __init__(self):
-        self.format = "arpdata.txt"
+        self.format = ""
+        self.name = ""
         self.files = []
         self.type = ""
         self.block = ""
 
-    def parse_block(self, block):
+    def init_block(self, name, block):
+        """Initialize data from a single block of arpdata WITHOUT the ! line"""
+
+        self.format = "arpdata.txt"
+        self.name = name
         self.block = block
         if self.name.startswith("mox_"):
             self.type = "MOX"
@@ -38,9 +62,13 @@ class LibInfo:
             s += ne
             self.coolant_densities = [float(x) for x in tokens[s : s + nc]]
             s += nc
-            nf = nc * ne
-            self.files = [str(x) for x in tokens[s : s + nf]]
-            s += nf
+            self.files = list()
+            for ie in range(len(self.enrichments)):
+                self.files.append(list())
+                for ic in range(len(self.coolant_densities)):
+                    filename = tokens[s].replace("'", "").replace('"', "")
+                    self.files[ie].append(filename)
+                    s += 1
             self.burnups = [float(x) for x in tokens[s : s + nb]]
 
         elif self.type == "MOX":
@@ -57,22 +85,120 @@ class LibInfo:
             s += 1  # Skip dummy entry
             self.coolant_densities = [float(x) for x in tokens[s : s + nc]]
             s += nc
-            nf = np * nf * nc
-            self.files = [
-                str(x.replace("'", "").replace('"', "")) for x in tokens[s : s + nf]
+            nfile = np * nf * nc
+            files = [
+                str(x.replace("'", "").replace('"', "")) for x in tokens[s : s + nfile]
             ]
-            s += nf
+            s += nfile
             self.burnups = [float(x) for x in tokens[s : s + nb]]
 
-    def init_uox(name, enrichments, coolant_densities, burnups):
-        # Need to convert from full list to interpolation space.
-        self.enrichments = []
-        self.coolant_densities = []
-        self.burnups = []
-        self.files = []
-        self.block = ""
-        self.type = "UOX"
+    def init_uox(self, name, files, enrichments, coolant_densities):
+        # Convert to interpolation space, assuming correct set up.
+        self.name = name
         self.format = "arpdata.txt"
+        self.type = "UOX"
+        self.enrichments = sorted(set(enrichments))
+        self.coolant_densities = sorted(set(coolant_densities))
+        self.burnups = []
+        self.block = ""
+
+        # Initialize empty 2d array of correct size.
+        self.files = list()
+        for ie in range(len(self.enrichments)):
+            self.files.append(list())
+            for ic in range(len(self.coolant_densities)):
+                self.files[ie].append("")
+
+        # Map flat list of files.
+        for i in range(len(files)):
+            e = enrichments[i]
+            c = coolant_densities[i]
+            ie = self.enrichments.index(e)
+            ic = self.coolant_densities.index(c)
+            self.files[ie][ic] = files[i]
+
+    def get_canonical_filenames(self, ext):
+        # Initialize correct size.
+        filenames = copy.deepcopy(self.files)
+
+        # Keep track of filename counts so we are sure we don't create a duplicate.
+        counts = set()
+        if self.type == "UOX":
+            # Fill with data.
+            for ie in range(len(self.enrichments)):
+                e = self.enrichments[ie]
+                for ic in range(len(self.coolant_densities)):
+                    c = self.coolant_densities[ic]
+                    filename = "{}_e{:02d}w{:02d}{}".format(
+                        self.name, int(10 * e), int(10 * c), ext
+                    )
+                    filenames[ie][ic] = filename
+                    if filename in counts:
+                        logger.error("repeated {filename} due to assumed spacing!")
+                    counts.add(filename)
+
+        elif self.type == "MOX":
+            logger.error("mox not implemented")
+        else:
+            logger.error("LibInfo.type={} unkonwn (UOX/MOX)".format(self.type))
+
+        return filenames
+
+    def get_file_by_index(self, i):
+        if self.type == "UOX":
+            ne = len(self.enrichments)
+            nc = len(self.coolant_densities)
+            j = 0
+            for ie in range(ne):
+                for ic in range(nc):
+                    if j == i:
+                        return self.files[ie][ic]
+                    j += 1
+        elif self.type == "MOX":
+            logger.error("mox not implemented")
+        else:
+            logger.error("LibInfo.type={} unkonwn (UOX/MOX)".format(self.type))
+
+        return ""
+
+    def create_archive(self, arpdir):
+        h5 = None
+        print(self.files)
+        if self.type == "UOX":
+            ne = len(self.enrichments)
+            nc = len(self.coolant_densities)
+            for ie in range(ne):
+                for ic in range(nc):
+                    file = self.files[ie][ic]
+                    print(f"{file} is...")
+                    lib = h5py.File(arpdir / file)
+        elif self.type == "MOX":
+            logger.error("mox not implemented")
+        else:
+            logger.error("LibInfo.type={} unkonwn (UOX/MOX)".format(self.type))
+
+        return h5
+
+    def get_arpdata(self):
+        entry = ""
+        if self.type == "UOX":
+            ne = len(self.enrichments)
+            nc = len(self.coolant_densities)
+            nb = len(self.burnups)
+            entry += "{} {} {}\n".format(ne, nc, nb)
+            entry += "\n".join([str(x) for x in self.enrichments]) + "\n"
+            entry += "\n".join([str(x) for x in self.coolant_densities]) + "\n"
+            for ie in range(ne):
+                for ic in range(nc):
+                    entry += "'{}'\n".format(self.files[ie][ic])
+            entry += "\n".join([str(x) for x in self.burnups])
+        elif self.type == "MOX":
+            logger.error("mox not implemented")
+        else:
+            logger.error("LibInfo.type={} unkonwn (UOX/MOX)".format(self.type))
+
+        self.block = entry
+        return "!{}\n{}".format(self.name, self.block)
 
 
 def update_model(model):
@@ -113,11 +239,6 @@ def update_model(model):
     work_dir = work_dir.resolve()
     work_dir.mkdir(parents=True, exist_ok=True)
     model["work_dir"] = str(work_dir)
-
-    # Final archive file.
-    archive_file = work_dir / (model["name"] + ".h5")
-    archive_file.resolve()
-    model["archive_file"] = str(archive_file)
 
     return model
 
@@ -201,11 +322,9 @@ def update_registry(registry, path):
                 else:
                     logger.info("found library name {} in {}!".format(n, q1))
                     libinfo = LibInfo()
-                    libinfo.format = "arpdata.txt"
-                    libinfo.name = n
+                    libinfo.init_block(n, blocks[n])
                     libinfo.path = q1
                     libinfo.arplibs_dir = r
-                    libinfo.parse_block(blocks[n])
                     registry[n] = libinfo
 
 
@@ -266,11 +385,22 @@ class Archive:
     time-dependent sequence of Transition Matrices. An Archive is a multi-dimensional
     interpolatable space of Libraries."""
 
-    def __init__(self, file):
+    def __init__(self, file, name=""):
         logger.info("Loading archive file={}".format(file))
 
         self.file_name = file
-        self.h5 = h5py.File(file, "r")
+
+        # Initialize in-memory data structure.
+        if file.name == "arpdata.txt":
+            blocks = parse_arpdata(file)
+            libinfo = LibInfo()
+            libinfo.init_block(name, blocks[name])
+            print(libinfo.__dict__)
+            self.h5 = libinfo.create_archive(file.parent / "arplibs")
+        else:
+            self.h5 = h5py.File(file, "r")
+
+        # Get important axis variables.
         (
             self.axes_names,
             self.axes_values,
@@ -279,7 +409,7 @@ class Archive:
             self.nvec,
         ) = Archive.extract_axes(self.h5)
 
-        # populate coefficient data
+        # Populate coefficient data.
         self.coeff = np.zeros((*self.axes_shape, self.ncoeff))
         data = self.h5["incident"]["neutron"]
         for i in tqdm(data.keys()):

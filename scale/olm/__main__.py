@@ -90,11 +90,12 @@ def command_do(config_file, generate, run, build, check, report, do_all, nprocs)
 
     # Run each enabled mode in sequence.
     for mode in all_modes:
-        output = common.fn_redirect({"model": model, **data[mode]})
-        output_file = str(Path(model["work_dir"]) / mode) + ".json"
-        common.logger.info(f"Writing {output_file} ...")
-        with open(output_file, "w") as f:
-            f.write(json.dumps(output, indent=4))
+        if do[mode]:
+            output = common.fn_redirect({"model": model, **data[mode]})
+            output_file = str(Path(model["work_dir"]) / mode) + ".json"
+            common.logger.info(f"Writing {output_file} ...")
+            with open(output_file, "w") as f:
+                f.write(json.dumps(output, indent=4))
 
 
 cli.add_command(command_do)

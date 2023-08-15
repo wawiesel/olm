@@ -27,21 +27,21 @@ def triton_constpower_burndata(state, gwd_burnups):
 
     specific_power = state["specific_power"]
 
-    # calculate length of each burnup step
+    # Calculate cumulative time to achieve each burnup.
     burnups = [float(x) * 1e3 for x in gwd_burnups]
     days = [burnup / float(specific_power) for burnup in burnups]
 
+    # Check warnings and errors.
     if burnups[0] > 0:
-        common.logger.warning("Burnup step for 0.0 GWd/MTHM added.")
-        burnups.insert(0, 0.0)
-        days.insert(0, 0.0)
+        common.logger.error("Burnup step 0.0 GWd/MTHM must be included.")
+        raise ValueError
+
     if days[1] > 3:
         common.logger.warning(
-            "Small burnup step added at 2 days because initial step is > 3 days."
+            "Burnup step at ~2 days should be added for Xe equilibrium."
         )
-        days.insert(1, 2.0)  # first step of two days for Xe equilibrium
-        burnups.insert(1, 2.0 * float(specific_power))
 
+    # Create the burndata block.
     burndata = []
     for i in range(len(days) - 1):
         burndata.append({"power": specific_power, "burn": (days[i + 1] - days[i])})
@@ -109,7 +109,7 @@ def expander(model, template, params, states, fuelcomp, time):
 
         # Generate all data.
         data = {
-            "file": str(file),
+            "file": str(file.relative_to(work_dir)),
             "params": params,
             "fuelcomp": fuelcomp2,
             "time": time2,
@@ -133,4 +133,4 @@ def expander(model, template, params, states, fuelcomp, time):
         # Save the data.
         perms2.append(data)
 
-    return {"perms": perms2}
+    return {"work_dir": str(work_dir), "perms": perms2}

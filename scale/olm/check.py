@@ -2,6 +2,7 @@ import numpy as np
 from tqdm import tqdm, tqdm_notebook
 import scale.olm.common as common
 import json
+from pathlib import Path
 
 
 class CheckInfo:
@@ -33,7 +34,12 @@ def sequencer(model, sequence):
             run_list.append(this_class)
 
         # Read the archive.
-        archive = common.Archive(model["archive_file"])
+        work_dir = Path(model["work_dir"])
+        arpdata_txt = work_dir / "arpdata.txt"
+        if arpdata_txt.exists():
+            archive = common.Archive(arpdata_txt, model["name"])
+        else:
+            archive = common.Archive(f"{name}.arc.h5")
 
         # Execute in sequence.
         test_pass = True

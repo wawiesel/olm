@@ -1,6 +1,5 @@
 from pathlib import Path
 import scale.olm.common as common
-import subprocess
 
 
 def makefile(model, nprocs):
@@ -15,8 +14,8 @@ all: $(outputs)
 
 %.out: %.inp
 \t@rm -f $@.FAILED
-\t{scalerte} $< || echo $< finished
-\t@grep 'Error' $@ && mv -f $@ $@.FAILED && echo "^^^^^^^^^^^^^^^^ errors from $<" 
+\t{scalerte} $<
+\t@grep 'Error' $@ && mv -f $@ $@.FAILED && echo "^^^^^^^^^^^^^^^^ errors from $<" || true
 
 clean:
 \trm -f $(outputs)
@@ -29,21 +28,11 @@ clean:
 
     command_line = f"cd {work_dir} && make -j {nprocs}"
     common.logger.info(f"Running command_line='{command_line}' ...")
+    common.run_command(command_line)
 
-    p = subprocess.Popen(
-        command_line,
-        shell=True,
-        stdout=subprocess.PIPE,
-        universal_newlines=True,
-        encoding="utf-8",
-    )
-    while True:
-        line = p.stdout.readline()
-        if "Error" in line:
-            common.logger.error(line.strip())
-        else:
-            common.logger.info(line.strip())
-        if not line:
-            break
-
-    return {"scalerte": scalerte, "file": str(file), "command_line": command_line}
+    return {
+        "scalerte": scalerte,
+        "work_dir": work_dir,
+        "file": str(file.relative_to(work_dir)),
+        "command_line": command_line,
+    }
