@@ -11,11 +11,11 @@ def make_mini_arpdatatxt(dry_run, registry, dest):
     mini_arpdata = ""
     files_to_copy = []
     for name in registry:
-        libinfo = registry[name]
-        path = libinfo.path
+        arpinfo = registry[name]
+        path = arpinfo.path
         common.logger.info(f"linking {name} from {path}")
-        mini_arpdata += f"!{name}\n" + libinfo.block
-        files_to_copy.extend([libinfo.arplibs_dir / x for x in libinfo.files])
+        mini_arpdata += f"!{name}\n" + arpinfo.block
+        files_to_copy.extend([arpinfo.arplibs_dir / x for x in arpinfo.files])
 
     # Create an arpdata.txt file with the concatenated content.
     a = Path(dest) / "arpdata.txt"

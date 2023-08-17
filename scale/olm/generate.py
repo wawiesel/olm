@@ -33,8 +33,7 @@ def triton_constpower_burndata(state, gwd_burnups):
 
     # Check warnings and errors.
     if burnups[0] > 0:
-        common.logger.error("Burnup step 0.0 GWd/MTHM must be included.")
-        raise ValueError
+        raise ValueError("Burnup step 0.0 GWd/MTHM must be included.")
 
     if days[1] > 3:
         common.logger.warning(
@@ -119,11 +118,14 @@ def expander(model, template, params, states, fuelcomp, time):
         # Instance template.
         j2t = Template(template_text, undefined=StrictUndefined)
 
+        # Catch specific types of error.
         try:
             filled_text = j2t.render(data)
         except exceptions.UndefinedError as ve:
-            common.logger.error(str(ve))
-            filled_text = str(ve) + "\n" + template_text
+            raise ValueError(
+                "Undefined variable reported (most likely template has a variable that is undefined in the configuration file). Error from template expansion: "
+                + str(ve)
+            )
 
         # Write the file.
         file.parent.mkdir(parents=True, exist_ok=True)

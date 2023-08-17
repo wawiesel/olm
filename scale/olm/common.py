@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import sys
 import copy
 import subprocess
+import shutil
 
 logger = structlog.getLogger(__name__)
 
@@ -18,187 +19,312 @@ def run_command(command_line):
         command_line,
         shell=True,
         stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         universal_newlines=True,
         encoding="utf-8",
     )
     while True:
         line = p.stdout.readline()
         if "Error" in line:
-            logger.error(line.strip())
+            raise ValueError(line.strip())
         else:
             logger.info(line.rstrip())
         if not line:
             break
 
 
-class LibInfo:
+#     OBIWAN is not consistent with return codes
+#     if p.returncode != 0:
+#         raise ValueError(p.stderr.read())
+
+
+class ArpInfo:
     def __init__(self):
-        self.format = ""
         self.name = ""
-        self.files = []
-        self.type = ""
+        self.lib_map = None
+        self.fuel_type = ""
         self.block = ""
+
+    def clear_lib_map(self):
+        self.lib_map = list()
+
+        if self.fuel_type == "UOX":
+            for ie in range(len(self.enrichment_list)):
+                self.lib_map.append(list())
+                for im in range(len(self.mod_dens_list)):
+                    self.lib_map[ie].append("")
+
+        elif self.fuel_type == "MOX":
+            raise ValueError("mox not implemented")
+        else:
+            raise ValueError(
+                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+            )
 
     def init_block(self, name, block):
         """Initialize data from a single block of arpdata WITHOUT the ! line"""
 
-        self.format = "arpdata.txt"
         self.name = name
         self.block = block
         if self.name.startswith("mox_"):
-            self.type = "MOX"
+            self.fuel_type = "MOX"
         elif self.name.startswith("act_"):
-            self.type = "ACT"
+            self.fuel_type = "ACT"
         else:
-            self.type = "UOX"
+            self.fuel_type = "UOX"
 
         tokens = self.block.split()
-        if self.type == "UOX":
+        if self.fuel_type == "UOX":
             ne = int(tokens[0])
-            nc = int(tokens[1])
+            nm = int(tokens[1])
             nb = int(tokens[2])
             s = 3
-            self.enrichments = [float(x) for x in tokens[s : s + ne]]
+            self.enrichment_list = [float(x) for x in tokens[s : s + ne]]
             s += ne
-            self.coolant_densities = [float(x) for x in tokens[s : s + nc]]
-            s += nc
-            self.files = list()
-            for ie in range(len(self.enrichments)):
-                self.files.append(list())
-                for ic in range(len(self.coolant_densities)):
+            self.mod_dens_list = [float(x) for x in tokens[s : s + nm]]
+            s += nm
+            self.clear_lib_map()
+            for ie in range(len(self.enrichment_list)):
+                for im in range(len(self.mod_dens_list)):
                     filename = tokens[s].replace("'", "").replace('"', "")
-                    self.files[ie].append(filename)
+                    self.lib_map[ie][im] = filename
                     s += 1
-            self.burnups = [float(x) for x in tokens[s : s + nb]]
+            self.burnup_list = [float(x) for x in tokens[s : s + nb]]
 
-        elif self.type == "MOX":
+        elif self.fuel_type == "MOX":
             np = int(tokens[0])
             nf = int(tokens[1])
             nd = int(tokens[2])
-            nc = int(tokens[3])
+            nm = int(tokens[3])
             nb = int(tokens[4])
             s = 5
-            self.percent_pu = [float(x) for x in tokens[s : s + np]]
+            self.pu_frac_list = [float(x) for x in tokens[s : s + np]]
             s += np
-            self.percent_fiss = [float(x) for x in tokens[s : s + nf]]
+            self.fissile_pu_frac_list = [float(x) for x in tokens[s : s + nf]]
             s += nf
             s += 1  # Skip dummy entry
-            self.coolant_densities = [float(x) for x in tokens[s : s + nc]]
-            s += nc
-            nfile = np * nf * nc
-            files = [
-                str(x.replace("'", "").replace('"', "")) for x in tokens[s : s + nfile]
-            ]
-            s += nfile
-            self.burnups = [float(x) for x in tokens[s : s + nb]]
+            self.mod_dens_list = [float(x) for x in tokens[s : s + nm]]
+            s += nm
+            nfile = np * nf * nm
+            #### READ FILES
 
-    def init_uox(self, name, files, enrichments, coolant_densities):
+            self.burnup_list = [float(x) for x in tokens[s : s + nb]]
+        else:
+            raise ValueError(
+                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+            )
+
+    @staticmethod
+    def parse_arpdata(file):
+        """Simple function to parse the blocks of arpdata.txt"""
+        logger.debug(f"reading {file} ...")
+        blocks = dict()
+        with open(file, "r") as f:
+            for line in f.readlines():
+                if line.startswith("!"):
+                    name = line.strip()[1:]
+                    logger.debug(f"reading {name} ...")
+                    blocks[name] = ""
+                else:
+                    blocks[name] += line
+        return blocks
+
+    def init_uox(self, name, file_list, enrichment_list, mod_dens_list):
         # Convert to interpolation space, assuming correct set up.
         self.name = name
-        self.format = "arpdata.txt"
-        self.type = "UOX"
-        self.enrichments = sorted(set(enrichments))
-        self.coolant_densities = sorted(set(coolant_densities))
-        self.burnups = []
+        self.fuel_type = "UOX"
+        self.enrichment_list = sorted(set(enrichment_list))
+        self.mod_dens_list = sorted(set(mod_dens_list))
+        self.burnup_list = []
         self.block = ""
+        self.clear_lib_map()
 
-        # Initialize empty 2d array of correct size.
-        self.files = list()
-        for ie in range(len(self.enrichments)):
-            self.files.append(list())
-            for ic in range(len(self.coolant_densities)):
-                self.files[ie].append("")
+        # Map flat list of file_list.
+        for i in range(len(file_list)):
+            e = enrichment_list[i]
+            m = mod_dens_list[i]
+            ie = self.enrichment_list.index(e)
+            im = self.mod_dens_list.index(m)
+            self.lib_map[ie][im] = file_list[i]
 
-        # Map flat list of files.
-        for i in range(len(files)):
-            e = enrichments[i]
-            c = coolant_densities[i]
-            ie = self.enrichments.index(e)
-            ic = self.coolant_densities.index(c)
-            self.files[ie][ic] = files[i]
-
-    def get_canonical_filenames(self, ext):
-        # Initialize correct size.
-        filenames = copy.deepcopy(self.files)
-
+    def set_canonical_filenames(self, ext):
         # Keep track of filename counts so we are sure we don't create a duplicate.
         counts = set()
-        if self.type == "UOX":
+        if self.fuel_type == "UOX":
             # Fill with data.
-            for ie in range(len(self.enrichments)):
-                e = self.enrichments[ie]
-                for ic in range(len(self.coolant_densities)):
-                    c = self.coolant_densities[ic]
-                    filename = "{}_e{:02d}w{:02d}{}".format(
-                        self.name, int(10 * e), int(10 * c), ext
+            self.clear_lib_map()
+            (ne, nm) = self.get_dims()
+            for ie in range(ne):
+                e = self.enrichment_list[ie]
+                for im in range(nm):
+                    m = self.mod_dens_list[im]
+                    filename = "{}_e{:04d}w{:04d}{}".format(
+                        self.name, int(1000 * e), int(1000 * m), ext
                     )
-                    filenames[ie][ic] = filename
+                    self.lib_map[ie][im] = filename
                     if filename in counts:
-                        logger.error("repeated {filename} due to assumed spacing!")
+                        raise ValueError(
+                            f"canonical filename={filename} has already been used--most likely due to too small grid spacing!"
+                        )
                     counts.add(filename)
 
-        elif self.type == "MOX":
-            logger.error("mox not implemented")
+        elif self.fuel_type == "MOX":
+            raise ValueError("mox not implemented")
         else:
-            logger.error("LibInfo.type={} unkonwn (UOX/MOX)".format(self.type))
+            raise ValueError(
+                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+            )
 
-        return filenames
-
-    def get_file_by_index(self, i):
-        if self.type == "UOX":
-            ne = len(self.enrichments)
-            nc = len(self.coolant_densities)
-            j = 0
-            for ie in range(ne):
-                for ic in range(nc):
-                    if j == i:
-                        return self.files[ie][ic]
-                    j += 1
-        elif self.type == "MOX":
-            logger.error("mox not implemented")
+    def get_lib_by_index(self, i):
+        if self.fuel_type == "UOX":
+            (ie, im) = self.get_dim_by_index(i)
+            return self.lib_map[ie][im]
+        elif self.fuel_type == "MOX":
+            raise ValueError("mox not implemented")
         else:
-            logger.error("LibInfo.type={} unkonwn (UOX/MOX)".format(self.type))
+            raise ValueError(
+                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+            )
 
-        return ""
+        return None
 
-    def create_archive(self, arpdir):
-        h5 = None
-        print(self.files)
-        if self.type == "UOX":
-            ne = len(self.enrichments)
-            nc = len(self.coolant_densities)
-            for ie in range(ne):
-                for ic in range(nc):
-                    file = self.files[ie][ic]
-                    print(f"{file} is...")
-                    lib = h5py.File(arpdir / file)
-        elif self.type == "MOX":
-            logger.error("mox not implemented")
+    def get_dims(self):
+        if self.fuel_type == "UOX":
+            ne = len(self.enrichment_list)
+            nm = len(self.mod_dens_list)
+            return (ne, nm)
+        elif self.fuel_type == "MOX":
+            raise ValueError("mox not implemented")
         else:
-            logger.error("LibInfo.type={} unkonwn (UOX/MOX)".format(self.type))
+            raise ValueError(
+                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+            )
 
-        return h5
+        return None
+
+    def get_dim_by_index(self, i):
+        return np.unravel_index(i, self.get_dims())
+
+    def interptags_by_index(self, i):
+        if self.fuel_type == "UOX":
+            (ie, im) = self.get_dim_by_index(i)
+            print(f"{i} {ie} {im}")
+            e = self.enrichment_list[ie]
+            m = self.mod_dens_list[im]
+            return f"enrichment={e},mod_dens={m}"
+        elif self.fuel_type == "MOX":
+            raise ValueError("mox not implemented")
+        else:
+            raise ValueError(
+                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+            )
+
+        return None
 
     def get_arpdata(self):
         entry = ""
-        if self.type == "UOX":
-            ne = len(self.enrichments)
-            nc = len(self.coolant_densities)
-            nb = len(self.burnups)
-            entry += "{} {} {}\n".format(ne, nc, nb)
-            entry += "\n".join([str(x) for x in self.enrichments]) + "\n"
-            entry += "\n".join([str(x) for x in self.coolant_densities]) + "\n"
+        if self.fuel_type == "UOX":
+            ne = len(self.enrichment_list)
+            nm = len(self.mod_dens_list)
+            nb = len(self.burnup_list)
+            entry += "{} {} {}\n".format(ne, nm, nb)
+            entry += "\n".join([str(x) for x in self.enrichment_list]) + "\n"
+            entry += "\n".join([str(x) for x in self.mod_dens_list]) + "\n"
             for ie in range(ne):
-                for ic in range(nc):
-                    entry += "'{}'\n".format(self.files[ie][ic])
-            entry += "\n".join([str(x) for x in self.burnups])
-        elif self.type == "MOX":
-            logger.error("mox not implemented")
+                for im in range(nm):
+                    entry += "'{}'\n".format(self.lib_map[ie][im])
+            entry += "\n".join([str(x) for x in self.burnup_list])
+        elif self.fuel_type == "MOX":
+            raise ValueError("mox not implemented")
         else:
-            logger.error("LibInfo.type={} unkonwn (UOX/MOX)".format(self.type))
+            raise ValueError(
+                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+            )
 
         self.block = entry
         return "!{}\n{}".format(self.name, self.block)
+
+    def create_temp_archive(self, arpdata_txt, temp_arc):
+        h5arc = None
+        n = 1
+        arpdir = arpdata_txt.parent / "arplibs"
+        if self.fuel_type == "UOX":
+            (ne, nm) = self.get_dims()
+            for ie in range(ne):
+                for im in range(nm):
+                    lib = Path(self.lib_map[ie][im])
+                    if not h5arc:
+                        logger.info(f"initializing temporary archive {temp_arc}")
+                        shutil.copy(arpdir / lib, temp_arc)
+                        h5arc = h5py.File(temp_arc, "a")
+                    else:
+                        n += 1
+                        logger.info(
+                            f"adding library {lib} to temporary archive {temp_arc}"
+                        )
+                        h5arc["incident"]["neutron"][f"lib{n}"] = h5py.ExternalLink(
+                            arpdir / lib, "/incident/neutron/lib1"
+                        )
+
+        elif arpinfo.fuel_type == "MOX":
+            raise ValueError("mox not implemented")
+        else:
+            raise ValueError(
+                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+            )
+
+        return h5arc
+
+
+def parse_burnups_from_triton_output(output):
+    """Parse the table that looks like this:
+
+    Sub-Interval   Depletion   Sub-interval    Specific      Burn Length  Decay Length   Library Burnup
+         No.       Interval     in interval  Power(MW/MTIHM)     (d)          (d)           (MWd/MTIHM)
+    ----------------------------------------------------------------------------------------------------
+    ----------------------------------------------------------------------------------------------------
+            0     ****Initial Bootstrap Calculation****                                      0.00000E+00
+            1          1                1          40.000      25.000         0.000          5.00000e+02
+            2          1                2          40.000     300.000         0.000          7.00000e+03
+            3          1                3          40.000     300.000         0.000          1.90000e+04
+            4          1                4          40.000     312.500         0.000          3.12500e+04
+            5          1                5          40.000     312.500         0.000          4.37500e+04
+            6          1                6          40.000     333.333         0.000          5.66667e+04
+            7          1                7          40.000     333.333         0.000          7.00000e+04
+            8          1                8          40.000     333.333         0.000          8.33333e+04
+    ----------------------------------------------------------------------------------------------------
+
+    """
+    burnup_list = []
+    with open(output, "r") as f:
+        n = 0
+        found = False
+        for line in f.readlines():
+            words = line.split()
+            if words == [
+                "Sub-Interval",
+                "Depletion",
+                "Sub-interval",
+                "Specific",
+                "Burn",
+                "Length",
+                "Decay",
+                "Length",
+                "Library",
+                "Burnup",
+            ]:
+                found = True
+            if found:
+                n += 1
+                if n > 4 and line.strip().startswith("-----"):
+                    found = False
+                elif n > 4:
+                    bu = float(line.split()[-1])
+                    burnup_list.append(bu)
+    logger.info(
+        "found burnup_list=[{}]".format(",".join([str(x) for x in burnup_list]))
+    )
+    return burnup_list
 
 
 def update_model(model):
@@ -207,10 +333,9 @@ def update_model(model):
     # Find SCALE and utils.
     scale_env_var = model["scale_env_var"]
     if not scale_env_var in os.environ:
-        logger.error(
+        raise ValueError(
             f"Environment variable scale_env_var='{scale_env_var}' must be set!"
         )
-        raise ValueError
 
     scale_dir = os.environ[scale_env_var]
     scalerte = Path(scale_dir) / "bin" / "scalerte"
@@ -276,21 +401,6 @@ def execute_repo(model, generate, run, build, check, report):
     }
 
 
-def parse_arpdata(file):
-    """Simple function to parse the blocks of arpdata.txt"""
-    logger.debug(f"reading {file} ...")
-    blocks = dict()
-    with open(file, "r") as f:
-        for line in f.readlines():
-            if line.startswith("!"):
-                name = line.strip()[1:]
-                logger.debug(f"reading {name} ...")
-                blocks[name] = ""
-            else:
-                blocks[name] += line
-    return blocks
-
-
 def update_registry(registry, path):
     """Update a registry of library names using all the paths"""
 
@@ -311,7 +421,7 @@ def update_registry(registry, path):
             )
         else:
             logger.info("found arpdata.txt!")
-            blocks = parse_arpdata(q1)
+            blocks = ArpInfo.parse_arpdata(q1)
             for n in blocks:
                 if n in registry:
                     logger.warning(
@@ -321,11 +431,11 @@ def update_registry(registry, path):
                     )
                 else:
                     logger.info("found library name {} in {}!".format(n, q1))
-                    libinfo = LibInfo()
-                    libinfo.init_block(n, blocks[n])
-                    libinfo.path = q1
-                    libinfo.arplibs_dir = r
-                    registry[n] = libinfo
+                    arpinfo = ArpInfo()
+                    arpinfo.init_block(n, blocks[n])
+                    arpinfo.path = q1
+                    arpinfo.arplibs_dir = r
+                    registry[n] = arpinfo
 
 
 def create_registry(paths, env):
@@ -392,11 +502,11 @@ class Archive:
 
         # Initialize in-memory data structure.
         if file.name == "arpdata.txt":
-            blocks = parse_arpdata(file)
-            libinfo = LibInfo()
-            libinfo.init_block(name, blocks[name])
-            print(libinfo.__dict__)
-            self.h5 = libinfo.create_archive(file.parent / "arplibs")
+            blocks = ArpInfo.parse_arpdata(file)
+            arpinfo = ArpInfo()
+            arpinfo.init_block(name, blocks[name])
+            temp_arc = file.with_suffix(".arc.h5")
+            self.h5 = arpinfo.create_temp_archive(file, temp_arc)
         else:
             self.h5 = h5py.File(file, "r")
 

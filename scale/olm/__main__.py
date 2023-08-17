@@ -29,32 +29,38 @@ def cli():
 @click.option(
     "--generate/--nogenerate",
     default=False,
+    is_flag=True,
     help="whether to perform input generation",
 )
 @click.option(
     "--run/--norun",
     default=False,
+    is_flag=True,
     help="whether to perform runs",
 )
 @click.option(
     "--build/--nobuild",
     default=False,
+    is_flag=True,
     help="whether to build the reactor library",
 )
 @click.option(
     "--check/--nocheck",
     default=False,
+    is_flag=True,
     help="whether to check the generated library",
 )
 @click.option(
     "--report/--noreport",
     default=False,
+    is_flag=True,
     help="whether to create the report documentation",
 )
 @click.option(
     "--all",
     "do_all",
     default=False,
+    is_flag=True,
     help="do all modes",
 )
 @click.option(
@@ -76,26 +82,31 @@ def command_do(config_file, generate, run, build, check, report, do_all, nprocs)
         for mode in all_modes:
             do[mode] = True
 
-    # Load the input data.
-    with open(config_file, "r") as f:
-        data = json.load(f)
-    data["model"]["config_file"] = config_file
+    try:
+        # Load the input data.
+        with open(config_file, "r") as f:
+            data = json.load(f)
+        data["model"]["config_file"] = config_file
 
-    # If nprocs is present, override.
-    if nprocs:
-        data["run"]["nprocs"] = nprocs
+        # If nprocs is present, override.
+        if nprocs:
+            data["run"]["nprocs"] = nprocs
 
-    # Update paths in the model block.
-    model = common.update_model(data["model"])
+        # Update paths in the model block.
+        model = common.update_model(data["model"])
 
-    # Run each enabled mode in sequence.
-    for mode in all_modes:
-        if do[mode]:
-            output = common.fn_redirect({"model": model, **data[mode]})
-            output_file = str(Path(model["work_dir"]) / mode) + ".json"
-            common.logger.info(f"Writing {output_file} ...")
-            with open(output_file, "w") as f:
-                f.write(json.dumps(output, indent=4))
+        # Run each enabled mode in sequence.
+        for mode in all_modes:
+            if do[mode]:
+                output = common.fn_redirect({"model": model, **data[mode]})
+                output_file = str(Path(model["work_dir"]) / mode) + ".json"
+                common.logger.info(f"Writing {output_file} ...")
+                with open(output_file, "w") as f:
+                    f.write(json.dumps(output, indent=4))
+
+    except ValueError as ve:
+        common.logger.error(str(ve))
+        return str(ve)
 
 
 cli.add_command(command_do)
