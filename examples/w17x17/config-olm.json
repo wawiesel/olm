@@ -13,7 +13,7 @@
 		},
 		"params": {
 			".type": "scale.olm.common:pass_through",
-			"addnux": 2,
+			"addnux": 4,
 			"xslib": "xn252"
 		},
 		"states": {

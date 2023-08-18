@@ -69,8 +69,10 @@ def get_history_from_f71(obiwan, f71, caseid0):
         caseid = tokens[8]
         if caseid0 == int(caseid):
             days = float(tokens[1]) / 86400.0
-            burndata.append({"power": float(tokens[2]), "burn": (days - last_days)})
-            initialhm0 = float(tokens[6])
+            if days == 0.0:
+                initialhm0 = float(tokens[6])
+            else:
+                burndata.append({"power": float(tokens[2]), "burn": (days - last_days)})
             last_days = days
     return {"burndata": burndata, "initialhm": initialhm0}
 
