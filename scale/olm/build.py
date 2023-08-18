@@ -18,11 +18,13 @@ def arpdata_txt(model, fuel_type, suffix, dim_map):
     generate_json = work_dir / "generate.json"
     with open(generate_json, "r") as f:
         generate = json.load(f)
-    lib_list = []
+    lib_list = list()
+    input_list = list()
     for perm in generate["perms"]:
+        input_list.append(perm["file"])
         # Convert from .inp to expected suffix.
-        file = work_dir / Path(perm["file"])
-        lib = file.with_suffix(suffix)
+        lib = work_dir / Path(perm["file"])
+        lib = lib.with_suffix(suffix)
         if not lib.exists():
             common.logger.error(f"library file={lib} does not exist!")
             raise ValueError
@@ -79,6 +81,7 @@ def arpdata_txt(model, fuel_type, suffix, dim_map):
     if d.exists():
         shutil.rmtree(d)
     os.mkdir(d)
+    perms = list()
     for i in range(len(lib_list)):
         old_lib = lib_list[i]
         new_lib = d / arpinfo.get_lib_by_index(i)
@@ -90,9 +93,7 @@ def arpdata_txt(model, fuel_type, suffix, dim_map):
         common.run_command(f"{obiwan} convert -i -setbu='[{bu_str}]' {old_lib}")
         bad_local = Path(old_lib.with_suffix(".f33").name)
         if bad_local.exists():
-            common.logger.warning(
-                f"obiwan introduced local file {bad_local} when setting burnup tags--overwriting {new_lib}"
-            )
+            common.logger.warning(f"fixup: moving local={bad_local} to {new_lib}")
             shutil.move(bad_local, old_lib)
 
         # Set tags on file using obiwan.
@@ -100,12 +101,14 @@ def arpdata_txt(model, fuel_type, suffix, dim_map):
         common.run_command(
             f"{obiwan} tag -interptags='{interptags}' -idtags='{idtags}' {old_lib}"
         )
-
         # Convert to HDF5 and move to arplibs.
         common.run_command(
             f"{obiwan} convert -format=hdf5 -type=f33 {old_lib} -dir={d}"
         )
         shutil.move(Path(d / old_lib.name).with_suffix(".h5"), new_lib)
+
+        # Save relevant permutation data in a list.
+        perms.append({"input": input_list[i], **arpinfo.interpvars_by_index(i)})
 
     # Write arpdata.txt.
     arpdata_txt = work_dir / "arpdata.txt"
@@ -113,4 +116,8 @@ def arpdata_txt(model, fuel_type, suffix, dim_map):
     with open(arpdata_txt, "w") as f:
         f.write(arpinfo.get_arpdata())
 
-    return {"archive_file": "arpdata.txt:" + arpinfo.name, "work_dir": str(work_dir)}
+    return {
+        "archive_file": "arpdata.txt:" + arpinfo.name,
+        "perms": perms,
+        "work_dir": str(work_dir),
+    }

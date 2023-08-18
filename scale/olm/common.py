@@ -10,11 +10,13 @@ import sys
 import copy
 import subprocess
 import shutil
+from jinja2 import Template, StrictUndefined, exceptions
 
 logger = structlog.getLogger(__name__)
 
 
 def run_command(command_line):
+    logger.info(f"running command:\n{command_line}")
     p = subprocess.Popen(
         command_line,
         shell=True,
@@ -23,19 +25,54 @@ def run_command(command_line):
         universal_newlines=True,
         encoding="utf-8",
     )
+
+    text = ""
     while True:
         line = p.stdout.readline()
+        text += line
         if "Error" in line:
             raise ValueError(line.strip())
         else:
             logger.info(line.rstrip())
         if not line:
             break
+    if p.returncode != 0:
+        msg = p.stderr.read().strip()
+        if not msg == "":
+            raise ValueError()
+    return text
 
 
-#     OBIWAN is not consistent with return codes
-#     if p.returncode != 0:
-#         raise ValueError(p.stderr.read())
+def get_history_from_f71(obiwan, f71, caseid0):
+    """
+     Parse the history of the form as follows:
+    pos         time        power         flux      fluence       energy    initialhm libpos   case   step DCGNAB
+    (-)          (s)         (MW)    (n/cm2-s)      (n/cm2)        (MWd)      (MTIHM)    (-)    (-)    (-)    (-)
+      1  0.00000e+00  4.00000e+01  8.11143e+14  0.00000e+00  0.00000e+00  1.00000e+00      1      1      0 DC----
+      2  2.16000e+06  4.00000e+01  6.22529e+14  1.53582e+21  1.00000e+03  1.00000e+00      1      1     10 DC----
+      3  2.16000e+07  4.00000e+01  4.26681e+14  8.78948e+21  1.00000e+04  1.00000e+00      2      1     10 DC----
+      4  5.40000e+07  4.00000e+01  4.26566e+14  1.34274e+22  2.50000e+04  1.00000e+00      3      1     10 DC----
+      5  1.08000e+08  4.00000e+01  4.31263e+14  2.30677e+22  5.00000e+04  1.00000e+00      4      1     10 DC----
+      6  1.51200e+08  4.00000e+01  4.32303e+14  1.86058e+22  7.00000e+04  1.00000e+00      5      1     10 DC----
+      7  1.94400e+08  4.00000e+01  4.33742e+14  1.86669e+22  9.00000e+04  1.00000e+00      6      1     10 DC----
+      8  2.37600e+08  4.00000e+01  4.35733e+14  1.87415e+22  1.10000e+05  1.00000e+00      7      1     10 DC----
+    """
+    logger.info(f"extracting history from {f71}")
+    text = run_command(f"{obiwan} view -format=info {f71}")
+    burndata = list()
+    initialhm0 = None
+    last_days = 0.0
+    for line in text.split("\n")[2:]:
+        if len(line) < 60:
+            break
+        tokens = line.rstrip().split()
+        caseid = tokens[8]
+        if caseid0 == int(caseid):
+            days = float(tokens[1]) / 86400.0
+            burndata.append({"power": float(tokens[2]), "burn": (days - last_days)})
+            initialhm0 = float(tokens[6])
+            last_days = days
+    return {"burndata": burndata, "initialhm": initialhm0}
 
 
 class ArpInfo:
@@ -153,7 +190,7 @@ class ArpInfo:
         if self.fuel_type == "UOX":
             # Fill with data.
             self.clear_lib_map()
-            (ne, nm) = self.get_dims()
+            (ne, nm) = self.get_ndims()
             for ie in range(ne):
                 e = self.enrichment_list[ie]
                 for im in range(nm):
@@ -186,9 +223,7 @@ class ArpInfo:
                 "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
             )
 
-        return None
-
-    def get_dims(self):
+    def get_ndims(self):
         if self.fuel_type == "UOX":
             ne = len(self.enrichment_list)
             nm = len(self.mod_dens_list)
@@ -200,18 +235,17 @@ class ArpInfo:
                 "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
             )
 
-        return None
+    def num_libs(self):
+        return np.prod(self.get_ndims())
 
     def get_dim_by_index(self, i):
-        return np.unravel_index(i, self.get_dims())
+        return np.unravel_index(i, self.get_ndims())
 
     def interptags_by_index(self, i):
         if self.fuel_type == "UOX":
-            (ie, im) = self.get_dim_by_index(i)
-            print(f"{i} {ie} {im}")
-            e = self.enrichment_list[ie]
-            m = self.mod_dens_list[im]
-            return f"enrichment={e},mod_dens={m}"
+            d = self.interpvars_by_index(i)
+            y = ["{}={}".format(x, d[x]) for x in d]
+            return ",".join(y)
         elif self.fuel_type == "MOX":
             raise ValueError("mox not implemented")
         else:
@@ -219,7 +253,19 @@ class ArpInfo:
                 "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
             )
 
-        return None
+    def interpvars_by_index(self, i):
+        if self.fuel_type == "UOX":
+            (ie, im) = self.get_dim_by_index(i)
+            return {
+                "enrichment": self.enrichment_list[ie],
+                "mod_dens": self.mod_dens_list[im],
+            }
+        elif self.fuel_type == "MOX":
+            raise ValueError("mox not implemented")
+        else:
+            raise ValueError(
+                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+            )
 
     def get_arpdata(self):
         entry = ""
@@ -249,13 +295,13 @@ class ArpInfo:
         n = 1
         arpdir = arpdata_txt.parent / "arplibs"
         if self.fuel_type == "UOX":
-            (ne, nm) = self.get_dims()
+            (ne, nm) = self.get_ndims()
             for ie in range(ne):
                 for im in range(nm):
                     lib = Path(self.lib_map[ie][im])
                     if not h5arc:
                         logger.info(f"initializing temporary archive {temp_arc}")
-                        shutil.copy(arpdir / lib, temp_arc)
+                        shutil.copyfile(arpdir / lib, temp_arc)
                         h5arc = h5py.File(temp_arc, "a")
                     else:
                         n += 1
@@ -274,6 +320,20 @@ class ArpInfo:
             )
 
         return h5arc
+
+
+def expand_template(template_text, data):
+    # Instance template.
+    j2t = Template(template_text, undefined=StrictUndefined)
+
+    # Catch specific types of error.
+    try:
+        return j2t.render(data)
+    except exceptions.UndefinedError as ve:
+        raise ValueError(
+            "Undefined variable reported (most likely template has a variable that is undefined in the configuration file). Error from template expansion: "
+            + str(ve)
+        )
 
 
 def parse_burnups_from_triton_output(output):
@@ -506,6 +566,7 @@ class Archive:
             arpinfo = ArpInfo()
             arpinfo.init_block(name, blocks[name])
             temp_arc = file.with_suffix(".arc.h5")
+            self.name = name
             self.h5 = arpinfo.create_temp_archive(file, temp_arc)
         else:
             self.h5 = h5py.File(file, "r")

@@ -13,7 +13,7 @@
 		},
 		"params": {
 			".type": "scale.olm.common:pass_through",
-			"addnux": 0,
+			"addnux": 2,
 			"xslib": "v7-56",
 			"pitch": 1.26,
 			"fuelr": 0.4095,
@@ -67,10 +67,12 @@
 	"check": {
 	    ".type": "scale.olm.check:sequencer",
 	    "sequence": 
-	    [{
-			"eps0": 0.0001,
-			".type": "scale.olm.check:GridGradient"
-		}]
+	    [
+		{
+			"template": "check-origami.inp",
+			".type": "scale.olm.check:LowOrderConsistency"
+		}
+		]
 	},
 	"report": {
 		".type": "scale.olm.common:pass_through",

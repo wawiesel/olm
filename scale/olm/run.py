@@ -27,7 +27,6 @@ clean:
         f.write(contents)
 
     command_line = f"cd {work_dir} && make -j {nprocs}"
-    common.logger.info(f"Running command_line='{command_line}' ...")
     common.run_command(command_line)
 
     return {

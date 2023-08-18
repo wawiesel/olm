@@ -1,4 +1,3 @@
-from jinja2 import Template, StrictUndefined, exceptions
 import scale.olm.common as common
 import numpy as np
 import math
@@ -11,8 +10,8 @@ def fuelcomp_uox_simple(state, nuclide_prefix=""):
     data = {
         "u235": enrichment,
         "u238": 100.0 - float(enrichment),
-        "u234": 0.0,
-        "u236": 0.0,
+        "u234": 1.0e-20,
+        "u236": 1.0e-20,
     }
 
     # Rename keys to add prefix.
@@ -35,15 +34,16 @@ def triton_constpower_burndata(state, gwd_burnups):
     if burnups[0] > 0:
         raise ValueError("Burnup step 0.0 GWd/MTHM must be included.")
 
-    if days[1] > 3:
-        common.logger.warning(
-            "Burnup step at ~2 days should be added for Xe equilibrium."
-        )
-
     # Create the burndata block.
     burndata = []
-    for i in range(len(days) - 1):
-        burndata.append({"power": specific_power, "burn": (days[i + 1] - days[i])})
+    if len(days) > 1:
+        for i in range(len(days) - 1):
+            burndata.append({"power": specific_power, "burn": (days[i + 1] - days[i])})
+
+        # Add one final step so that we can interpolate to the final requested burnup.
+        burndata.append({"power": specific_power, "burn": (days[-1] - days[-2])})
+    else:
+        burndata.append({"power": specific_power, "burn": 0})
 
     return {"burndata": burndata}
 
@@ -115,17 +115,7 @@ def expander(model, template, params, states, fuelcomp, time):
             "state": perm,
         }
 
-        # Instance template.
-        j2t = Template(template_text, undefined=StrictUndefined)
-
-        # Catch specific types of error.
-        try:
-            filled_text = j2t.render(data)
-        except exceptions.UndefinedError as ve:
-            raise ValueError(
-                "Undefined variable reported (most likely template has a variable that is undefined in the configuration file). Error from template expansion: "
-                + str(ve)
-            )
+        filled_text = common.expand_template(template_text, data)
 
         # Write the file.
         file.parent.mkdir(parents=True, exist_ok=True)

@@ -7,6 +7,8 @@ import os
 def make_mini_arpdatatxt(dry_run, registry, dest):
     """Create a local arpdata.txt and arplibs"""
 
+    common.logger.info(f"setting up at destination dir={dest}")
+
     # Concatenate the blocks from each name.
     mini_arpdata = ""
     files_to_copy = []
@@ -15,7 +17,10 @@ def make_mini_arpdatatxt(dry_run, registry, dest):
         path = arpinfo.path
         common.logger.info(f"linking {name} from {path}")
         mini_arpdata += f"!{name}\n" + arpinfo.block
-        files_to_copy.extend([arpinfo.arplibs_dir / x for x in arpinfo.files])
+        for i in range(arpinfo.num_libs()):
+            files_to_copy.append(
+                Path(path.parent) / "arplibs" / arpinfo.get_lib_by_index(i)
+            )
 
     # Create an arpdata.txt file with the concatenated content.
     a = Path(dest) / "arpdata.txt"

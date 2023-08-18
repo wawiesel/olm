@@ -1,0 +1,25 @@
+=shell
+olm link -p {{work_dir}} {{name}}
+end
+
+=origami
+
+libs=[ {{name}} ]
+
+options{ ft71=all mtu={{history.initialhm}} }
+
+fuelcomp{
+    uox(fuel){ enrich={{enrichment}} }
+    mix(1){ comps[fuel=100] }
+}
+
+modz = [ {{mod_dens}} ]
+pz = [ 1.0 ]
+
+hist[
+  {%- for pb in history.burndata %}
+  cycle{ power={{pb.power}} burn={{pb.burn}} nlib=1 } 
+  {%- endfor %}
+]
+
+end

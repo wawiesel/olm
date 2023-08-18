@@ -1,8 +1,10 @@
 import numpy as np
 from tqdm import tqdm, tqdm_notebook
 import scale.olm.common as common
+import scale.olm.run as run
 import json
 from pathlib import Path
+import copy
 
 
 class CheckInfo:
@@ -23,6 +25,7 @@ def sequencer(model, sequence):
             if name.find(":") == -1:
                 name = "scale.olm.check:" + name
             s[".type"] = name
+            s["model"] = model
 
             common.logger.info(
                 "Checking options for check={}, sequence={}".format(name, i)
@@ -35,6 +38,7 @@ def sequencer(model, sequence):
 
         # Read the archive.
         work_dir = Path(model["work_dir"])
+        common.logger.info(f"Running checking in work dir={work_dir}")
         arpdata_txt = work_dir / "arpdata.txt"
         if arpdata_txt.exists():
             archive = common.Archive(arpdata_txt, model["name"])
@@ -78,7 +82,7 @@ class GridGradient:
         c = GridGradient()
         return {"eps0": c.eps0, "epsa": c.epsa, "epsr": c.epsr}
 
-    def __init__(self, eps0=1e-20, epsa=1e-1, epsr=1e-1):
+    def __init__(self, model=None, eps0=1e-20, epsa=1e-1, epsr=1e-1):
         self.eps0 = eps0
         self.epsa = epsa
         self.epsr = epsr
@@ -196,6 +200,77 @@ class GridGradient:
         return ahist, rhist, khist
 
 
+class LowOrderConsistency:
+    """Check that we are consistent with the original calculation."""
+
+    @staticmethod
+    def describe_params():
+        return {"nprocs": "number of processes to use to run consistency check"}
+
+    @staticmethod
+    def default_params():
+        c = LowOrderConsistency()
+        return {"nprocs": c.nprocs}
+
+    def __init__(self, model=None, template=None, nprocs=3):
+        self.template = template
+        self.nprocs = nprocs
+        self.checkinfo = CheckInfo()
+        self.scalerte = model["scalerte"]
+        self.config_dir = Path(model["dir"])
+        self.work_dir = Path(model["work_dir"])
+        self.check_dir = self.work_dir / "check" / Path(self.template).stem
+        self.name = model["name"]
+        self.obiwan = model["obiwan"]
+
+    def info(self):
+        return self.checkinfo
+
+    def run(self, archive):
+        try:
+            # Load the template file.
+            with open(self.config_dir / self.template, "r") as f:
+                template_text = f.read()
+
+            # Load the build data.
+            build_json = self.work_dir / "build.json"
+            with open(build_json, "r") as f:
+                build = json.load(f)
+
+            # For each permutation.
+            for perm in build["perms"]:
+                # Extract the fuel power / burnup output from base f71.
+                f71 = self.work_dir / perm["input"]
+                f71 = f71.with_suffix(".f71")
+                perm["history"] = common.get_history_from_f71(self.obiwan, f71, -1)
+                perm["work_dir"] = self.work_dir
+                perm["name"] = self.name
+
+                # Fill the template.
+                filled_text = common.expand_template(template_text, perm)
+
+                # Write the input file.
+                input = self.check_dir / perm["input"]
+                input.parent.mkdir(parents=True, exist_ok=True)
+                common.logger.info(f"Writing input file={input} for Consistency check")
+
+                with open(input, "w") as f:
+                    f.write(filled_text)
+
+            run.makefile(
+                {"scalerte": self.scalerte, "work_dir": self.check_dir},
+                self.nprocs,
+            )
+
+            self.checkinfo.test_pass = True
+
+        except ValueError as ve:
+            self.checkinfo.test_pass = False
+            common.logger.error(str(ve))
+
+        return self.checkinfo
+
+
 class Continuity:
     @staticmethod
     def describe_params():
@@ -209,7 +284,7 @@ class Continuity:
         c = Continuity()
         return {"c": c.c, "eps": c.eps}
 
-    def __init__(self, c=0, eps=1e-3):
+    def __init__(self, model=None, c=0, eps=1e-3):
         self.c = c
         self.eps = eps
 
