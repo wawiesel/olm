@@ -131,6 +131,13 @@ Multiple stages can be run at once.
 olm do --generate --run --build examples/w17x17/config-olm.json
 ```
 
+All stages can be run with `--all`.
+
+```
+cd examples/quick2
+olm do --all config-olm.json
+```
+
 ### Run the unit tests
 
 Locally for unit tests we use the pytest framework under the `testing` directory.
