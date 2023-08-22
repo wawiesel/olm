@@ -53,6 +53,8 @@ virtualenv venv
 . venv/bin/activate
 which python
 ```
+If you get an error about missing `virtualenv`, you may need to run this
+`pip install virtualenv`.
 
 ### Install requirements
 
@@ -75,6 +77,17 @@ pip install --editable .
 olm
 which olm
 ```
+
+### Notebooks
+
+You may need to install your virtual environment kernel for the notebooks to
+work.
+
+```
+ipython kernel install --name "venv" --user
+```
+
+Now, you can select the created kernel "venv" when you start Jupyter notebook or lab.
 
 ### Click for CLI
 
@@ -149,4 +162,9 @@ pytest .
 
 ### Local formatting on commit
 
-Use the black formatter, https://medium.com/gousto-engineering-techbrunch/automate-python-code-formatting-with-black-and-pre-commit-ebc69dcc5e03
+The first time you do work on a clone, do this.
+```
+pre-commit install
+```
+
+This will use the black formatter, https://medium.com/gousto-engineering-techbrunch/automate-python-code-formatting-with-black-and-pre-commit-ebc69dcc5e03

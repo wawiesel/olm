@@ -80,12 +80,22 @@ class GridGradient:
     @staticmethod
     def default_params():
         c = GridGradient()
-        return {"eps0": c.eps0, "epsa": c.epsa, "epsr": c.epsr}
+        return {
+            "eps0": c.eps0,
+            "epsa": c.epsa,
+            "epsr": c.epsr,
+            "target_q2": c.target_q2,
+            "target_q1": c.target_q1,
+        }
 
-    def __init__(self, model=None, eps0=1e-20, epsa=1e-1, epsr=1e-1):
+    def __init__(
+        self, model=None, eps0=1e-20, epsa=1e-1, epsr=1e-1, target_q1=0.5, target_q2=0.7
+    ):
         self.eps0 = eps0
         self.epsa = epsa
         self.epsr = epsr
+        self.target_q1 = target_q1
+        self.target_q2 = target_q2
 
     def run(self, archive):
         """Run the calculation and return post-processed results"""
@@ -124,7 +134,9 @@ class GridGradient:
         info.fa = float(info.wa) / info.m
         info.q2 = 1.0 - 0.9 * info.fa - 0.1 * info.fr
 
-        info.test_pass = info.q1 > 0 and info.q2 > 0  # Fix this to real conditions
+        info.test_pass_q1 = info.q1 >= info.target_q1
+        info.test_pass_q2 = info.q2 >= info.target_q2
+        info.test_pass = info.test_pass_q1 and info.test_pass_q2
 
         return info
 
@@ -179,6 +191,7 @@ class GridGradient:
             yp = np.asarray(np.gradient(y, *rel_axes))
 
             # Iterate through every combination of two dimensions.
+            # TODO: generalize to all dimensions
             for i in range(n):
                 ypi = yp[i, ...]
 
@@ -210,21 +223,87 @@ class LowOrderConsistency:
     @staticmethod
     def default_params():
         c = LowOrderConsistency()
-        return {"nprocs": c.nprocs}
+        return {
+            "eps0": c.eps0,
+            "epsa": c.epsa,
+            "epsr": c.epsr,
+            "target_q2": c.target_q2,
+            "target_q1": c.target_q1,
+            "nprocs": c.nprocs,
+        }
 
-    def __init__(self, model=None, template=None, nprocs=3):
+    def __init__(
+        self,
+        model=None,
+        template=None,
+        eps0=1e-12,
+        epsa=1e-6,
+        epsr=1e-3,
+        target_q1=0.9,
+        target_q2=0.95,
+        nprocs=3,
+    ):
         self.template = template
         self.nprocs = nprocs
-        self.checkinfo = CheckInfo()
         self.scalerte = model["scalerte"]
         self.config_dir = Path(model["dir"])
         self.work_dir = Path(model["work_dir"])
         self.check_dir = self.work_dir / "check" / Path(self.template).stem
         self.name = model["name"]
         self.obiwan = model["obiwan"]
+        self.eps0 = eps0
+        self.epsa = epsa
+        self.epsr = epsr
+        self.target_q1 = target_q1
+        self.target_q2 = target_q2
 
     def info(self):
-        return self.checkinfo
+        info = CheckInfo()
+        info.name = self.__class__.__name__
+
+        info.eps0 = self.eps0
+        info.epsa = self.epsa
+        info.epsr = self.epsr
+        info.target_q1 = self.target_q1
+        info.target_q2 = self.target_q2
+        if not self.run_success:
+            info.test_pass = False
+            return info
+
+        self.ahist = np.array(self.origami_list)
+        self.rhist = np.array(self.origami_list)
+        self.triton = np.array(self.triton_list)
+        self.origami = np.array(self.origami_list)
+        for k in range(len(self.origami_list)):
+            for j in range(len(self.origami_list[k])):
+                osum = self.origami_list[k][j].sum()
+                tsum = self.triton_list[k][j].sum()
+                oden = self.origami_list[k][j] / osum
+                tden = self.triton_list[k][j] / tsum
+                self.origami[k, j, :] = oden
+                self.triton[k, j, :] = tden
+                self.ahist[k, j, :] = np.absolute(oden - tden)
+                self.rhist[k, j, :] = np.absolute(
+                    (oden + self.eps0) / (tden + self.eps0) - 1.0
+                )
+
+        self.ahist = np.ndarray.flatten(self.ahist)
+        self.rhist = np.ndarray.flatten(self.rhist)
+
+        info.wa = int(
+            np.logical_and((self.ahist > self.epsa), (self.rhist > self.epsr)).sum()
+        )
+        info.wr = int((self.rhist > self.epsr).sum())
+        info.m = int(len(self.ahist))
+        info.fr = float(info.wr) / info.m
+        info.q1 = 1.0 - info.fr
+        info.fa = float(info.wa) / info.m
+        info.q2 = 1.0 - 0.9 * info.fa - 0.1 * info.fr
+        info.test_pass_q1 = info.q1 >= info.target_q1
+        info.test_pass_q2 = info.q2 >= info.target_q2
+        info.test_pass = info.test_pass_q1 and info.test_pass_q2
+
+        return info
 
     def run(self, archive):
         try:
@@ -235,40 +314,87 @@ class LowOrderConsistency:
             # Load the build data.
             build_json = self.work_dir / "build.json"
             with open(build_json, "r") as f:
-                build = json.load(f)
+                build_d = json.load(f)
+
+            # Load the generate data.
+            generate_json = self.work_dir / "generate.json"
+            with open(generate_json, "r") as f:
+                generate_d = json.load(f)
 
             # For each permutation.
-            for perm in build["perms"]:
+            triton_case = -2
+            origami_case = 1
+            f71_list = list()
+            for j in range(len(build_d["perms"])):
                 # Extract the fuel power / burnup output from base f71.
-                f71 = self.work_dir / perm["input"]
+                build = build_d["perms"][j]
+                f71 = self.work_dir / build["input"]
                 f71 = f71.with_suffix(".f71")
-                perm["history"] = common.get_history_from_f71(self.obiwan, f71, -1)
-                perm["work_dir"] = self.work_dir
-                perm["name"] = self.name
+                history = common.get_history_from_f71(self.obiwan, f71, triton_case)
 
                 # Fill the template.
-                filled_text = common.expand_template(template_text, perm)
+                filled_text = common.expand_template(
+                    template_text,
+                    {
+                        "history": history,
+                        "model": {"work_dir": self.work_dir, "name": self.name},
+                        "build": build,
+                        "generate": generate_d["perms"][j],
+                    },
+                )
 
                 # Write the input file.
-                input = self.check_dir / perm["input"]
+                input = self.check_dir / build["input"]
                 input.parent.mkdir(parents=True, exist_ok=True)
-                common.logger.info(f"Writing input file={input} for Consistency check")
+                common.logger.info(
+                    f"Writing input file={input} for LowOrderConsistency check"
+                )
 
                 with open(input, "w") as f:
                     f.write(filled_text)
 
+                # Save TRITON and ORIGAMI f71 in a list.
+                f71_list.append((f71, input.with_suffix(".f71")))
+
             run.makefile(
-                {"scalerte": self.scalerte, "work_dir": self.check_dir},
-                self.nprocs,
+                {"scalerte": self.scalerte, "work_dir": self.check_dir}, self.nprocs
             )
 
-            self.checkinfo.test_pass = True
+            # Save as ii.json.
+            for t, o in f71_list:
+                it = t.with_suffix(".ii.json")
+                io = o.with_suffix(".ii.json")
+                common.run_command(
+                    f"{self.obiwan} view -format=ii.json {t} -cases='[{triton_case}]' >{it}"
+                )
+                common.run_command(f"{self.obiwan} view -format=ii.json {o} >{io}")
+
+                # Load the json data into TRITON and ORIGAMI data structures.
+                self.triton_list = list()
+                with open(it, "r") as f:
+                    jt = json.load(f)
+                    case = jt["responses"][f"case({triton_case})"]
+                    triton = np.array(case["amount"])
+                    self.triton_list.append(triton)
+                    self.names = jt["definitions"]["nuclideVectors"][
+                        case["nuclideVectorHash"]
+                    ]
+
+                self.origami_list = list()
+                with open(io, "r") as f:
+                    jo = json.load(f)
+                    origami = np.array(
+                        jo["responses"][f"case({origami_case})"]["amount"]
+                    )
+                    self.origami_list.append(origami)
+
+            self.run_success = True
 
         except ValueError as ve:
-            self.checkinfo.test_pass = False
+            self.run_success = False
             common.logger.error(str(ve))
 
-        return self.checkinfo
+        return self.info()
 
 
 class Continuity:

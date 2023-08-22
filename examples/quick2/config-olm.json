@@ -8,7 +8,7 @@
 		".type": "scale.olm.generate:expander",
 	    "template": "model.inp",
 		"fuelcomp": {
-		    ".type": "scale.olm.generate:fuelcomp_uox_simple",
+		    ".type": "scale.olm.generate:fuelcomp_uox_scale6",
 		    "nuclide_prefix": "wt_"
 		},
 		"params": {

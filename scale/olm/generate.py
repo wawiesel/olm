@@ -4,21 +4,39 @@ import math
 from pathlib import Path
 
 
-def fuelcomp_uox_simple(state, nuclide_prefix=""):
-    """Example of a simple enrichment formula."""
-    enrichment = state["enrichment"]
-    data = {
-        "u235": enrichment,
-        "u238": 100.0 - float(enrichment),
-        "u234": 1.0e-20,
-        "u236": 1.0e-20,
+def __fuelcomp_uox(u234, u235, u236):
+    return {
+        "u235": u235,
+        "u238": 100.0 - u234 - u235 - u236,
+        "u234": u234,
+        "u236": u236,
     }
 
+
+def __apply_prefix(data, nuclide_prefix):
     # Rename keys to add prefix.
     for i in data.copy():
         data[nuclide_prefix + i] = data.pop(i)
-
     return data
+
+
+def fuelcomp_uox_simple(state, nuclide_prefix=""):
+    """Example of a simple enrichment formula."""
+    enrichment = float(state["enrichment"])
+    data = __fuelcomp_uox(u234=1.0e-20, u235=enrichment, u236=1.0e-20)
+    return __apply_prefix(data, nuclide_prefix)
+
+
+def fuelcomp_uox_scale6(state, nuclide_prefix=""):
+    """Enrichment formula used in SCALE 6.1, 6.2, 6.3."""
+
+    enrichment = float(state["enrichment"])
+    data = __fuelcomp_uox(
+        u234=0.007731 * (enrichment**1.0837),
+        u235=enrichment,
+        u236=0.0046 * enrichment,
+    )
+    return __apply_prefix(data, nuclide_prefix)
 
 
 def triton_constpower_burndata(state, gwd_burnups):

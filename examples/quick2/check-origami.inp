@@ -1,19 +1,27 @@
 =shell
-olm link -p {{work_dir}} {{name}}
+olm link -p {{model.work_dir}} {{model.name}}
 end
 
 =origami
 
-libs=[ {{name}} ]
+libs=[ {{model.name}} ]
 
 options{ ft71=all mtu={{history.initialhm}} }
 
 fuelcomp{
-    uox(fuel){ enrich={{enrichment}} }
+    % uox(fuel){ enrich={{build.enrichment}} }
+    stdcomp(fuel){ base=uo2
+        iso[ 
+            92234={{generate.fuelcomp.wt_u234*0.99999}}
+            92235={{generate.fuelcomp.wt_u235}}
+            92236={{generate.fuelcomp.wt_u236*0.99999}}
+            92238={{generate.fuelcomp.wt_u238}}
+        ] 
+    }
     mix(1){ comps[fuel=100] }
 }
 
-modz = [ {{mod_dens}} ]
+modz = [ {{build.mod_dens}} ]
 pz = [ 1.0 ]
 
 hist[

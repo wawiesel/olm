@@ -192,7 +192,7 @@ class ArpInfo:
         if self.fuel_type == "UOX":
             # Fill with data.
             self.clear_lib_map()
-            (ne, nm) = self.get_ndims()
+            (nm, ne) = self.get_ndims()
             for ie in range(ne):
                 e = self.enrichment_list[ie]
                 for im in range(nm):
@@ -216,7 +216,7 @@ class ArpInfo:
 
     def get_lib_by_index(self, i):
         if self.fuel_type == "UOX":
-            (ie, im) = self.get_dim_by_index(i)
+            (im, ie) = self.get_dim_by_index(i)
             return self.lib_map[ie][im]
         elif self.fuel_type == "MOX":
             raise ValueError("mox not implemented")
@@ -229,7 +229,7 @@ class ArpInfo:
         if self.fuel_type == "UOX":
             ne = len(self.enrichment_list)
             nm = len(self.mod_dens_list)
-            return (ne, nm)
+            return (nm, ne)
         elif self.fuel_type == "MOX":
             raise ValueError("mox not implemented")
         else:
@@ -257,7 +257,7 @@ class ArpInfo:
 
     def interpvars_by_index(self, i):
         if self.fuel_type == "UOX":
-            (ie, im) = self.get_dim_by_index(i)
+            (im, ie) = self.get_dim_by_index(i)
             return {
                 "enrichment": self.enrichment_list[ie],
                 "mod_dens": self.mod_dens_list[im],
@@ -297,7 +297,7 @@ class ArpInfo:
         n = 1
         arpdir = arpdata_txt.parent / "arplibs"
         if self.fuel_type == "UOX":
-            (ne, nm) = self.get_ndims()
+            (nm, ne) = self.get_ndims()
             for ie in range(ne):
                 for im in range(nm):
                     lib = Path(self.lib_map[ie][im])
