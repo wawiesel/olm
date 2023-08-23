@@ -2,9 +2,51 @@ import scale.olm.common as common
 import os
 import json
 from pathlib import Path
+import os
 import copy
 import shutil
 import numpy as np
+import subprocess
+
+def archive(model):
+    """Build an ORIGEN reactor archive in HDF5 format."""
+    archive_file = model["archive_file"]
+    config_file = model["work_dir"] + os.path.sep + "generate.json"
+
+    # Load the permuation data
+    with open(config_file, "r") as f:
+        data = json.load(f)
+
+    assem_tag = "assembly_type={:s}".format(model["name"])
+    lib_paths = []
+
+    # Tag each permutation's libraries
+    for perm in data['perms']:
+        perm_dir = Path(perm['file']).parent
+        perm_name = Path(perm["file"]).stem
+        statevars = perm["state"]
+        lib_path = os.path.join(perm_dir,perm_name + ".system.f33")
+        lib_paths.append(lib_path)
+        common.logger.info(f"Now tagging {lib_path}")
+
+        ts = ",".join(key + "=" + str(value) for key, value in statevars.items())
+        try:
+            subprocess.run([model["obiwan"], "tag",lib_path,f"-interptags={ts}",
+                f"-idtags={assem_tag}"],capture_output=True,check=True)
+        except subprocess.SubprocessError as error:
+            print(error)
+            print("OBIWAN library tagging failed; cannot build archive")
+
+    to_consolidate = " ".join(lib for lib in lib_paths)
+    common.logger.info(f"Building archive at {archive_file} ... ")
+    try:
+        subprocess.run([model["obiwan"],"convert","-format=hdf5",
+                       "-name={archive_file}",to_consolidate],check=True)
+    except subprocess.SubprocessError as error:
+        print(error)
+        print("OBIWAN library conversion to archive format failed")
+
+    return {"archive_file": archive_file}
 
 
 def arpdata_txt(model, fuel_type, suffix):
