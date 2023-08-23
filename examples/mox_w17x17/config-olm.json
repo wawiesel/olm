@@ -1,6 +1,6 @@
 {
 	"model": {
-		"name": "w17x17",
+		"name": "mox_w17x17",
 		"work_dir": "_build",
 		"scale_env_var": "SCALE"
 	},
@@ -8,31 +8,36 @@
 		".type": "scale.olm.generate:expander",
 	    "template": "model.inp",
 		"fuelcomp": {
-		    ".type": "scale.olm.generate:fuelcomp_uox_simple",
-		    "nuclide_prefix": "wt_"
-		},
+		    ".type": "scale.olm.generate:fuelcomp_mox_ornltm2003_2",
+                    "pins_gd" : 0,
+                    "pins_zone" : [144, 56, 52, 12],
+                    "pct_gd" : 0.0,
+                    "nuclide_prefix" : "wtpt_",
+                    "density_fuel" : 10.4                        
+                 },
 		"params": {
 			".type": "scale.olm.common:pass_through",
 			"addnux": 4,
-			"xslib": "xn252"
+			"xsLib": "xn252",
+                        "density_Am" : 0.0
 		},
 		"states": {
 			".type": "scale.olm.generate:all_permutations",
 			"coolant_density": [
 				0.723
 			],
-			"enrichment": [
-				0.5,
-				1.5,
-				2,
-				3,
-				4,
-				5,
-				6,
-				7,
-				8,
-				8.5
+			"wtpt_pu": [
+                                4.0,
+                                7.0,
+                                10.0
 			],
+                        "wtpt_pu239": [ 
+                                50.0,
+                                55.0,
+                                60.0,
+                                65.0,
+                                70.0
+                        ],
 			"specific_power": [
 				40
 			]
@@ -54,7 +59,7 @@
 	},
 	"build": {
 		".type": "scale.olm.build:arpdata_txt",
-		"fuel_type": "UOX",
+		"fuel_type": "MOX",
 		"suffix": ".system.f33"
 	},
 	"check": {
