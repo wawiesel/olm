@@ -8,6 +8,7 @@ import shutil
 import numpy as np
 import subprocess
 
+
 def archive(model):
     """Build an ORIGEN reactor archive in HDF5 format."""
     archive_file = model["archive_file"]
@@ -21,18 +22,27 @@ def archive(model):
     lib_paths = []
 
     # Tag each permutation's libraries
-    for perm in data['perms']:
-        perm_dir = Path(perm['file']).parent
+    for perm in data["perms"]:
+        perm_dir = Path(perm["file"]).parent
         perm_name = Path(perm["file"]).stem
         statevars = perm["state"]
-        lib_path = os.path.join(perm_dir,perm_name + ".system.f33")
+        lib_path = os.path.join(perm_dir, perm_name + ".system.f33")
         lib_paths.append(lib_path)
         common.logger.info(f"Now tagging {lib_path}")
 
         ts = ",".join(key + "=" + str(value) for key, value in statevars.items())
         try:
-            subprocess.run([model["obiwan"], "tag",lib_path,f"-interptags={ts}",
-                f"-idtags={assem_tag}"],capture_output=True,check=True)
+            subprocess.run(
+                [
+                    model["obiwan"],
+                    "tag",
+                    lib_path,
+                    f"-interptags={ts}",
+                    f"-idtags={assem_tag}",
+                ],
+                capture_output=True,
+                check=True,
+            )
         except subprocess.SubprocessError as error:
             print(error)
             print("OBIWAN library tagging failed; cannot build archive")
@@ -40,8 +50,16 @@ def archive(model):
     to_consolidate = " ".join(lib for lib in lib_paths)
     common.logger.info(f"Building archive at {archive_file} ... ")
     try:
-        subprocess.run([model["obiwan"],"convert","-format=hdf5",
-                       "-name={archive_file}",to_consolidate],check=True)
+        subprocess.run(
+            [
+                model["obiwan"],
+                "convert",
+                "-format=hdf5",
+                "-name={archive_file}",
+                to_consolidate,
+            ],
+            check=True,
+        )
     except subprocess.SubprocessError as error:
         print(error)
         print("OBIWAN library conversion to archive format failed")
@@ -66,6 +84,34 @@ def generated_thinned_list(thin_factor, burnup_list):
         rm += 1.0
         j += 1
     return thinned_list
+
+
+def __arpdata_txt_input_desc(fuel_type, suffix, dim_map, thin_factor):
+    """Return a simple input description for arpdata.txt"""
+
+    dim_map_str = ""
+    for d in dim_map:
+        dim_map_str += "input({}) -> arp({})  ".format(dim_map[d], d)
+    return common.rst_table(
+        "Input data for arpdata.txt build type",
+        [25, 25, 50],
+        1,
+        [
+            ["input", "value", "description"],
+            ["fuel_type", f"{fuel_type}", "ARP fuel type (UOX/MOX)"],
+            ["suffix", f"{suffix}", "suffix to search for matching library"],
+            [
+                "dim_map",
+                f"{dim_map_str}",
+                "simple map of input variable names to interpolation variables names",
+            ],
+            [
+                "thin_factor",
+                f"{thin_factor}",
+                "simple factor to use for thinning (0.0 do nothing, 1.0 remove every other burnup, etc.)",
+            ],
+        ],
+    )
 
 
 def arpdata_txt(model, fuel_type, suffix, dim_map, thin_factor):
@@ -106,6 +152,8 @@ def arpdata_txt(model, fuel_type, suffix, dim_map, thin_factor):
             lib = lib_list[i]
             input = perm["file"]
             output = Path(input).with_suffix(".out")
+            perms[i]["output"] = str(output)
+            perms[i]["lib"] = str(lib)
             perm = perms[i]
             state = perm["state"]
 
@@ -207,4 +255,5 @@ def arpdata_txt(model, fuel_type, suffix, dim_map, thin_factor):
         "archive_file": "arpdata.txt:" + arpinfo.name,
         "perms": perms,
         "work_dir": str(work_dir),
+        "input_desc": __arpdata_txt_input_desc(fuel_type, suffix, dim_map, thin_factor),
     }

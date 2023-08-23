@@ -2,22 +2,10 @@
 {{model.name}}
 ==========================================================================================
 
-A 2D t-depl quarter assembly model for a Pressurized Water Reactor of the 
+A 2D t-depl quarter assembly model for a Pressurized Water Reactor of the
 Westinghouse 17x17 type.
 
-Fixed parameters used in this library generation are as follows.
-
-- xslib: cross section library used in the neutron transport calculation
-- addnux: nuclide set to perform high-fidelity self-shielding for
-
-The values used in this ORIGEN reactor library are as follows.
-
-{{params.summary}}
-
-The interpolation dimensions available are as follows.
-
-{{library.summary}}
-
+{{summary.lib}}
 
 Sources
 -------
@@ -47,29 +35,39 @@ Revision Log
 
 - Rev 0: Unknown authorship
 - Rev 1: Ported into SLIG, B. R. Betzler, June 2014
-- Rev 2: Ported into OLM, W. A. Wieselquist, August 2023 
+- Rev 2: Ported into OLM, W. A. Wieselquist, August 2023
 
-
-Generate Summary
-----------------
-
-{{generate.summary}}
 
 
 Run Summary
 -----------
 
-{{run.summary}}
+The status of the various runs is show below.
 
-
-Build Summary
--------------
-
-{{build.summary}}
+{{summary.run}}
 
 
 Check Summary
 -------------
 
-{{check.summary}}
+{{summary.check}}
+
+
+Input Summary
+-------------
+
+The various inputs to create this library are described below.
+
+{{generate.input_desc}}
+
+The run configuration is as shown below.
+
+{{run.input_desc}}
+
+To build a library from the output of the various runs, the following input was
+processed.
+
+{{build.input_desc}}
+
+
 

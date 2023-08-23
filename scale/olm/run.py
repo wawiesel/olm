@@ -2,7 +2,14 @@ from pathlib import Path
 import scale.olm.common as common
 
 
-def makefile(model, nprocs):
+def __makefile_input_desc(status):
+    rows = list()
+    for s in status:
+        rows.append([s, status[s]])
+    return common.rst_table("Makefile-based SCALE run info", [25, 75], 0, rows)
+
+
+def makefile(model, dry_run, nprocs):
     scalerte = model["scalerte"]
 
     contents = f"""
@@ -27,11 +34,18 @@ clean:
         f.write(contents)
 
     command_line = f"cd {work_dir} && make -j {nprocs}"
-    common.run_command(command_line)
+    if dry_run:
+        common.logger.warning("No SCALE runs will be performed because dry_run=True!")
+    else:
+        common.run_command(command_line)
 
-    return {
+    status = {
         "scalerte": scalerte,
         "work_dir": work_dir,
         "file": str(file.relative_to(work_dir)),
+        "dry_run": dry_run,
         "command_line": command_line,
     }
+
+    status["input_desc"] = __makefile_input_desc(status)
+    return status

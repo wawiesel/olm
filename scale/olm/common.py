@@ -15,6 +15,24 @@ from jinja2 import Template, StrictUndefined, exceptions
 logger = structlog.getLogger(__name__)
 
 
+def rst_table(title, widths, header_rows, rows):
+    """Create simple RST table."""
+    widths_str = " ".join([str(w) for w in widths])
+    table = f"""
+.. list-table:: {title}
+   :widths: {widths_str}
+   :header-rows: {header_rows}
+
+"""
+    for row in rows:
+        prefix = "   * "
+        for col in row:
+            table += prefix + "- " + str(col) + "\n"
+            prefix = "     "
+    table += "\n"
+    return table
+
+
 def run_command(command_line, check_return_code=True):
     logger.info(f"running command:\n{command_line}")
     p = subprocess.Popen(

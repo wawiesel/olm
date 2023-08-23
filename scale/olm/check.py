@@ -362,7 +362,9 @@ class LowOrderConsistency:
                 f71_list.append((f71, input.with_suffix(".f71")))
 
             run.makefile(
-                {"scalerte": self.scalerte, "work_dir": self.check_dir}, self.nprocs
+                model={"scalerte": self.scalerte, "work_dir": self.check_dir},
+                dry_run=False,
+                nprocs=self.nprocs,
             )
 
             # Save as ii.json.

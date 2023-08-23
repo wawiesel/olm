@@ -1,87 +1,92 @@
 {
-	"model": {
-		"name": "w17x17_pin2",
-		"work_dir": "_build",
-		"scale_env_var": "SCALE"
-	},
-	"generate": {
-		".type": "scale.olm.generate:expander",
-	    "template": "model.inp",
-		"fuelcomp": {
-		    ".type": "scale.olm.generate:fuelcomp_uox_nuregcr5625",
-		    "nuclide_prefix": "wt_"
-		},
-		"params": {
-			".type": "scale.olm.common:pass_through",
-			"addnux": 2,
-			"xslib": "v7-56",
-			"pitch": 1.26,
-			"fuelr": 0.4095,
-			"cladr": 0.4750
-		},
-		"states": {
-			".type": "scale.olm.generate:all_permutations",
-			"coolant_density": [
-				0.70,
-				0.72,
-				0.74
-			],
-			"enrichment": [
-				0.5,
-				3,
-				5,
-				7
-			],
-			"specific_power": [
-				40
-			],
-			"boron_ppm": [ 600 ]
-		},
-		"time": {
-			".type": "scale.olm.generate:triton_constpower_burndata",
-			"gwd_burnups": [
-				0.0,
-				1.0,
-				10.0,
-				25.0,
-				50.0,
-				70.0,
-				90.0
-			]
-		}
-	},
-	"run": {
-		".type": "scale.olm.run:makefile",
-		"nprocs": 3
-	},
-	"build": {
-		".type": "scale.olm.build:arpdata_txt",
-		"fuel_type": "UOX",
-		"suffix": ".system.f33",
-		"dim_map": 
-		{
-		    "enrichment": "enrichment",
-		    "mod_dens": "coolant_density"
-		},
-		"thin_factor": 3.0
-	},
-	"check": {
-	    ".type": "scale.olm.check:sequencer",
-	    "sequence": 
-	    [
-		{
-			"template": "check-origami.inp",
-			".type": "scale.olm.check:LowOrderConsistency",
-			"target_q1": 0.75,
-			"target_q2": 0.96,
+    "model": {
+        "name": "w17x17_pin2",
+        "work_dir": "_build",
+        "scale_env_var": "SCALE"
+    },
+    "generate": {
+        ".type": "scale.olm.generate:expander",
+        "template": "model.inp",
+        "fuelcomp": {
+            ".type": "scale.olm.generate:fuelcomp_uox_nuregcr5625",
+            "nuclide_prefix": "wt_"
+        },
+        "params": {
+            ".type": "scale.olm.common:pass_through",
+            "addnux": 2,
+            "xslib": "v7-56",
+            "pitch": 1.26,
+            "fuelr": 0.4095,
+            "cladr": 0.4750,
+            "input_desc": {
+                "xslib": "cross section library used in the neutron transport calculation",
+                "addnux": "nuclide set to perform high-fidelity self-shielding with XSProc"
+            }
+        },
+        "states": {
+            ".type": "scale.olm.generate:all_permutations",
+            "coolant_density": [
+                0.70,
+                0.72,
+                0.74
+            ],
+            "enrichment": [
+                0.5,
+                3,
+                5,
+                7
+            ],
+            "specific_power": [
+                40
+            ],
+            "boron_ppm": [ 600 ]
+        },
+        "time": {
+            ".type": "scale.olm.generate:triton_constpower_burndata",
+            "gwd_burnups": [
+                0.0,
+                1.0,
+                10.0,
+                25.0,
+                50.0,
+                70.0,
+                90.0
+            ]
+        }
+    },
+    "run": {
+        ".type": "scale.olm.run:makefile",
+        "nprocs": 3,
+        "dry_run": false
+    },
+    "build": {
+        ".type": "scale.olm.build:arpdata_txt",
+        "fuel_type": "UOX",
+        "suffix": ".system.f33",
+        "dim_map":
+        {
+            "enrichment": "enrichment",
+            "mod_dens": "coolant_density"
+        },
+        "thin_factor": 3.0
+    },
+    "check": {
+        ".type": "scale.olm.check:sequencer",
+        "sequence":
+        [
+        {
+            "template": "check-origami.inp",
+            ".type": "scale.olm.check:LowOrderConsistency",
+            "target_q1": 0.75,
+            "target_q2": 0.96,
             "eps0": 1e-12,
             "epsa": 1e-6,
             "epsr": 1e-3
-		}
-		]
-	},
-	"report": {
-		".type": "scale.olm.report:stub1",
-		"template": "report.rst"
-	}
+        }
+        ]
+    },
+    "report": {
+        ".type": "scale.olm.report:stub1",
+        "template": "report.rst"
+    }
 }
