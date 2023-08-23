@@ -171,4 +171,4 @@ def expander(model, template, params, states, fuelcomp, time):
         # Save the data.
         perms2.append(data)
 
-    return {"work_dir": str(work_dir), "perms": perms2}
+    return {"work_dir": str(work_dir), "perms": perms2, "params": params}

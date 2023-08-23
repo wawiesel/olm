@@ -111,7 +111,9 @@ def arpdata_txt(model, fuel_type, suffix, dim_map, thin_factor):
     perms = list()
     for i in range(len(lib_list)):
         old_lib = lib_list[i]
-        old_lib2 = d / ("tmp" + lib_list[i].name)
+        tmp = d / "tmp"
+        tmp.mkdir(parents=True, exist_ok=True)
+        old_lib2 = tmp / lib_list[i].name
         new_lib = d / arpinfo.get_lib_by_index(i)
 
         obiwan = model["obiwan"]
@@ -143,12 +145,15 @@ def arpdata_txt(model, fuel_type, suffix, dim_map, thin_factor):
         )
         # Convert to HDF5 and move to arplibs.
         common.run_command(
-            f"{obiwan} convert -format=hdf5 -type=f33 {old_lib2} -dir={d}"
+            f"{obiwan} convert -format=hdf5 -type=f33 {old_lib2} -dir={tmp}"
         )
         shutil.move(old_lib2.with_suffix(".h5"), new_lib)
 
         # Save relevant permutation data in a list.
         perms.append({"input": input_list[i], **arpinfo.interpvars_by_index(i)})
+
+    # Remove temporary files.
+    shutil.rmtree(tmp)
 
     # Write arpdata.txt.
     arpdata_txt = work_dir / "arpdata.txt"

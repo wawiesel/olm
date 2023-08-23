@@ -1,9 +1,13 @@
 from pathlib import Path
 import scale.olm.common as common
+import json
 
 
-def __stub1_parameters_summary():
-    return "Hello parameters.summary!"
+def __stub1_params_summary(params):
+    summary = ""
+    for x in params:
+        summary += "- {}: {}\n".format(x, params[x])
+    return summary
 
 
 def __stub1_library_summary():
@@ -33,8 +37,14 @@ def stub1(model, template):
     with open(Path(model["dir"]) / template, "r") as f:
         template_text = f.read()
 
+    # Load a data file.
+    work_dir = Path(model["work_dir"])
+    generate_json = work_dir / "generate.json"
+    with open(generate_json, "r") as f:
+        generate_d = json.load(f)
+
     data = {
-        "parameters": {"summary": __stub1_parameters_summary()},
+        "params": {"summary": __stub1_params_summary(generate_d["params"])},
         "library": {"summary": __stub1_library_summary()},
         "generate": {"summary": __stub1_generate_summary()},
         "run": {"summary": __stub1_run_summary()},

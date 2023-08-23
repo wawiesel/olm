@@ -5,15 +5,16 @@
 A 2D t-depl quarter assembly model for a Pressurized Water Reactor of the 
 Westinghouse 17x17 type.
 
+Fixed parameters used in this library generation are as follows.
 
-Parameters
-----------
+- xslib: cross section library used in the neutron transport calculation
+- addnux: nuclide set to perform high-fidelity self-shielding for
 
-{{parameters.summary}}
+The values used in this ORIGEN reactor library are as follows.
 
+{{params.summary}}
 
-ORIGEN Reactor Library
-----------------------
+The interpolation dimensions available are as follows.
 
 {{library.summary}}
 
