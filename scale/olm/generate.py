@@ -115,30 +115,6 @@ def all_permutations(**states):
     return permutations
 
 
-def __expander_input_desc_params_table(params):
-    title = "Summary of static parameters"
-    rows = list()
-    rows.append(["name", "value", "description"])
-    input_desc = params["input_desc"]
-    for p in params:
-        if p != "input_desc":
-            v = params[p]
-            d = ""
-            if p in input_desc:
-                d = input_desc[p]
-            rows.append([p, v, d])
-    return common.rst_table(title, [25, 25, 50], 1, rows)
-
-
-def __expander_input_desc(template, params, states, fuelcomp, time):
-    desc = ""
-    desc += "\n\n" + __expander_input_desc_params_table(params)
-
-    # TODO: Add more output.
-
-    return desc
-
-
 def expander(model, template, params, states, fuelcomp, time):
     """First expand the state to all the individual state combinations, then calculate the
     times and the compositions which may require state. The params just pass through."""
@@ -195,8 +171,4 @@ def expander(model, template, params, states, fuelcomp, time):
         # Save the data.
         perms2.append(data)
 
-    return {
-        "work_dir": str(work_dir),
-        "perms": perms2,
-        "input_desc": __expander_input_desc(template, params, states, fuelcomp, time),
-    }
+    return {"work_dir": str(work_dir), "perms": perms2, "params": params2}

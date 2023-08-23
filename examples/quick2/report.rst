@@ -5,7 +5,7 @@
 A 2D t-depl quarter assembly model for a Pressurized Water Reactor of the
 Westinghouse 17x17 type.
 
-{{summary.lib}}
+SCALE version: {{run.version}}
 
 Sources
 -------
@@ -44,30 +44,38 @@ Run Summary
 
 The status of the various runs is show below.
 
-{{summary.run}}
+.. list-table:: Run summary data
+    :widths: 5 1
+    :header-rows: 1
 
-
-Check Summary
--------------
-
-{{summary.check}}
-
+    *   - output
+        - runtime (s)
+    {% for x in tables.run_summary -%}
+    *   {% for i in [0,1] -%}
+        - {{x[i]}}
+        {% endfor %}
+    {% endfor -%}
+    {{"    "}}
 
 Input Summary
 -------------
 
 The various inputs to create this library are described below.
 
-{{generate.input_desc}}
+.. list-table:: Static summary data
+    :widths: 1 1 5
+    :header-rows: 1
 
-The run configuration is as shown below.
+    *   - name
+        - value
+        - description
+    {% for x in tables.static_summary -%}
+    *   {% for i in [0,1,2] -%}
+        - {{x[i]}}
+        {% endfor %}
+    {% endfor -%}
+    {{"    "}}
 
-{{run.input_desc}}
-
-To build a library from the output of the various runs, the following input was
-processed.
-
-{{build.input_desc}}
 
 
 

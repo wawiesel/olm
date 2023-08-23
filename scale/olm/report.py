@@ -3,10 +3,6 @@ import scale.olm.common as common
 import json
 
 
-def __stub1_summary_run():
-    return "Hello run!"
-
-
 def __stub1_summary_check():
     return "Hello check!"
 
@@ -31,10 +27,9 @@ def stub1(model, template):
             data[x] = json.load(f)
 
     # Populate basic section summaries.
-    data["summary"] = {
-        "run": __stub1_summary_run(),
-        "check": __stub1_summary_check(),
-        "lib": __stub1_summary_lib(),
+    data["tables"] = {
+        "run_summary": common.run_summary(data["build"]),
+        "static_summary": common.static_summary(data["generate"]["params"]),
     }
     filled_text = common.expand_template(template_text, data)
 

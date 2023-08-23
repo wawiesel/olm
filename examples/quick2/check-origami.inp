@@ -9,24 +9,24 @@ libs=[ {{model.name}} ]
 options{ ft71=all mtu={{history.initialhm}} }
 
 fuelcomp{
-    % uox(fuel){ enrich={{build.enrichment}} }
+    % uox(fuel){ enrich={{build.interpvars.enrichment}} }
     stdcomp(fuel){ base=uo2
-        iso[ 
+        iso[
             92234={{generate.fuelcomp.wt_u234}}
-            92235={{generate.fuelcomp.wt_u235*( 1 + 1e-5*(1.0 - build.enrichment/3.5) )}}
+            92235={{generate.fuelcomp.wt_u235*( 1 + 1e-5*(1.0 - build.interpvars.enrichment/3.5) )}}
             92236={{generate.fuelcomp.wt_u236}}
             92238={{generate.fuelcomp.wt_u238}}
-        ] 
+        ]
     }
     mix(1){ comps[fuel=100] }
 }
 
-modz = [ {{build.mod_dens}} ]
+modz = [ {{build.interpvars.mod_dens}} ]
 pz = [ 1.0 ]
 
 hist[
   {%- for pb in history.burndata %}
-  cycle{ power={{pb.power}} burn={{pb.burn}} nlib=1 } 
+  cycle{ power={{pb.power}} burn={{pb.burn}} nlib=1 }
   {%- endfor %}
 ]
 

@@ -333,7 +333,7 @@ class LowOrderConsistency:
             for j in range(len(build_d["perms"])):
                 # Extract the fuel power / burnup output from base f71.
                 build = build_d["perms"][j]
-                f71 = self.work_dir / build["input"]
+                f71 = self.work_dir / build["files"]["input"]
                 f71 = f71.with_suffix(".f71")
                 history = common.get_history_from_f71(self.obiwan, f71, triton_case)
 
@@ -349,7 +349,7 @@ class LowOrderConsistency:
                 )
 
                 # Write the input file.
-                input = self.check_dir / build["input"]
+                input = self.check_dir / build["files"]["input"]
                 input.parent.mkdir(parents=True, exist_ok=True)
                 common.logger.info(
                     f"Writing input file={input} for LowOrderConsistency check"

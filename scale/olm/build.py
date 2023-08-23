@@ -86,34 +86,6 @@ def generated_thinned_list(thin_factor, burnup_list):
     return thinned_list
 
 
-def __arpdata_txt_input_desc(fuel_type, suffix, dim_map, thin_factor):
-    """Return a simple input description for arpdata.txt"""
-
-    dim_map_str = ""
-    for d in dim_map:
-        dim_map_str += "input({}) -> arp({})  ".format(dim_map[d], d)
-    return common.rst_table(
-        "Input data for arpdata.txt build type",
-        [25, 25, 50],
-        1,
-        [
-            ["input", "value", "description"],
-            ["fuel_type", f"{fuel_type}", "ARP fuel type (UOX/MOX)"],
-            ["suffix", f"{suffix}", "suffix to search for matching library"],
-            [
-                "dim_map",
-                f"{dim_map_str}",
-                "simple map of input variable names to interpolation variables names",
-            ],
-            [
-                "thin_factor",
-                f"{thin_factor}",
-                "simple factor to use for thinning (0.0 do nothing, 1.0 remove every other burnup, etc.)",
-            ],
-        ],
-    )
-
-
 def arpdata_txt(model, fuel_type, suffix, dim_map, thin_factor):
     """Build an ORIGEN reactor library in arpdata.txt format."""
 
@@ -127,15 +99,18 @@ def arpdata_txt(model, fuel_type, suffix, dim_map, thin_factor):
         generate = json.load(f)
     lib_list = list()
     input_list = list()
+    output_list = list()
     for perm in generate["perms"]:
-        input_list.append(perm["file"])
+        input = perm["file"]
+        input_list.append(input)
         # Convert from .inp to expected suffix.
-        lib = work_dir / Path(perm["file"])
+        lib = work_dir / Path(input)
         lib = lib.with_suffix(suffix)
         if not lib.exists():
             common.logger.error(f"library file={lib} does not exist!")
             raise ValueError
         lib_list.append(lib)
+        output_list.append(Path(input).with_suffix(".out"))
 
     # Initialize library info data structure.
     arpinfo = common.ArpInfo()
@@ -150,10 +125,8 @@ def arpdata_txt(model, fuel_type, suffix, dim_map, thin_factor):
         for i in range(len(perms)):
             # Get library file and other convenience variables.
             lib = lib_list[i]
-            input = perm["file"]
-            output = Path(input).with_suffix(".out")
-            perms[i]["output"] = str(output)
-            perms[i]["lib"] = str(lib)
+            input = input_list[i]
+            output = output_list[i]
             perm = perms[i]
             state = perm["state"]
 
@@ -240,7 +213,16 @@ def arpdata_txt(model, fuel_type, suffix, dim_map, thin_factor):
         shutil.move(old_lib2.with_suffix(".h5"), new_lib)
 
         # Save relevant permutation data in a list.
-        perms.append({"input": input_list[i], **arpinfo.interpvars_by_index(i)})
+        perms.append(
+            {
+                "files": {
+                    "output": str(output_list[i]),
+                    "lib": str(lib_list[i].relative_to(work_dir)),
+                    "input": str(input_list[i]),
+                },
+                "interpvars": {**arpinfo.interpvars_by_index(i)},
+            }
+        )
 
     # Remove temporary files.
     shutil.rmtree(tmp)
@@ -255,5 +237,4 @@ def arpdata_txt(model, fuel_type, suffix, dim_map, thin_factor):
         "archive_file": "arpdata.txt:" + arpinfo.name,
         "perms": perms,
         "work_dir": str(work_dir),
-        "input_desc": __arpdata_txt_input_desc(fuel_type, suffix, dim_map, thin_factor),
     }

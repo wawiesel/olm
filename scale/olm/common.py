@@ -11,26 +11,47 @@ import copy
 import subprocess
 import shutil
 from jinja2 import Template, StrictUndefined, exceptions
+import re
 
 logger = structlog.getLogger(__name__)
 
 
-def rst_table(title, widths, header_rows, rows):
-    """Create simple RST table."""
-    widths_str = " ".join([str(w) for w in widths])
-    table = f"""
-.. list-table:: {title}
-   :widths: {widths_str}
-   :header-rows: {header_rows}
+def get_runtime(output):
+    with open(output, "r") as f:
+        for line in f.readlines():
+            tokens = line.strip().split(" ")
+            # t-depl finished. used 35.2481 seconds.
+            if len(tokens) >= 5:
+                if (
+                    tokens[1] == "finished."
+                    and tokens[2] == "used"
+                    and tokens[4] == "seconds."
+                ):
+                    return float(tokens[3])
+    return 0
 
-"""
-    for row in rows:
-        prefix = "   * "
-        for col in row:
-            table += prefix + "- " + str(col) + "\n"
-            prefix = "     "
-    table += "\n"
-    return table
+
+def run_summary(build):
+    rows = list()
+    rows.append(["output", "runtime (s)"])
+    work_dir = Path(build["work_dir"])
+    for p in build["perms"]:
+        output = p["files"]["output"]
+        rows.append([output, get_runtime(work_dir / output)])
+    return rows
+
+
+def static_summary(params):
+    rows = list()
+    input_desc = params["input_desc"]
+    for p in params:
+        if p != "input_desc":
+            v = params[p]
+            d = ""
+            if p in input_desc:
+                d = input_desc[p]
+            rows.append([p, v, d])
+    return rows
 
 
 def run_command(command_line, check_return_code=True):

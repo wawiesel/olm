@@ -2,13 +2,6 @@ from pathlib import Path
 import scale.olm.common as common
 
 
-def __makefile_input_desc(status):
-    rows = list()
-    for s in status:
-        rows.append([s, status[s]])
-    return common.rst_table("Makefile-based SCALE run info", [25, 75], 0, rows)
-
-
 def makefile(model, dry_run, nprocs):
     scalerte = model["scalerte"]
 
@@ -33,19 +26,19 @@ clean:
     with open(file, "w") as f:
         f.write(contents)
 
+    version = common.run_command(f"{scalerte} -V").split(" ")[2]
+    common.logger.info(f"Running SCALE version {version}")
+
     command_line = f"cd {work_dir} && make -j {nprocs}"
     if dry_run:
         common.logger.warning("No SCALE runs will be performed because dry_run=True!")
     else:
         common.run_command(command_line)
 
-    status = {
+    return {
         "scalerte": scalerte,
         "work_dir": work_dir,
-        "file": str(file.relative_to(work_dir)),
         "dry_run": dry_run,
         "command_line": command_line,
+        "version": version,
     }
-
-    status["input_desc"] = __makefile_input_desc(status)
-    return status
