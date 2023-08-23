@@ -12,9 +12,9 @@ fuelcomp{
     % uox(fuel){ enrich={{build.enrichment}} }
     stdcomp(fuel){ base=uo2
         iso[ 
-            92234={{generate.fuelcomp.wt_u234*0.99999}}
-            92235={{generate.fuelcomp.wt_u235}}
-            92236={{generate.fuelcomp.wt_u236*0.99999}}
+            92234={{generate.fuelcomp.wt_u234}}
+            92235={{generate.fuelcomp.wt_u235*( 1 + 1e-5*(1.0 - build.enrichment/3.5) )}}
+            92236={{generate.fuelcomp.wt_u236}}
             92238={{generate.fuelcomp.wt_u238}}
         ] 
     }

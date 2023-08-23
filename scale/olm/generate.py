@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 def __fuelcomp_uox(u234, u235, u236):
+    """Tiny helper to pass u234,u235,u238 through to create map and recalc u238."""
     return {
         "u235": u235,
         "u238": 100.0 - u234 - u235 - u236,
@@ -14,7 +15,7 @@ def __fuelcomp_uox(u234, u235, u236):
 
 
 def __apply_prefix(data, nuclide_prefix):
-    # Rename keys to add prefix.
+    """Rename keys to add prefix."""
     for i in data.copy():
         data[nuclide_prefix + i] = data.pop(i)
     return data

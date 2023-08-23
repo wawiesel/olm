@@ -302,6 +302,11 @@ class LowOrderConsistency:
         info.test_pass_q1 = info.q1 >= info.target_q1
         info.test_pass_q2 = info.q2 >= info.target_q2
         info.test_pass = info.test_pass_q1 and info.test_pass_q2
+        # Other stats.
+        info.mean_abs_diff = np.mean(self.ahist)
+        info.mean_rel_diff = np.mean(self.rhist)
+        info.std_abs_diff = np.std(self.ahist)
+        info.std_rel_diff = np.std(self.rhist)
 
         return info
 

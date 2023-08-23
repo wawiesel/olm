@@ -15,7 +15,7 @@ from jinja2 import Template, StrictUndefined, exceptions
 logger = structlog.getLogger(__name__)
 
 
-def run_command(command_line):
+def run_command(command_line, check_return_code=True):
     logger.info(f"running command:\n{command_line}")
     p = subprocess.Popen(
         command_line,
@@ -36,10 +36,10 @@ def run_command(command_line):
             logger.info(line.rstrip())
         if not line:
             break
-    if p.returncode != 0:
+    if check_return_code and p.returncode != 0:
         msg = p.stderr.read().strip()
         if not msg == "":
-            raise ValueError()
+            raise ValueError(str(msg))
     return text
 
 
