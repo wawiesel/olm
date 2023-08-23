@@ -24,14 +24,24 @@ def __apply_prefix(data, nuclide_prefix):
 def fuelcomp_uox_simple(state, nuclide_prefix=""):
     """Example of a simple enrichment formula."""
     enrichment = float(state["enrichment"])
+    if enrichment > 100:
+        raise ValueError(f"enrichment={enrichment} must be >=0 and <=100")
     data = __fuelcomp_uox(u234=1.0e-20, u235=enrichment, u236=1.0e-20)
     return __apply_prefix(data, nuclide_prefix)
 
 
-def fuelcomp_uox_scale6(state, nuclide_prefix=""):
-    """Enrichment formula used in SCALE 6.1, 6.2, 6.3."""
+def fuelcomp_uox_vera(state, nuclide_prefix=""):
+    """Enrichment formula from:
+    Andrew T. Godfrey. VERA core physics benchmark progression problem specifications.
+    Consortium for Advanced Simulation of LWRs, 2014.
+    """
 
     enrichment = float(state["enrichment"])
+    if enrichment > 10:
+        raise ValueError(
+            f"enrichment={enrichment} must be <=10% to use fuelcomp_uox_vera"
+        )
+
     data = __fuelcomp_uox(
         u234=0.007731 * (enrichment**1.0837),
         u235=enrichment,
@@ -40,8 +50,25 @@ def fuelcomp_uox_scale6(state, nuclide_prefix=""):
     return __apply_prefix(data, nuclide_prefix)
 
 
+def fuelcomp_uox_nuregcr5625(state, nuclide_prefix=""):
+    """Enrichment formula from NUREG/CR-5625."""
+
+    enrichment = float(state["enrichment"])
+    if enrichment > 20:
+        raise ValueError(
+            f"enrichment={enrichment} must be <=20% to use fuelcomp_uox_nuregcr5625"
+        )
+
+    data = __fuelcomp_uox(
+        u234=0.0089 * enrichment,
+        u235=enrichment,
+        u236=0.0046 * enrichment,
+    )
+    return __apply_prefix(data, nuclide_prefix)
+
+
 def triton_constpower_burndata(state, gwd_burnups):
-    """Return a list of powers and times."""
+    """Return a list of powers and times assuming constant burnup."""
 
     specific_power = state["specific_power"]
 
