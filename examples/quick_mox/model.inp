@@ -1,0 +1,68 @@
+=t-depl parm=(bonami,addnux={{params.addnux}})
+pincell model
+{{params.xslib}}
+
+read composition
+'
+' fuel
+  uo2  10 den={{fuelcomp.density_fuel}} {{100.0-fuelcomp.wtpt_inner}}  900 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 10 den={{fuelcomp.density_fuel}} {{fuelcomp.wtpt_inner}} 900 94238 {{fuelcomp.wtpt_pu238}}
+                                 94239 {{fuelcomp.wtpt_pu239}}
+                                 94240 {{fuelcomp.wtpt_pu240}}
+                                 94241 {{fuelcomp.wtpt_pu241}}
+                                 94242 {{fuelcomp.wtpt_pu242}} end
+{% if params.density_Am > 0.0 %}
+  am-241 1 den={{params.density_Am}} {{fuelcomp.wtpt_inner}} 900 end
+{%- endif %}
+'
+' clad
+  zirc4 20 1 622 end
+'
+' coolant
+  h2o   30 den={{state.coolant_density}} 1.000000 575 end
+  boron 30 den={{state.coolant_density}} {{state.boron_ppm*1e-6}} 575 end
+'
+end composition
+
+read celldata
+  latticecell squarepitch
+    pitch={{params.pitch}} 30
+    fuelr={{params.fuelr}} 10
+    cladr={{params.cladr}} 20 end
+end celldata
+
+read depletion
+  10
+end depletion
+
+read burndata
+  {%- for pb in time.burndata %}
+  power={{pb.power}} burn={{pb.burn}} down=0 end
+  {%- endfor %}
+end burndata
+
+read model
+
+read materials
+  mix=10 pn=1 com="fuel" end
+  mix=20 pn=1 com="clad" end
+  mix=30 pn=2 com="coolant" end
+end materials
+
+read geom
+  global unit 1
+    cylinder 10 {{params.fuelr}}
+    cylinder 20 {{params.cladr}}
+    cuboid   30 4p{{params.pitch/2.0}}
+    media 10 1 10
+    media 20 1 20 -10
+    media 30 1 30 -20
+  boundary 30 3 3
+end geom
+
+read bounds
+  all=refl
+end bounds
+
+end model
+end

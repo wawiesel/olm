@@ -67,6 +67,39 @@ def fuelcomp_uox_nuregcr5625(state, nuclide_prefix=""):
     return __apply_prefix(data, nuclide_prefix)
 
 
+def fuelcomp_mox_ornltm2003_2(
+    state, pins_zone, density_fuel=10.4, pins_gd=0, pct_gd=0.0, nuclide_prefix=""
+):
+    """MOX isotopic vector calculation from ORNL/TM-2003/2, Sect. 3.2.2.1"""
+
+    data = {"pu239": float(state[nuclide_prefix + "pu239"])}
+    assert (data["pu239"] > 0.0) and (data["pu239"] < 100.0)
+
+    data["pu238"] = 0.0045678 * data["pu239"] ** 2 - 0.66370 * data["pu239"] + 24.941
+    data["pu240"] = -0.0113290 * data["pu239"] ** 2 + 1.02710 * data["pu239"] + 4.7929
+    data["pu241"] = 0.0018630 * data["pu239"] ** 2 - 0.42787 * data["pu239"] + 26.355
+    data["pu242"] = 0.0048985 * data["pu239"] ** 2 - 0.93553 * data["pu239"] + 43.911
+
+    avgApu = (
+        data["pu238"] * 238.0
+        + data["pu239"] * 239.0
+        + data["pu240"] * 240.0
+        + data["pu241"] * 241.0
+        + data["pu242"] * 242.0
+    )
+
+    data["pu"] = state[nuclide_prefix + "pu"]
+    data["gd"] = pct_gd
+    data = __apply_prefix(data, nuclide_prefix)
+
+    data["avgA_pu"] = avgApu
+    data["pins_zone"] = pins_zone
+    data["pins_gd"] = pins_gd
+    data["density_fuel"] = density_fuel
+    data.update(getMoxContents(data, nuclide_prefix))
+    return data
+
+
 def triton_constpower_burndata(state, gwd_burnups):
     """Return a list of powers and times assuming constant burnup."""
 
@@ -172,3 +205,38 @@ def expander(model, template, params, states, fuelcomp, time):
         perms2.append(data)
 
     return {"work_dir": str(work_dir), "perms": perms2, "params": params2}
+
+
+# Adapted from getMoxContents in SLIG; original MOX formulae from ORNL/TM-2003/2
+def getMoxContents(fuelcomp, nuclide_prefix=""):
+    wtpt_pu = fuelcomp[nuclide_prefix + "pu"]
+    wptt_pu239 = fuelcomp[nuclide_prefix + "pu239"]
+    ratios = []
+
+    # pu zoning calculation
+    if fuelcomp["pins_gd"] > 0:
+        raise ValueError("Gd pins not implemented")
+        ratios = [1.0, 0.75, 0.5, 0.3]  # inner/inside edge/edge/corner
+    else:
+        ratios = [1.0, 0.9, 0.68, 0.5]  # inner/inside edge/edge/corner
+
+    Au = 238.0289  # g/mol
+    Ao = 15.999  # g/mol
+
+    denom = 0
+    for i in range(len(ratios)):
+        denom += ratios[i] * fuelcomp["pins_zone"][i]
+
+    Ahm = ((100 - wtpt_pu) * Au + wtpt_pu * fuelcomp["avgA_pu"]) / 100.0
+    hmInOnePin = Ahm / (Ahm + 2 * Ao) * fuelcomp["density_fuel"]
+    hmInPins = hmInOnePin * (
+        sum(fuelcomp["pins_zone"]) + fuelcomp["wtpt_gd"] * fuelcomp["pins_gd"]
+    )
+    puInPins = hmInPins * wtpt_pu / 100.0
+    innerPuContent = 100.0 / hmInOnePin * puInPins / denom
+    puContents = [innerPuContent * x for x in ratios]
+
+    order = ["inner", "inedge", "edge", "corner"]
+    pu_regions = dict(zip(order, puContents))
+
+    return __apply_prefix(pu_regions, nuclide_prefix)

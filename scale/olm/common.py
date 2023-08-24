@@ -122,6 +122,7 @@ class ArpInfo:
         self.lib_map = None
         self.fuel_type = ""
         self.block = ""
+        self.burnup_list = []
 
     def clear_lib_map(self):
         self.lib_map = list()
@@ -133,10 +134,15 @@ class ArpInfo:
                     self.lib_map[ie].append("")
 
         elif self.fuel_type == "MOX":
-            raise ValueError("mox not implemented")
+            for im in range(len(self.mod_dens_list)):
+                self.lib_map.append(list())
+                for ipf in range(len(self.pufrac_list)):
+                    self.lib_map.append(list())
+                    for iff in range(len(self.fissilefrac_list)):
+                        self.lib_map[im][iff].append("")
         else:
             raise ValueError(
-                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
             )
 
     def init_block(self, name, block):
@@ -189,7 +195,7 @@ class ArpInfo:
             self.burnup_list = [float(x) for x in tokens[s : s + nb]]
         else:
             raise ValueError(
-                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
             )
 
     @staticmethod
@@ -225,6 +231,27 @@ class ArpInfo:
             im = self.mod_dens_list.index(m)
             self.lib_map[ie][im] = file_list[i]
 
+    def init_mox(self, name, file_list, fissilefrac_list, pufrac_list, mod_dens_list):
+        # Convert to interpolation space, assuming correct set up.
+        self.name = name
+        self.fuel_type = "MOX"
+        self.fissilefrac_list = sorted(set(fissilefrac_list))
+        self.pufrac_list = sorted(set(pufrac_list))
+        self.mod_dens_list = sorted(set(mod_dens_list))
+        self.burnup_list = []
+        self.block = ""
+        self.clear_lib_map()
+
+        # Map flat list of file_list.
+        for i in range(len(file_list)):
+            ff = fissilefrac_list[i]
+            pf = pufrac_list[i]
+            m = mod_dens_list[i]
+            iff = self.fissilefrac_list.index(ff)
+            ipf = self.pufrac_list.index(pf)
+            im = self.mod_dens_list.index(m)
+            self.lib_map[im][iff][ipf] = file_list[i]
+
     def set_canonical_filenames(self, ext):
         # Keep track of filename counts so we are sure we don't create a duplicate.
         counts = set()
@@ -247,10 +274,35 @@ class ArpInfo:
                     counts.add(filename)
 
         elif self.fuel_type == "MOX":
-            raise ValueError("mox not implemented")
+            self.clear_lib_map()
+            (npf, nff, nm) = self.get_ndims()
+            # Moderator density iterated last
+            for im in range(nm):
+                m = self.mod_dens_list[im]
+                # Fissile Pu vector iterated second
+                for iff in range(nff):
+                    ff = self.fissilefrac_list[iff]
+                    # Pu fraction of HM iterated first
+                    for pufrac in range(npf):
+                        pf = self.pufrac_list[ipf]
+                        filename = "{}_e{}v{}w{}{}".format(
+                            self.name,
+                            int(1000 * pf),
+                            int(1000 * ff),
+                            int(1000 * m),
+                            ext,
+                        )
+                        self.lib_map[pf][ff][m] = filename
+
+                        if filename in counts:
+                            raise ValueError(
+                                f"canonical filename={filename} has already been used--most likely due to too small grid spacing!"
+                            )
+                        counts.add(filename)
+
         else:
             raise ValueError(
-                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
             )
 
     def get_lib_by_index(self, i):
@@ -258,10 +310,11 @@ class ArpInfo:
             (im, ie) = self.get_dim_by_index(i)
             return self.lib_map[ie][im]
         elif self.fuel_type == "MOX":
-            raise ValueError("mox not implemented")
+            (ipf, iff, im) = self.get_dim_by_index(i)
+            return self.lib_map[ipf][iff][im]
         else:
             raise ValueError(
-                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
             )
 
     def get_ndims(self):
@@ -270,10 +323,13 @@ class ArpInfo:
             nm = len(self.mod_dens_list)
             return (nm, ne)
         elif self.fuel_type == "MOX":
-            raise ValueError("mox not implemented")
+            npu = len(self.pufrac_list)
+            nfis = len(self.fissfrac_list)
+            nmod = len(self.mod_dens_list)
+            return (npu, nfis, nmod)
         else:
             raise ValueError(
-                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
             )
 
     def num_libs(self):
@@ -283,15 +339,13 @@ class ArpInfo:
         return np.unravel_index(i, self.get_ndims())
 
     def interptags_by_index(self, i):
-        if self.fuel_type == "UOX":
+        if self.fuel_type == "UOX" or self.fuel_type == "MOX":
             d = self.interpvars_by_index(i)
             y = ["{}={}".format(x, d[x]) for x in d]
             return ",".join(y)
-        elif self.fuel_type == "MOX":
-            raise ValueError("mox not implemented")
         else:
             raise ValueError(
-                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
             )
 
     def interpvars_by_index(self, i):
@@ -302,10 +356,15 @@ class ArpInfo:
                 "mod_dens": self.mod_dens_list[im],
             }
         elif self.fuel_type == "MOX":
-            raise ValueError("mox not implemented")
+            (ipf, iff, im) = self.get_dim_by_index(i)
+            return {
+                "fissile_fraction": self.fissilefrac_list[iff],
+                "pu_fraction": self.pufrac_list[ipf],
+                "mod_dens": self.mod_dens_list[im],
+            }
         else:
             raise ValueError(
-                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
             )
 
     def get_arpdata(self):
@@ -322,10 +381,22 @@ class ArpInfo:
                     entry += "'{}'\n".format(self.lib_map[ie][im])
             entry += "\n".join([str(x) for x in self.burnup_list])
         elif self.fuel_type == "MOX":
-            raise ValueError("mox not implemented")
+            npf = len(self.pufrac_list)
+            nff = len(self.fissilefrac_list)
+            nm = len(self.mod_dens_list)
+            nb = len(self.burnup_list)
+            entry += "{} {} 1 {} {}\n".format(npf, nff, nm, nb)
+            entry += "\n".join([str(x) for x in self.pufrac_list]) + "\n"
+            entry += "\n".join([str(x) for x in self.fissilefrac_list]) + "\n"
+            entry += "1\n"  # dummy entry
+            entry += "\n".join([str(x) for x in self.mod_dens_list]) + "\n"
+            for im in range(nm):
+                for iff in range(nff):
+                    for ipf in range(npf):
+                        entry += "'{}'\n".format(self.lib_map[im][iff][ipf])
         else:
             raise ValueError(
-                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
             )
 
         self.block = entry
@@ -354,10 +425,27 @@ class ArpInfo:
                         )
 
         elif arpinfo.fuel_type == "MOX":
-            raise ValueError("mox not implemented")
+            (npf, nff, nm) = self.get_ndims()
+            for im in range(nm):
+                for iff in range(nff):
+                    for ipf in range(npf):
+                        lib = Path(self.lib_map[im][iff][ipf])
+                        if not h5arc:
+                            logger.info(f"initializing temporary archive {temp_arc}")
+                            shutil.copyfile(arpdir / lib, temp_arc)
+                            h5arc = h5py.File(temp_arc, "a")
+                        else:
+                            n += 1
+                            logger.info(
+                                f"adding library {lib} to temporary archive {temp_arc}"
+                            )
+                            h5arc["incident"]["neutron"][f"lib{n}"] = h5py.ExternalLink(
+                                arpdir / lib, "/incident/neutron/lib1"
+                            )
+
         else:
             raise ValueError(
-                "ArpInfo.fuel_type={} unkonwn (UOX/MOX)".format(self.fuel_type)
+                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
             )
 
         return h5arc

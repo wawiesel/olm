@@ -66,7 +66,7 @@
 		}]
 	},
 	"report": {
-		".type": "scale.olm.common:pass_through",
+		".type": "scale.olm.report:generate_rst",
 		"template": "report.rst"
 	}
 }
