@@ -68,7 +68,7 @@
             "enrichment": "enrichment",
             "mod_dens": "coolant_density"
         },
-        "thin_factor": 3.0
+        "keep_every": 2
     },
     "check": {
         ".type": "scale.olm.check:sequencer",
