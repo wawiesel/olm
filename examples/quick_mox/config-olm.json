@@ -1,0 +1,93 @@
+{
+    "model": {
+        "name": "mox_w17x17",
+        "work_dir": "_build",
+        "scale_env_var": "SCALE"
+    },
+    "generate": {
+        ".type": "scale.olm.generate:expander",
+        "template": "model.inp",
+        "fuelcomp": {
+            ".type": "scale.olm.generate:fuelcomp_mox_ornltm2003_2",
+            "pins_gd" : 0,
+            "pins_zone" : [144, 56, 52, 12],
+            "pct_gd" : 0.0,
+            "nuclide_prefix" : "wtpt_",
+            "density_fuel" : 10.4
+         },
+        "params": {
+            ".type": "scale.olm.common:pass_through",
+            "addnux": 2,
+            "xslib": "v7-56",
+            "pitch": 1.26,
+            "fuelr": 0.4095,
+            "cladr": 0.4750,
+            "input_desc": {
+                "xslib": "cross section library used in the neutron transport calculation",
+                "addnux": "nuclide set to perform high-fidelity self-shielding with XSProc"
+            },
+            "density_Am" : 0.0
+        },
+        "states": {
+            ".type": "scale.olm.generate:all_permutations",
+            "coolant_density": [
+                0.723
+            ],
+            "wtpt_pu": [
+                4.0,
+                7.0,
+                10.0
+            ],
+            "wtpt_pu239": [
+                50.0,
+                55.0,
+                60.0,
+                65.0,
+                70.0
+            ],
+            "specific_power": [
+                40
+            ],
+            "boron_ppm": [ 600 ]
+        },
+        "time": {
+            ".type": "scale.olm.generate:triton_constpower_burndata",
+            "gwd_burnups": [
+                0.0,
+                1.0,
+                25.0,
+                50.0,
+                90.0
+            ]
+        }
+    },
+    "run": {
+        ".type": "scale.olm.run:makefile",
+        "nprocs": 3,
+        "dry_run": false
+    },
+    "build": {
+        ".type": "scale.olm.build:arpdata_txt",
+        "fuel_type": "MOX",
+        "suffix": ".system.f33",
+        "dim_map":
+        {
+            "pu_frac": "wpt_pu",
+            "pu239_frac": "wpt_pu239",
+            "mod_dens": "coolant_density"
+        },
+        "thin_factor": 0.0
+    },
+    "check": {
+        ".type": "scale.olm.check:sequencer",
+        "sequence":
+        [{
+            "eps0": 0.0001,
+            ".type": "scale.olm.check:GridGradient"
+        }]
+    },
+    "report": {
+        ".type": "scale.olm.report:stub1",
+        "template": "report.rst"
+    }
+}
