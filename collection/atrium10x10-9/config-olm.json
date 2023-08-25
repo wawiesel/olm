@@ -1,6 +1,6 @@
 {
 	"model": {
-		"name": "ge10x10-8",
+		"name": "atrium10x10-9",
 		"work_dir": "_build",
 		"scale_env_var": "SCALE"
 	},
@@ -10,7 +10,7 @@
 		"fuelcomp": {
 		    ".type": "scale.olm.generate:fuelcomp_uox_simple",
                     "nuclide_prefix" : "wtpt_",
-                    "fuel_density" : [ 10.42 ]
+                    "fuel_density" : [ 10.5 ]
                  },
 		"params": {
 			".type": "scale.olm.common:pass_through",
@@ -23,11 +23,11 @@
                          "state_vector" : ["coolant_density"],
                          "data_list" : 
                          [ 
-                             [ 0.1, 0.5041 ],
-                             [ 0.3, 0.3937 ],
-                             [ 0.5, 0.3182 ],
-                             [ 0.7, 0.2631 ],
-                             [ 0.9, 0.2211 ]
+                             [ 0.1, 0.5035 ],
+                             [ 0.3, 0.3883 ],
+                             [ 0.5, 0.3106 ],
+                             [ 0.7, 0.2544 ],
+                             [ 0.9, 0.2120 ]
                          ]
                     },
                     "dancoff2" : {
@@ -35,11 +35,11 @@
                          "state_vector" : ["coolant_density"],
                          "data_list" :
                          [
-                             [ 0.1, 0.3229 ],
-                             [ 0.3, 0.2541 ],
-                             [ 0.5, 0.2069 ],
-                             [ 0.7, 0.1722 ],
-                             [ 0.9, 0.1455 ]
+                             [ 0.1, 0.3237 ],
+                             [ 0.3, 0.2512 ],
+                             [ 0.5, 0.2024 ],
+                             [ 0.7, 0.1669 ],
+                             [ 0.9, 0.1399 ]
                          ]
                     }
                 },
@@ -64,10 +64,10 @@
                                 8.0,
                                 8.5
                         ],
-                        "wtpt_gd": [
-                                5.0
+                        "wtpt_gd" : [
+                                3.0
                         ],
-			"specific_power": [
+ 			"specific_power": [
 				25.0
 			]
 		},
@@ -112,7 +112,7 @@
                                 76.50,
                                 79.50,
                                 82.50
-                        ]		
+			]
 		}
 	},
 	"run": {

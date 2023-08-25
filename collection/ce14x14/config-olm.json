@@ -9,7 +9,8 @@
 	    "template": "model.inp",
 		"fuelcomp": {
 		    ".type": "scale.olm.generate:fuelcomp_uox_simple",
-		    "nuclide_prefix": "wt_"
+		    "nuclide_prefix": "wt_",
+                    "fuel_density" : [ 10.412 ]
 		},
 		"params": {
 			".type": "scale.olm.common:pass_through",

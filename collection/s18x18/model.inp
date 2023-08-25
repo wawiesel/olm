@@ -30,7 +30,7 @@ PWR Siemens 18x18, 2D quarter assembly model
 read comp
 '
 ' fuel - 94-95% theoretical density (10.96g/cc) (set to max)
-  uo2   1 den=10.412 1 1000 92234 {{fuelcomp.wtpt_u234}} 
+  uo2   1 den={{fuelcomp.fuel_density}} 1 1000 92234 {{fuelcomp.wtpt_u234}} 
                             92235 {{fuelcomp.wtpt_u235}} 
                             92236 {{fuelcomp.wtpt_u236}} 
                             92238 {{fuelcomp.wtpt_u238}} end 

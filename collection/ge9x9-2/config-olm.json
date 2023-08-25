@@ -1,6 +1,6 @@
 {
 	"model": {
-		"name": "ge10x10-8",
+		"name": "ge9x9-2",
 		"work_dir": "_build",
 		"scale_env_var": "SCALE"
 	},
@@ -10,7 +10,8 @@
 		"fuelcomp": {
 		    ".type": "scale.olm.generate:fuelcomp_uox_simple",
                     "nuclide_prefix" : "wtpt_",
-                    "fuel_density" : [ 10.42 ]
+                    "fuel_density" : [ 10.42 ],
+                    "fuel_density_gd" : [ 10.28 ]
                  },
 		"params": {
 			".type": "scale.olm.common:pass_through",
@@ -23,11 +24,11 @@
                          "state_vector" : ["coolant_density"],
                          "data_list" : 
                          [ 
-                             [ 0.1, 0.5041 ],
-                             [ 0.3, 0.3937 ],
-                             [ 0.5, 0.3182 ],
-                             [ 0.7, 0.2631 ],
-                             [ 0.9, 0.2211 ]
+                             [ 0.1, 0.4621 ],
+                             [ 0.3, 0.3368 ],
+                             [ 0.5, 0.2583 ],
+                             [ 0.7, 0.2044 ],
+                             [ 0.9, 0.1653 ]
                          ]
                     },
                     "dancoff2" : {
@@ -35,11 +36,11 @@
                          "state_vector" : ["coolant_density"],
                          "data_list" :
                          [
-                             [ 0.1, 0.3229 ],
-                             [ 0.3, 0.2541 ],
-                             [ 0.5, 0.2069 ],
-                             [ 0.7, 0.1722 ],
-                             [ 0.9, 0.1455 ]
+                             [ 0.1, 0.2967 ],
+                             [ 0.3, 0.2194 ],
+                             [ 0.5, 0.1702 ],
+                             [ 0.7, 0.1359 ],
+                             [ 0.9, 0.1107 ]
                          ]
                     }
                 },
@@ -65,7 +66,7 @@
                                 8.5
                         ],
                         "wtpt_gd": [
-                                5.0
+                                3.0
                         ],
 			"specific_power": [
 				25.0

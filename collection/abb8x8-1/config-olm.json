@@ -1,6 +1,6 @@
 {
 	"model": {
-		"name": "mox_ge10x10-8",
+		"name": "abb8x8-1",
 		"work_dir": "_build",
 		"scale_env_var": "SCALE"
 	},
@@ -10,6 +10,7 @@
 		"fuelcomp": {
 		    ".type": "scale.olm.generate:fuelcomp_uox_simple",
                     "nuclide_prefix" : "wtpt_"
+                    "fuel_density" : [ 10.31619 ]
                  },
 		"params": {
 			".type": "scale.olm.common:pass_through",

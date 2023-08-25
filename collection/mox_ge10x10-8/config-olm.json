@@ -13,7 +13,7 @@
                     "pins_zone" : [26, 16, 24, 12],
                     "pct_gd" : 3.5,
                     "nuclide_prefix" : "wtpt_",
-                    "density_fuel" : 10.4                        
+                    "fuel_density" : 10.4
                  },
 		"params": {
 			".type": "scale.olm.common:pass_through",

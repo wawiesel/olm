@@ -9,6 +9,7 @@ BWR ABB 8x8-1, 2D full assembly model
 '                  wtpt_u238       - wt% U238
 '                  wtpt_gd         - wt% Gd2O3 in Gd rods
 '                  coolant_density - coolant density (g/cc)
+'                  fuel_density    - fuel density (g/cc)
 '                  dancoff1        - dancoff factor 1
 '                  dancoff2        - dancoff factor 2
 '                  specpow         - average specific power
@@ -46,14 +47,14 @@ end alias
 read comp
 '
 ' fuel
-  uo2   $fuel den=10.31619 1 900 92234 {{fuelcomps.wtpt_u234}}
+  uo2 $fuel den={{fuelcomp.fuel_density}} 1 900 92234 {{fuelcomps.wtpt_u234}}
                                  92235 {{fuelcomps.wtpt_u235}}
                                  92236 {{fuelcomps.wtpt_u236}}
                                  92238 {{fuelcomps.wtpt_u238}} end
 '
 ' fuel - with {state.wtpt_gd}% Gd2O3
-  gd2o3 $fgad den=10.31619 {{state.wtpt_gd/100.0}} 900 end 
-  uo2   $fgad den=10.31619 {{1-state.wtpt_gd/100.0}} 900 92234 {{fuelcomps.wtpt_u234}}
+  gd2o3 $fgad den={{fuelcomp.fuel_density}} {{state.wtpt_gd/100.0}} 900 end
+  uo2   $fgad den={{fuelcomp.fuel_density}} {{1-state.wtpt_gd/100.0}} 900 92234 {{fuelcomps.wtpt_u234}}
                                     92235 {{fuelcomps.wtpt_u235}}
                                     92236 {{fuelcomps.wtpt_u236}}
                                     92238 {{fuelcomps.wtpt_u238}} end

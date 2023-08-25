@@ -13,7 +13,7 @@ PWR-MOX Westinghouse 15x15, 2D quarter assembly model
 '                  wtpt_pu241      - wt% Pu241
 '                  wtpt_pu242      - wt% Pu242
 '                  density_Am      - americium density (g/cc)
-'                  density_fuel    - fuel density (g/cc)
+'                  fuel_density    - fuel density (g/cc)
 '                  coolant_density - coolant density (g/cc)
 '                  ppm_boron       - coolant boron content (ppm)
 '                  specpow         - average specific power
@@ -56,8 +56,8 @@ end alias
 read comp
 '
 ' fuel inner
-  uo2  1 den={{fuelcomp.density_fuel}} {{100.0-fuelcomp.wtpt_inner}} 923 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 1 den={{fuelcomp.density_fuel}} {{fuelcomp.wtpt_inner}} 923 94238 {{fuelcomp.wtpt_pu238}}
+  uo2  1 den={{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_inner}} 923 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 1 den={{fuelcomp.fuel_density}} {{fuelcomp.wtpt_inner}} 923 94238 {{fuelcomp.wtpt_pu238}}
                                  94239 {{fuelcomp.wtpt_pu239}}
                                  94240 {{fuelcomp.wtpt_pu240}}
                                  94241 {{fuelcomp.wtpt_pu241}}
@@ -67,8 +67,8 @@ read comp
 {% endif -%}
 '
 ' fuel inside edge
-  uo2  11 den={{fuelcomp.density_fuel}} {{100.0-fuelcomp.wtpt_inedge}} 923 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 11 den={{fuelcomp.density_fuel}} {{fuelcomp.wtpt_inedge}} 923 94238 {{fuelcomp.wtpt_pu238}}
+  uo2  11 den={{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_inedge}} 923 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 11 den={{fuelcomp.fuel_density}} {{fuelcomp.wtpt_inedge}} 923 94238 {{fuelcomp.wtpt_pu238}}
                                    94239 {{fuelcomp.wtpt_pu239}}
                                    94240 {{fuelcomp.wtpt_pu240}}
                                    94241 {{fuelcomp.wtpt_pu241}}
@@ -78,8 +78,8 @@ read comp
 {% endif -%}
 '
 ' fuel edge
-  uo2  21 den={{fuelcomp.density_fuel}} {{100.0-fuelcomp.wtpt_edge}} 923 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 21 den={{fuelcomp.density_fuel}} {{fuelcomp.wtpt_edge}} 923 94238 {{fuelcomp.wtpt_pu238}}
+  uo2  21 den={{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_edge}} 923 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 21 den={{fuelcomp.fuel_density}} {{fuelcomp.wtpt_edge}} 923 94238 {{fuelcomp.wtpt_pu238}}
                                   94239 {{fuelcomp.wtpt_pu239}}
                                   94240 {{fuelcomp.wtpt_pu240}}
                                   94241 {{fuelcomp.wtpt_pu241}}
@@ -89,8 +89,8 @@ read comp
 {% endif -%}
 '
 ' fuel corner
-  uo2  31 den={{fuelcomp.density_fuel}} {{100.0-fuelcomp.wtpt_corner}} 923 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 31 den={{fuelcomp.density_fuel}} {{fuelcomp.wtpt_corner}} 923 94238 {{fuelcomp.wtpt_pu238}}
+  uo2  31 den={{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_corner}} 923 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 31 den={{fuelcomp.fuel_density}} {{fuelcomp.wtpt_corner}} 923 94238 {{fuelcomp.wtpt_pu238}}
                                   94239 {{fuelcomp.wtpt_pu239}}
                                   94240 {{fuelcomp.wtpt_pu240}}
                                   94241 {{fuelcomp.wtpt_pu241}}
