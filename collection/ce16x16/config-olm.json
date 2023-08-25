@@ -1,6 +1,6 @@
 {
 	"model": {
-		"name": "w17x17",
+		"name": "ce14x14",
 		"work_dir": "_build",
 		"scale_env_var": "SCALE"
 	},
@@ -19,7 +19,7 @@
 		"states": {
 			".type": "scale.olm.generate:all_permutations",
 			"coolant_density": [
-				0.723
+				0.71
 			],
 			"enrichment": [
 				0.5,
@@ -34,7 +34,7 @@
 				8.5
 			],
                         "ppm_boron": [
-                                630
+                                650
                         ],
 			"specific_power": [
 				40

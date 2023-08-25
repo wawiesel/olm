@@ -41,9 +41,9 @@ read comp
 ' clad
   zirc4 2 1 622 end 
 '
-' coolant - water with 630 ppm B 
+' coolant - water with {{state.ppm_boron}} ppm B 
   h2o   3 den={{state.coolant_density}} 1.000000 575 end
-  boron 3 den={{state.coolant_density}} 0.000630 575 end
+  boron 3 den={{state.coolant_density}} {{state.ppm_boron/1.0E6}} 575 end
 '
 ' gap - 275-500psig (set at minimum)
   he-4  4 den=0.001467 1 622 end

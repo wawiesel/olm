@@ -9,7 +9,7 @@
 	    "template": "model.inp",
 		"fuelcomp": {
 		    ".type": "scale.olm.generate:fuelcomp_uox_simple",
-		    "nuclide_prefix": "wtpt_"
+		    "nuclide_prefix": "wt_"
 		},
 		"params": {
 			".type": "scale.olm.common:pass_through",
@@ -33,21 +33,47 @@
 				8,
 				8.5
 			],
-			"specific_power": [
-				40
-			],
                         "ppm_boron": [
                                 800
-                        ]
+                        ],
+			"specific_power": [
+				40
+			]
 		},
 		"time": {
 			".type": "scale.olm.generate:triton_constpower_burndata",
 			"gwd_burnups": [
 				0.0,
-				1.0,
-				25.0,
-				50.0,
-				90.0
+                                0.04,
+				1.04,
+				3.00,
+				5.00,
+				7.50,
+                                10.5,
+                                13.5,
+                                16.5,
+                                19.5,
+                                22.5,
+                                25.5,
+                                28.5,
+                                31.5,
+                                34.5,
+                                37.5,
+                                40.5,
+                                43.5,
+                                46.5,
+                                49.5,
+                                52.5,
+                                55.5,
+                                58.5,
+                                61.5,
+                                64.5,
+                                67.5,
+                                70.5,
+                                73.5,
+                                76.5,
+                                79.5,
+                                82.5 
 			]
 		}
 	},
