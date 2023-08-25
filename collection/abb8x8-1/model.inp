@@ -1,6 +1,6 @@
 =t-depl parm=(addnux={{params.addnux)
 BWR ABB 8x8-1, 2D full assembly model
-{{params.xsLib}}
+{{params.xslib}}
 ' ----------------------------------------------------------------
 '  template to generate libraries for ORIGEN-S 
 '  parameters are: wtpt_u235       - wt% U235
@@ -21,7 +21,7 @@ BWR ABB 8x8-1, 2D full assembly model
 '  [Author(s)] B. R. Betzler
 '  [SCALE Version] SCALE 6.2
 '  [Reactor Type] Boiling Water Reactor ABB 8x8-1 
-'  [Model Info] 2D t-depl full assembly model (see Figure \ref{fi:abb8x8-1}), xsLib cross-section library
+'  [Model Info] 2D t-depl full assembly model (see Figure \ref{fi:abb8x8-1}), {{params.xslib}} cross-section library
 '  [Sources] 
 '    1. SCALE: A Comprehensive Modeling and Simulation Suite for Nuclear Safety Analysis and Design, ORNL/TM-2005/39, Version 6.1, Oak Ridge National Laboratory, Oak Ridge, Tennessee, June 2011. |
 '    2. H. Smith, J. Peterson, and J. Hu, ``Fuel Assembly Modeling for the Modeling and Simulation Toolset'', ORNL/LTR-2012-555 Rev. 1, Oak Ridge National Laboratory, 2013.

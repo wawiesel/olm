@@ -18,7 +18,7 @@
 		"params": {
 			".type": "scale.olm.common:pass_through",
 			"addnux": 4,
-			"xsLib": "xn252",
+			"xslib": "xn252",
                         "density_Am" : 0.0,
                         "dancoff1" : [0.5041, 0.3937, 0.3182, 0.2631, 0.2211 ],
                         "dancoff2" : [0.3229, 0.2541, 0.2069, 0.1722, 0.1455]

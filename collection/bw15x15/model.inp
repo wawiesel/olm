@@ -17,7 +17,7 @@ PWR B&W 15x15, 2D quarter assembly model
 '  [Author(s)] B. R. Betzler
 '  [SCALE Version] SCALE 6.2
 '  [Reactor Type] Pressurized Water Reactor Babcock & Wilcox 15x15
-'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:bw15x15}), xsLib cross-section library
+'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:bw15x15}), {{params.xslib}} cross-section library
 '  [Sources] 
 '    1. ``Characteristics of Spent Fuel, High-Level Waste, and other Radioactive Wastes which May Require Long-Term Isolation'', Appendix 2A. Physical Descriptions of LWR Fuel Assemblies, DOE/RW-0184, Volume 3 of 6, U.S. DOE Office of Civilian Radioactive Waste Management, 1987. | 
 '    2. H. Smith, J. Peterson, and J. Hu, ``Fuel Assembly Modeling for the Modeling and Simulation Toolset'', ORNL/LTR-2012-555 Rev. 1, Oak Ridge National Laboratory, 2013.

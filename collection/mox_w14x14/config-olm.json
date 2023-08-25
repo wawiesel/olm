@@ -1,6 +1,6 @@
 {
 	"model": {
-		"name": "mox_w17x17",
+		"name": "mox_w14x14",
 		"work_dir": "_build",
 		"scale_env_var": "SCALE"
 	},
@@ -10,7 +10,7 @@
 		"fuelcomp": {
 		    ".type": "scale.olm.generate:fuelcomp_mox_ornltm2003_2",
                     "pins_gd" : 0,
-                    "pins_zone" : [144, 56, 52, 12],
+                    "pins_zone" : [83, 44, 40, 12],
                     "pct_gd" : 0.0,
                     "nuclide_prefix" : "wtpt_",
                     "density_fuel" : 10.4                        
@@ -24,7 +24,7 @@
 		"states": {
 			".type": "scale.olm.generate:all_permutations",
 			"coolant_density": [
-				0.723
+				0.7264
 			],
 			"wtpt_pu": [
                                 4.0,
@@ -39,7 +39,7 @@
                                 70.0
                         ],
                         "ppm_boron": [
-                                630
+                                653
                         ],
 			"specific_power": [
 				40

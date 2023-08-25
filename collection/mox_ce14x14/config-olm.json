@@ -18,7 +18,7 @@
 		"params": {
 			".type": "scale.olm.common:pass_through",
 			"addnux": 4,
-			"xsLib": "xn252",
+			"xslib": "xn252",
                         "density_Am" : 0.0
 		},
 		"states": {
@@ -80,13 +80,6 @@
                                 79.5,
                                 82.5
 			]
-		}
-	},
-	"run": {
-		".type": "scale.olm.run:makefile",
-		"nprocs": 3
-	},
-	"build": {
 		}
 	},
 	"run": {

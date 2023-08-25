@@ -19,7 +19,7 @@ PWR Siemens 14x14, 2D quarter assembly model
 '  [Author(s)] B. R. Betzler
 '  [SCALE Version] SCALE 6.3
 '  [Reactor Type] Pressurized Water Reactor Siemens 14x14
-'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:s14x14}), xsLib cross-section library
+'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:s14x14}), {{model.xslib}} cross-section library
 '  [Sources] 
 '    1. U. Fischer and H. W. Wiese, ``Improved and Consistent Determination of the Nuclear Inventory of Spent PWR Fuel on the Bask of Cell Burnup Methods Using KORIGEN'' (ORNL-TR-5043), KFK 3014, Karlsruhe Nuclear Research Center, January 1983; available from Radiation Shielding Information Center, Oak Ridge National Laboratory, as GCC-457. | 
 '    2. U. Hesse, ``Verification of the OREST (HAMMER-ORlGEN) Depletion Program System Using Post-Irradiation Analyses of Fuel Assemblies 168, 170, 171, and 176 from the Obrigheim Reactor'' (ORNLTR-88/20), GRS-A-962, Gesellschaft fur Reaktorscherheit (GRS) mbH, 1984.

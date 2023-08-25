@@ -1,6 +1,6 @@
 =t-depl parm=(addnux={{param.addnux}})
 BWR GE 10x10-8, 2D full assembly model 
-{{param.xsLib}}
+{{param.xslib}}
 ' ----------------------------------------------------------------
 '  template to generate libraries for ORIGEN-S 
 '  parameters are: wtpt_u235       - wt% U235
@@ -35,7 +35,7 @@ BWR GE 10x10-8, 2D full assembly model
 '  [Author(s)] B. R. Betzler
 '  [SCALE Version] SCALE 6.2
 '  [Reactor Type] Boiling Water Reactor General Electric 10x10-8
-'  [Model Info] 2D t-depl full assembly model (see Figure \ref{fi:ge10x10-8}), xsLib cross-section library
+'  [Model Info] 2D t-depl full assembly model (see Figure \ref{fi:ge10x10-8}), {{params.xslib}} cross-section library
 '  [Sources] 
 '    1. B. J. Ade, ``Generation of Collapsed Cross Sections for Hatch 1 Cycles 1-3 and Generation of Generic BWR Reflector Cross Sections'', ORNL/LTR-2012/559, Oak Ridge National Laboratory, 2012. | 
 '    2. H. Smith, J. Peterson, and J. Hu, ``Fuel Assembly Modeling for the Modeling and Simulation Toolset'', ORNL/LTR-2012-555 Rev. 1, Oak Ridge National Laboratory, 2013.

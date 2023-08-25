@@ -17,7 +17,7 @@ PWR Siemens 18x18, 2D quarter assembly model
 '  [Author(s)] B. R. Betzler
 '  [SCALE Version] SCALE 6.2
 '  [Reactor Type] Pressurized Water Reactor Siemens 18x18
-'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:s18x18}), xsLib cross-section library
+'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:s18x18}), {{params.xslib}} cross-section library
 '  [Sources] 1. J. Neuber and T. Lamprecht, ``Phase II-C: Benchmark on the Effect of Axial Burnup Shapes'', Siemens Nuclear Power GmbH, 2000.
 '  [Data Range]
 '  [Libraries]

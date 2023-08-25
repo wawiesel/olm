@@ -19,7 +19,7 @@ PWR CE 16x16, 2D quarter assembly model
 '  [Author(s)] B. R. Betzler
 '  [SCALE Version] SCALE 6.2
 '  [Reactor Type] Pressurized Water Reactor Combustion Engineering 16x16
-'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:ce16x16}), xsLib cross-section library
+'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:ce16x16}), {{params.xslib}} cross-section library
 '  [Sources] 
 '    1. ``Characteristics of Spent Fuel, High-Level Waste, and other Radioactive Wastes which May Require Long-Term Isolation'', Appendix 2A. Physical Descriptions of LWR Fuel Assemblies, DOE/RW-0184, Volume 3 of 6, U.S. DOE Office of Civilian Radioactive Waste Management, 1987. | 
 '    2. S. M. Bowman, I. C. Gauld, and J. C. Wagner, ``Recommendations on Fuel Parameters for Standard Technical Specifications for Spent Fuel Storage Casks'', NUREG/CR-6716 (ORNL/TM-2000/385), U.S. Nuclear Regulatory Commission, Oak Ridge National Laboratory, March 2001. | 

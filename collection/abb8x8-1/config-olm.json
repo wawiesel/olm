@@ -14,7 +14,7 @@
 		"params": {
 			".type": "scale.olm.common:pass_through",
 			"addnux": 4,
-			"xsLib": "xn252"
+			"xslib": "xn252"
 		},
                 "dynamic" : {
                     "dancoff1" : {

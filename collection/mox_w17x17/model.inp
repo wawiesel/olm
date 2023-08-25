@@ -1,6 +1,6 @@
 =t-depl parm=(addnux={{params.addnux}})
 PWR-MOX Westinghouse 17x17, 2D quarter assembly model 
-{{params.xsLib}}
+{{params.xslib}}
 ' ----------------------------------------------------------------
 '  template to generate libraries for ORIGEN
 '  parameters are: IcontentPu      - wt% plutonium: inner
@@ -28,7 +28,7 @@ PWR-MOX Westinghouse 17x17, 2D quarter assembly model
 '  [Author(s)] B. R. Betzler
 '  [SCALE Version] SCALE 6.3
 '  [Reactor Type] Mixed Oxide Pressurized Water Reactor Westinghouse 17x17
-'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:mox_w17x17}), xsLib cross-section library
+'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:mox_w17x17}), {{params.xslib}} cross-section library
 '  [Sources] 
 '    1. ``Characteristics of Spent Fuel, High-Level Waste, and other Radioactive Wastes which May Require Long-Term Isolation'', Appendix 2A. Physical Descriptions of LWR Fuel Assemblies, DOE/RW-0184, Volume 3 of 6, U.S. DOE Office of Civilian Radioactive Waste Management, 1987. | 
 '    2. SCALE: A Comprehensive Modeling and Simulation Suite for Nuclear Safety Analysis and Design, ORNL/TM-2005/39, Version 6.1, Oak Ridge National Laboratory, Oak Ridge, Tennessee, June 2011. |
