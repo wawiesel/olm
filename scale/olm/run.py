@@ -1,5 +1,11 @@
 from pathlib import Path
 import scale.olm.common as common
+import glob
+
+
+def __runtime_in_hours(runtime):
+    """Convert runtime in seconds to well-formatted runtime in hours."""
+    return "{:.2g}".format(runtime / 3600.0)
 
 
 def makefile(model, dry_run, nprocs):
@@ -35,10 +41,29 @@ clean:
     else:
         common.run_command(command_line)
 
+    # Get file listing.
+    perms = list()
+    total_runtime = 0
+    for input in [Path(x) for x in sorted(glob.glob(str(work_dir) + "/*/*.inp"))]:
+        output = input.with_suffix(".out")
+        success = output.exists()
+        runtime = common.get_runtime(output) if success else 3.6e6
+        total_runtime += runtime
+        perms.append(
+            {
+                "input": str(input.relative_to(work_dir)),
+                "output": str(output.relative_to(work_dir)),
+                "success": success,
+                "runtime_hrs": __runtime_in_hours(runtime),
+            }
+        )
+
     return {
         "scalerte": scalerte,
         "work_dir": work_dir,
         "dry_run": dry_run,
         "command_line": command_line,
         "version": version,
+        "perms": perms,
+        "total_runtime_hrs": __runtime_in_hours(total_runtime),
     }

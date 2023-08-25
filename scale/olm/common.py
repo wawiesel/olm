@@ -31,30 +31,8 @@ def get_runtime(output):
     return 0
 
 
-def run_summary(build):
-    rows = list()
-    rows.append(["output", "runtime (s)"])
-    work_dir = Path(build["work_dir"])
-    for p in build["perms"]:
-        output = p["files"]["output"]
-        rows.append([output, get_runtime(work_dir / output)])
-    return rows
-
-
-def static_summary(params):
-    rows = list()
-    input_desc = params["input_desc"]
-    for p in params:
-        if p != "input_desc":
-            v = params[p]
-            d = ""
-            if p in input_desc:
-                d = input_desc[p]
-            rows.append([p, v, d])
-    return rows
-
-
 def run_command(command_line, check_return_code=True):
+    """Run a command as a subprocess. Throw on bad error code or finding 'Error' in the output."""
     logger.info(f"running command:\n{command_line}")
     p = subprocess.Popen(
         command_line,
@@ -327,6 +305,34 @@ class ArpInfo:
             nfis = len(self.fissfrac_list)
             nmod = len(self.mod_dens_list)
             return (npu, nfis, nmod)
+        else:
+            raise ValueError(
+                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
+            )
+
+    def get_space(self):
+        if self.fuel_type == "UOX":
+            return {
+                "mod_dens": {
+                    "grid": self.mod_dens_list,
+                    "desc": "Moderator density (g/cc)",
+                },
+                "enrichment": {
+                    "grid": self.enrichment_list,
+                    "desc": "U-235 enrichment (wt%)",
+                },
+                "burnup": {
+                    "grid": self.burnup_list,
+                    "desc": "energy release/burnup (MWd/MTIHM)",
+                },
+            }
+        elif self.fuel_type == "MOX":
+            return {
+                "mod_dens": {"grid": self.mod_dens_list, "desc": ""},
+                "pufrac": {"grid": self.pufrac_list, "desc": ""},
+                "fissilefrac": {"grid": self.fissilefrac_list, "desc": ""},
+                "burnup": {"grid": self.burnup_list, "desc": ""},
+            }
         else:
             raise ValueError(
                 "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)

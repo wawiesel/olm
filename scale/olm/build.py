@@ -7,6 +7,7 @@ import copy
 import shutil
 import numpy as np
 import subprocess
+import datetime
 
 
 def archive(model):
@@ -297,4 +298,6 @@ def arpdata_txt(model, fuel_type, suffix, dim_map, keep_every):
         "archive_file": archive_file,
         "perms": perms,
         "work_dir": str(work_dir),
+        "date": datetime.datetime.utcnow().isoformat(" ", "minutes"),
+        "space": arpinfo.get_space(),
     }

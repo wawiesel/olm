@@ -2,7 +2,14 @@
     "model": {
         "name": "w17x17_pin2",
         "work_dir": "_build",
-        "scale_env_var": "SCALE"
+        "scale_env_var": "SCALE",
+        "description": "A 2D t-depl quarter assembly model for a Pressurized Water Reactor of the Westinghouse 17x17 type.",
+        "sources":
+        {
+            "1":"Characteristics of Spent Fuel, High-Level Waste, and other Radioactive Wastes which May Require Long-Term Isolation, Appendix 2A. Physical Descriptions of LWR Fuel Assemblies, DOE/RW-0184, Volume 3 of 6, U.S. DOE Office of Civilian Radioactive Waste Management, 1987.",
+            "2": "SCALE: A Comprehensive Modeling and Simulation Suite for Nuclear Safety Analysis and Design, ORNL/TM-2005/39, Version 6.1, Oak Ridge National Laboratory, Oak Ridge, Tennessee, June 2011.",
+            "3": "H. Smith, J. Peterson, and J. Hu, Fuel Assembly Modeling for the Modeling and Simulation Toolset, ORNL/LTR-2012-555 Rev. 1, Oak Ridge National Laboratory, 2013."
+        }
     },
     "generate": {
         ".type": "scale.olm.generate:expander",
@@ -17,11 +24,7 @@
             "xslib": "v7-56",
             "pitch": 1.26,
             "fuelr": 0.4095,
-            "cladr": 0.4750,
-            "input_desc": {
-                "xslib": "cross section library used in the neutron transport calculation",
-                "addnux": "nuclide set to perform high-fidelity self-shielding with XSProc"
-            }
+            "cladr": 0.4750
         },
         "states": {
             ".type": "scale.olm.generate:all_permutations",

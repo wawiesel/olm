@@ -331,11 +331,15 @@ class LowOrderConsistency:
             origami_case = 1
             f71_list = list()
             for j in range(len(build_d["perms"])):
-                # Extract the fuel power / burnup output from base f71.
+                # Convenience variables.
+                generate = generate_d["perms"][j]
                 build = build_d["perms"][j]
-                f71 = self.work_dir / build["files"]["input"]
-                f71 = f71.with_suffix(".f71")
-                history = common.get_history_from_f71(self.obiwan, f71, triton_case)
+                base = generate["file"]
+
+                # Extract the fuel power / burnup output from base f71.
+                run_input = self.work_dir / base
+                run_f71 = run_input.with_suffix(".f71")
+                history = common.get_history_from_f71(self.obiwan, run_f71, triton_case)
 
                 # Fill the template.
                 filled_text = common.expand_template(
@@ -344,22 +348,23 @@ class LowOrderConsistency:
                         "history": history,
                         "model": {"work_dir": self.work_dir, "name": self.name},
                         "build": build,
-                        "generate": generate_d["perms"][j],
+                        "generate": generate,
                     },
                 )
 
-                # Write the input file.
-                input = self.check_dir / build["files"]["input"]
-                input.parent.mkdir(parents=True, exist_ok=True)
+                # Write the check input file.
+                check_input = self.check_dir / base
+                check_input.parent.mkdir(parents=True, exist_ok=True)
                 common.logger.info(
                     f"Writing input file={input} for LowOrderConsistency check"
                 )
 
-                with open(input, "w") as f:
+                with open(check_input, "w") as f:
                     f.write(filled_text)
 
                 # Save TRITON and ORIGAMI f71 in a list.
-                f71_list.append((f71, input.with_suffix(".f71")))
+                check_f71 = check_input.with_suffix(".f71")
+                f71_list.append((run_f71, check_f71))
 
             run.makefile(
                 model={"scalerte": self.scalerte, "work_dir": self.check_dir},

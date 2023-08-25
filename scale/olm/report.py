@@ -21,16 +21,12 @@ def stub1(model, template):
     # Load data files.
     work_dir = Path(model["work_dir"])
     data = {"model": model}
-    for x in ["generate", "build", "run"]:
+    for x in ["generate", "build", "run", "check"]:
         j = work_dir / (x + ".json")
         with open(j, "r") as f:
             data[x] = json.load(f)
 
-    # Populate basic section summaries.
-    data["tables"] = {
-        "run_summary": common.run_summary(data["build"]),
-        "static_summary": common.static_summary(data["generate"]["params"]),
-    }
+    # Expand template.
     filled_text = common.expand_template(template_text, data)
 
     # Fill template.
@@ -40,13 +36,14 @@ def stub1(model, template):
         f.write(filled_text)
 
     # Generate PDF.
-    report = rst.with_suffix(".pdf")
+    pdf = rst.with_suffix(".pdf")
     common.run_command(f"rst2pdf {rst}")
-    common.logger.info(f"Generated PDF report {report}")
+    common.logger.info(f"Generated PDF report {pdf}")
 
     return {
+        "work_dir": str(work_dir),
         "template": str(template),
-        "report": str(report),
-        "rst": str(rst),
+        "pdf": str(pdf.relative_to(work_dir)),
+        "rst": str(rst.relative_to(work_dir)),
         "data": data,
     }
