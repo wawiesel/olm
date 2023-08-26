@@ -5,6 +5,7 @@ import scale.olm.run as run
 import json
 from pathlib import Path
 import copy
+import os
 
 
 class CheckInfo:
@@ -21,10 +22,10 @@ def sequencer(model, sequence):
         i = 0
         for s in sequence:
             # Set the full name.
-            name = s[".type"]
+            name = s["_type"]
             if name.find(":") == -1:
                 name = "scale.olm.check:" + name
-            s[".type"] = name
+            s["_type"] = name
             s["model"] = model
 
             common.logger.info(
@@ -33,7 +34,7 @@ def sequencer(model, sequence):
             i += 1
 
             # Initialize the class.
-            this_class = common.fn_redirect(s)
+            this_class = common.fn_redirect(**s)
             run_list.append(this_class)
 
         # Read the archive.
@@ -242,9 +243,11 @@ class LowOrderConsistency:
         target_q1=0.9,
         target_q2=0.95,
         nprocs=3,
+        nuclide_compare=["0092235", "0094239"],
     ):
         self.template = template
         self.nprocs = nprocs
+        self.nuclide_compare = nuclide_compare
         self.scalerte = model["scalerte"]
         self.config_dir = Path(model["dir"])
         self.work_dir = Path(model["work_dir"])
@@ -270,22 +273,74 @@ class LowOrderConsistency:
             info.test_pass = False
             return info
 
-        self.ahist = np.array(self.origami_list)
-        self.rhist = np.array(self.origami_list)
-        self.triton = np.array(self.triton_list)
-        self.origami = np.array(self.origami_list)
-        for k in range(len(self.origami_list)):
-            for j in range(len(self.origami_list[k])):
-                osum = self.origami_list[k][j].sum()
-                tsum = self.triton_list[k][j].sum()
-                oden = self.origami_list[k][j] / osum
-                tden = self.triton_list[k][j] / tsum
-                self.origami[k, j, :] = oden
-                self.triton[k, j, :] = tden
+        # Create a base comparison data structure to repeat for every permutation.
+        common.logger.info("Setting up detailed comparison structures...")
+        info.nuclide_compare = dict()
+        ntime = len(self.time_list)
+        for nuclide in self.nuclide_compare:
+            i = self.names.index(nuclide)
+            common.logger.info(
+                f"Found nuclide={nuclide} at index {i} for detailed comparison"
+            )
+            info.nuclide_compare[nuclide] = {
+                "nuclide_index": i,
+                "nuclide": nuclide,
+                "time": self.time_list,
+                "max_diff": list(np.zeros(ntime)),
+                "min_diff": list(np.zeros(ntime)),
+                "perms": [],
+            }
+
+        self.ahist = np.array(self.lo_list)
+        self.rhist = np.array(self.lo_list)
+        self.hi = np.array(self.hi_list)
+        self.lo = np.array(self.lo_list)
+
+        # For each permutation.
+        common.logger.info("Calculating all comparison histogram data...")
+        for k in range(len(self.lo_list)):
+            # For each time.
+            for j in range(len(self.lo_list[k])):
+                osum = self.lo_list[k][j].sum()
+                tsum = self.hi_list[k][j].sum()
+                oden = self.lo_list[k][j] / osum
+                tden = self.hi_list[k][j] / tsum
+                self.lo[k, j, :] = oden
+                self.hi[k, j, :] = tden
                 self.ahist[k, j, :] = np.absolute(oden - tden)
                 self.rhist[k, j, :] = np.absolute(
                     (oden + self.eps0) / (tden + self.eps0) - 1.0
                 )
+
+        # Extract each nuclide time series.
+        common.logger.info("Calculating nuclide-wise comparisons...")
+        for n in info.nuclide_compare:
+            i_nuclide = info.nuclide_compare[n]["nuclide_index"]
+            for k in range(len(self.lo_list)):
+                lo = self.lo[k, :, i_nuclide]
+                hi = self.hi[k, :, i_nuclide]
+                err = (lo - hi) / (self.eps0 + np.amax(np.absolute(hi)))
+                info.nuclide_compare[n]["perms"].append(
+                    {
+                        "k": k,
+                        "lo": list(lo),
+                        "hi": list(hi),
+                        "(lo-hi)/max(|hi|)": list(err),
+                    }
+                )
+
+        # Get maximum and min error across all permutations.
+        common.logger.info("Calculating max/min across permutations...")
+        for n, d in info.nuclide_compare.items():
+            i_nuclide = d["nuclide_index"]
+            for k in range(len(self.lo_list)):
+                err = d["perms"][k]["(lo-hi)/max(|hi|)"]
+                for j in range(len(self.time_list)):
+                    d["max_diff"][j] = np.amax([err[j], d["max_diff"][j]])
+                    d["min_diff"][j] = np.amin([err[j], d["min_diff"][j]])
+            d["max_diff0"] = np.amax(
+                [np.absolute(d["max_diff"]), np.absolute(d["min_diff"])]
+            )
 
         self.ahist = np.ndarray.flatten(self.ahist)
         self.rhist = np.ndarray.flatten(self.rhist)
@@ -310,36 +365,44 @@ class LowOrderConsistency:
 
         return info
 
-    def run(self, archive):
-        try:
-            # Load the template file.
-            with open(self.config_dir / self.template, "r") as f:
-                template_text = f.read()
+    def __run_lo_fidelity(self, do_run):
+        """Run the LOWER fidelity calculation which should be consistent as possible with
+        the already-complete higher order calculation."""
 
-            # Load the build data.
-            build_json = self.work_dir / "build.json"
-            with open(build_json, "r") as f:
-                build_d = json.load(f)
+        # Load the template file.
+        with open(self.config_dir / self.template, "r") as f:
+            template_text = f.read()
 
-            # Load the generate data.
-            generate_json = self.work_dir / "generate.json"
-            with open(generate_json, "r") as f:
-                generate_d = json.load(f)
+        # Load the generate data.
+        generate_json = self.work_dir / "generate.json"
+        with open(generate_json, "r") as f:
+            generate_d = json.load(f)
 
-            # For each permutation.
-            triton_case = -2
-            origami_case = 1
-            f71_list = list()
-            for j in range(len(build_d["perms"])):
-                # Convenience variables.
-                generate = generate_d["perms"][j]
-                build = build_d["perms"][j]
-                base = generate["file"]
+        # Load the build data.
+        build_json = self.work_dir / "build.json"
+        with open(build_json, "r") as f:
+            build_d = json.load(f)
 
+        # For each permutation.
+        f71_list = list()
+        for j in range(len(build_d["perms"])):
+            # Convenience variables.
+            generate = generate_d["perms"][j]
+            build = build_d["perms"][j]
+            base = generate["file"]
+
+            # Save HIGH fidelity and LOWER fidelity f71 in a list.
+            run_input = self.work_dir / base
+            run_f71 = run_input.with_suffix(".f71")
+            check_input = self.check_dir / base
+            check_f71 = check_input.with_suffix(".f71")
+            f71_list.append((run_f71, check_f71))
+
+            if do_run:
                 # Extract the fuel power / burnup output from base f71.
-                run_input = self.work_dir / base
-                run_f71 = run_input.with_suffix(".f71")
-                history = common.get_history_from_f71(self.obiwan, run_f71, triton_case)
+                history = common.get_history_from_f71(
+                    self.obiwan, run_f71, self.hi_case
+                )
 
                 # Fill the template.
                 filled_text = common.expand_template(
@@ -353,53 +416,95 @@ class LowOrderConsistency:
                 )
 
                 # Write the check input file.
-                check_input = self.check_dir / base
                 check_input.parent.mkdir(parents=True, exist_ok=True)
                 common.logger.info(
                     f"Writing input file={input} for LowOrderConsistency check"
                 )
-
                 with open(check_input, "w") as f:
                     f.write(filled_text)
 
-                # Save TRITON and ORIGAMI f71 in a list.
-                check_f71 = check_input.with_suffix(".f71")
-                f71_list.append((run_f71, check_f71))
+        # Run all the check inputs.
+        run.makefile(
+            model={"scalerte": self.scalerte, "work_dir": self.check_dir},
+            dry_run=not do_run,
+            nprocs=self.nprocs,
+        )
 
-            run.makefile(
-                model={"scalerte": self.scalerte, "work_dir": self.check_dir},
-                dry_run=False,
-                nprocs=self.nprocs,
+        return f71_list
+
+    def __write_ii_json(self, do_run, f71_list):
+        """Run obiwan to write the ii.json data to disk."""
+
+        # Conver the f71 to ii.json and extract the relevant information into memory.
+        ii_json_list = list()
+        for hi_f71, lo_f71 in f71_list:
+            hi_ii_json = hi_f71.with_suffix(".ii.json")
+            lo_ii_json = lo_f71.with_suffix(".ii.json")
+            if do_run:
+                common.run_command(
+                    f"{self.obiwan} view -format=ii.json {hi_f71} -cases='[{self.hi_case}]' >{hi_ii_json}"
+                )
+                common.run_command(
+                    f"{self.obiwan} view -format=ii.json {lo_f71} -cases='[{self.lo_case}]' >{lo_ii_json}"
+                )
+            ii_json_list.append((hi_ii_json, lo_ii_json))
+
+        return ii_json_list
+
+    def __load_ii_json(self, ii_json_list):
+        """Load the ii.json data that exists on disk for HIGH and LOWER fidelity into memory."""
+
+        # Conver the f71 to ii.json and extract the relevant information into memory.
+        self.hi_list = list()
+        self.lo_list = list()
+        for hi_ii_json, lo_ii_json in ii_json_list:
+            # Load the json data into HIGH fidelity and LOWER fidelity data structures.
+            with open(hi_ii_json, "r") as f:
+                jt = json.load(f)
+                case = jt["responses"][f"case({self.hi_case})"]
+                hi = np.array(case["amount"])
+                hi_vector = case["nuclideVectorHash"]
+                self.hi_list.append(hi)
+                self.names = jt["definitions"]["nuclideVectors"][hi_vector]
+                self.time_list = case["time"]
+
+            with open(lo_ii_json, "r") as f:
+                jo = json.load(f)
+                case = jo["responses"][f"case({self.lo_case})"]
+                lo = np.array(case["amount"])
+                lo_time = case["time"]
+                if not np.array_equal(lo_time, self.time_list):
+                    raise ValueError(
+                        f"HIGH fidelity list of times={self.time_list} is inconsistent with LOWER fidelity list of times {lo_time}"
+                    )
+                lo_vector = case["nuclideVectorHash"]
+                if not lo_vector == hi_vector:
+                    raise ValueError(
+                        f"HIGH fidelity nuclide vector hash {hi_vector} is not the same as LOWER fidelity vector hash {lo_vector}, meaning the two nuclide sets are somehow inconsistent, which should not be possible."
+                    )
+                self.lo_list.append(lo)
+
+    def run(self, archive):
+        """Run a consistent set of LOWER fidelity calculations which also produce an
+        f71--typically ORIGAMI."""
+
+        # TODO: Allow input to change this or other smart way to determine if the data
+        # does not need to be regenerated. Here, this is just for development iterations
+        # to disable long SCALE runs while trying to debug checking.
+        do_run = os.environ.get("SCALE_OLM_DO_RUN", "True") in ["True"]
+        if not do_run:
+            common.logger.warning(
+                "Runs suppressed by environment variable SCALE_OLM_DO_RUN!"
             )
 
-            # Save as ii.json.
-            for t, o in f71_list:
-                it = t.with_suffix(".ii.json")
-                io = o.with_suffix(".ii.json")
-                common.run_command(
-                    f"{self.obiwan} view -format=ii.json {t} -cases='[{triton_case}]' >{it}"
-                )
-                common.run_command(f"{self.obiwan} view -format=ii.json {o} >{io}")
+        # Set the case identifiers for the high and low problems.
+        self.hi_case = -2
+        self.lo_case = 1
 
-                # Load the json data into TRITON and ORIGAMI data structures.
-                self.triton_list = list()
-                with open(it, "r") as f:
-                    jt = json.load(f)
-                    case = jt["responses"][f"case({triton_case})"]
-                    triton = np.array(case["amount"])
-                    self.triton_list.append(triton)
-                    self.names = jt["definitions"]["nuclideVectors"][
-                        case["nuclideVectorHash"]
-                    ]
-
-                self.origami_list = list()
-                with open(io, "r") as f:
-                    jo = json.load(f)
-                    origami = np.array(
-                        jo["responses"][f"case({origami_case})"]["amount"]
-                    )
-                    self.origami_list.append(origami)
-
+        try:
+            f71_list = self.__run_lo_fidelity(do_run)
+            ii_json_list = self.__write_ii_json(do_run, f71_list)
+            self.__load_ii_json(ii_json_list)
             self.run_success = True
 
         except ValueError as ve:

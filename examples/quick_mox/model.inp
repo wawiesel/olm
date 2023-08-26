@@ -5,15 +5,34 @@ pincell model
 read composition
 '
 ' fuel
-  uo2  10 den={{fuelcomp.density_fuel}} {{100.0-fuelcomp.wtpt_inner}}  900 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 10 den={{fuelcomp.density_fuel}} {{fuelcomp.wtpt_inner}} 900 94238 {{fuelcomp.wtpt_pu238}}
-                                 94239 {{fuelcomp.wtpt_pu239}}
-                                 94240 {{fuelcomp.wtpt_pu240}}
-                                 94241 {{fuelcomp.wtpt_pu241}}
-                                 94242 {{fuelcomp.wtpt_pu242}} end
-{% if params.density_Am > 0.0 %}
-  am-241 1 den={{params.density_Am}} {{fuelcomp.wtpt_inner}} 900 end
-{%- endif %}
+  uo2  10 den={{comp.inner.density}}
+        {{comp.inner.uo2.dens_frac}}  900
+        92234 {{comp.inner.uo2.iso.u234}}
+        92235 {{comp.inner.uo2.iso.u235}}
+        92238 {{comp.inner.uo2.iso.u238}}
+        end
+  puo2 10 den={{comp.inner.density}}
+        {{comp.inner.puo2.dens_frac}} 900
+        94238 {{comp.inner.puo2.iso.pu238}}
+        94239 {{comp.inner.puo2.iso.pu239}}
+        94240 {{comp.inner.puo2.iso.pu240}}
+        94241 {{comp.inner.puo2.iso.pu241}}
+        94242 {{comp.inner.puo2.iso.pu242}}
+        end
+  am   10 den={{comp.inner.density}}
+        {{comp.inner.amo2.dens_frac*comp.inner.info.amo2_hm_frac}} 900
+        95241 {{comp.inner.amo2.iso.am241}}
+        end
+  o    10 den={{comp.inner.density}}
+        {{comp.inner.amo2.dens_frac*(1.0-comp.inner.info.amo2_hm_frac)}} 900
+        end
+'
+' checks for mixture 10:
+'   sum of density fraction [-]: {{comp.inner.uo2.dens_frac+comp.inner.puo2.dens_frac+comp.inner.amo2.dens_frac}} (should be 1.0)
+'   pu239/(pu+am) [%]: {{comp.inner.puo2.iso.pu239*comp.inner.puo2.dens_frac/(comp.inner.puo2.dens_frac+comp.inner.amo2.dens_frac)}} (should be {{state.pu239_frac}})
+'   (pu+am)/(u+pu+am) [%]: {{100*(comp.inner.puo2.dens_frac+comp.inner.amo2.dens_frac)/(comp.inner.uo2.dens_frac+comp.inner.puo2.dens_frac+comp.inner.amo2.dens_frac)}} (should be {{state.pu_frac}})
+'   am/(pu+am) [%]: {{100*(comp.inner.amo2.dens_frac)/(comp.inner.puo2.dens_frac+comp.inner.amo2.dens_frac)}} (should be {{comp.inner.am241}})
+'
 '
 ' clad
   zirc4 20 1 622 end

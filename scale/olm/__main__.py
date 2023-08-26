@@ -98,7 +98,7 @@ def command_do(config_file, generate, run, build, check, report, do_all, nprocs)
         # Run each enabled mode in sequence.
         for mode in all_modes:
             if do[mode]:
-                output = common.fn_redirect({"model": model, **data[mode]})
+                output = common.fn_redirect(**data[mode], model=model)
                 output_file = str(Path(model["work_dir"]) / mode) + ".json"
                 common.logger.info(f"Writing {output_file} ...")
                 with open(output_file, "w") as f:
@@ -220,7 +220,7 @@ def methods_help(*methods):
     "-s",
     "text_sequence",
     type=str,
-    metavar="'{\".type\": NAME, <OPTIONS>}'",
+    metavar="'{\"_type\": NAME, <OPTIONS>}'",
     multiple=True,
     help=methods_help(check.GridGradient, check.Continuity),
 )

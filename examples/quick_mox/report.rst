@@ -15,11 +15,9 @@
     {% endfor %}
 :Revision Log:
     Rev. 0
-        Unknown authorship
+        Some human
     Rev. 1
-        Ported into SLIG, B. R. Betzler, June 2014
-    Rev. 2
-        Ported into OLM, W. A. Wieselquist, August 2023
+        Another human 2022
 
 
 .. list-table:: Interpolation Space
@@ -38,12 +36,6 @@
 
 Model info
 ~~~~~~~~~~
-
-The sources used in this model are summarized as follows.
-
-- Fuel density, gap gas pressure from Appendix 2A of Reference [1_].
-- Temperatures, moderator density, boron concentration from Table D1.A.2 of Reference [2_].
-- All other dimensions, materials, etc. from Reference [3_].
 
 This model introduces the following static parameters: {{generate.params.keys()|list}},
 with values shown in the table below.

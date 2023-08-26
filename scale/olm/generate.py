@@ -2,6 +2,8 @@ import scale.olm.common as common
 import numpy as np
 import math
 from pathlib import Path
+import json
+import copy
 
 
 def __fuelcomp_uox(u234, u235, u236):
@@ -65,6 +67,114 @@ def fuelcomp_uox_nuregcr5625(state, nuclide_prefix=""):
         u236=0.0046 * enrichment,
     )
     return __apply_prefix(data, nuclide_prefix)
+
+
+def __renormalize_wtpt(wtpt0, sum0, key_filter=""):
+    """Renormalize to sum0 any keys matching filter."""
+    # Calculate the sum of filtered elements. Copy into return value.
+    wtpt = {}
+    sum = 0.0
+    for k, v in wtpt0.items():
+        if k.startswith(key_filter):
+            sum += v
+            wtpt[k] = v
+
+    # Renormalize.
+    norm = sum / sum0
+    for k in wtpt:
+        wtpt[k] /= norm
+    return wtpt, norm
+
+
+def grams_per_mol(iso_wts):
+    """Calculate the grams per mole of a weight percent mixture."""
+    import re
+
+    m_data = {"am241": 241.0568}
+
+    m = 0.0
+    for iso, wt in iso_wts.items():
+        m_default = re.sub("^[a-z]+", "", iso)
+        m_iso = m_data.get(iso, float(m_default))
+        m += (wt / 100.0) / m_iso
+
+    return 1.0 / m
+
+
+def comp_mox_ornltm2003_2(state, density, uo2, am241):
+    """MOX isotopic vector calculation from ORNL/TM-2003/2, Sect. 3.2.2.1"""
+
+    # Calculate pu vector as per formula. Note that the pu239_frac is by definition:
+    # pu239/(pu+am) and the Am comes in from user input.
+    pu239 = float(state["pu239_frac"])
+    if not (pu239 > 0.0) and (pu239 < 100.0):
+        raise ValueError(f"pu239 percentage={pu239} must be between 0 and 100.")
+    pu238 = 0.0045678 * pu239**2 - 0.66370 * pu239 + 24.941
+    pu240 = -0.0113290 * pu239**2 + 1.02710 * pu239 + 4.7929
+    pu241 = 0.0018630 * pu239**2 - 0.42787 * pu239 + 26.355
+    pu242 = 0.0048985 * pu239**2 - 0.93553 * pu239 + 43.911
+    x0 = {"pu238": pu238, "pu240": pu240, "pu241": pu241, "pu242": pu242}
+    x, norm_x = __renormalize_wtpt(x0, 100.0 - pu239 - am241)
+    x["pu239"] = pu239
+    x["am241"] = am241
+
+    # Scale by relative weight percent of Pu+Am and U.
+    pu_plus_am_pct = float(state["pu_frac"])
+    for k in x:
+        x[k] *= pu_plus_am_pct / 100.0
+
+    # Get U isotopes and scale to remaining weight percent.
+    y = copy.deepcopy(uo2["iso"])
+    u_pct = 100.0 - pu_plus_am_pct
+    for k in y:
+        y[k] *= u_pct / 100.0
+
+    # At this point we can combine the vectors into one heavy metal vector.
+    x.update(y)
+    hm_iso, hm_norm = __renormalize_wtpt(x, 100.0)
+    hm_mass = grams_per_mol(hm_iso)
+
+    # Split into elements.
+    pu_iso, pu_norm = __renormalize_wtpt(hm_iso, 100.0, "pu")
+    pu_mass = grams_per_mol(pu_iso)
+
+    am_iso, am_norm = __renormalize_wtpt(hm_iso, 100.0, "am")
+    am_mass = grams_per_mol(am_iso)
+
+    u_iso, u_norm = __renormalize_wtpt(hm_iso, 100.0, "u")
+    u_mass = grams_per_mol(u_iso)
+
+    # Calculate heavy metal fractions of oxide (approximate).
+    o2_mass = 2 * 15.9994
+    puo2_hm_frac = pu_mass / (pu_mass + o2_mass)
+    amo2_hm_frac = am_mass / (am_mass + o2_mass)
+    uo2_hm_frac = u_mass / (u_mass + o2_mass)
+
+    # Assume the density fraction is proportional to the heavy metal fraction
+    # which was returned in the "norm".
+    uo2_dens_frac = u_norm
+    puo2_dens_frac = pu_norm
+    amo2_dens_frac = am_norm
+
+    return {
+        "uo2": {"iso": u_iso, "dens_frac": uo2_dens_frac},
+        "puo2": {"iso": pu_iso, "dens_frac": puo2_dens_frac},
+        "amo2": {"iso": am_iso, "dens_frac": amo2_dens_frac},
+        "am241": am241,
+        "info": {
+            "o2_mass": o2_mass,
+            "hm_iso": hm_iso,
+            "u_mass": u_mass,
+            "am_mass": am_mass,
+            "pu_mass": pu_mass,
+            "hm_mass": hm_mass,
+            "hm_norm": hm_norm,
+            "puo2_hm_frac": puo2_hm_frac,
+            "amo2_hm_frac": amo2_hm_frac,
+            "uo2_hm_frac": uo2_hm_frac,
+        },
+        "density": density,
+    }
 
 
 def fuelcomp_mox_ornltm2003_2(
@@ -148,18 +258,18 @@ def all_permutations(**states):
     return permutations
 
 
-def expander(model, template, params, states, fuelcomp, time):
+def expander(model, template, params, states, comp, time):
     """First expand the state to all the individual state combinations, then calculate the
     times and the compositions which may require state. The params just pass through."""
 
     # Handle parameters.
-    params2 = common.fn_redirect(params)
+    params2 = common.fn_redirect(**params)
 
     # Generate a list of states from the state specification.
-    perms = common.fn_redirect(states)
+    states2 = common.fn_redirect(**states)
 
     # Create a formatting statement for the files.
-    n = int(1 + math.log10(len(perms)))
+    n = int(1 + math.log10(len(states2)))
     work_dir = model["work_dir"]
     fmt = f"{work_dir}/perm{{0:0{n}d}}/perm{{0:0{n}d}}.inp"
 
@@ -167,19 +277,27 @@ def expander(model, template, params, states, fuelcomp, time):
     with open(Path(model["dir"]) / template, "r") as f:
         template_text = f.read()
 
-    # Create all the state information.
+    # Make a copy of the base compositions and handle the single object with implicit
+    # name fuel.
+    if "_type" in comp:
+        comp0 = {"fuel": comp}
+        common.logger.info(
+            "Assuming single composition named 'fuel'. Use as comp.fuel.* in template file."
+        )
+    else:
+        comp0 = comp
+
+    # Create all the permutation information.
     perms2 = []
     i = 0
-    for perm in perms:
-        # For each state, generate a fuel composition.
-        fuelcomp2 = fuelcomp.copy()
-        fuelcomp2["state"] = perm
-        fuelcomp2 = common.fn_redirect(fuelcomp2)
+    for state2 in states2:
+        # For each state, generate the compositions.
+        comp2 = {}
+        for k, v in comp0.items():
+            comp2[k] = common.fn_redirect(**comp0[k], state=state2)
 
         # For each state, generate a time list.
-        time2 = time.copy()
-        time2["state"] = perm
-        time2 = common.fn_redirect(time2)
+        time2 = common.fn_redirect(**time, state=state2)
 
         # Generate this file name.
         file = Path(fmt.format(i))
@@ -188,10 +306,10 @@ def expander(model, template, params, states, fuelcomp, time):
         # Generate all data.
         data = {
             "file": str(file.relative_to(work_dir)),
-            "params": params,
-            "fuelcomp": fuelcomp2,
+            "params": params2,
+            "comp": comp2,
             "time": time2,
-            "state": perm,
+            "state": state2,
         }
 
         filled_text = common.expand_template(template_text, data)

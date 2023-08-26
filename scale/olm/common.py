@@ -53,38 +53,81 @@ def run_command(command_line, check_return_code=True):
             logger.info(line.rstrip())
         if not line:
             break
-    if check_return_code and p.returncode != 0:
+    has_error = p.returncode and p.returncode < 0
+    if check_return_code and has_error:
+        logger.info(
+            f"Nonzero return code {p.returncode} on last command:\n{command_line}\n"
+        )
         msg = p.stderr.read().strip()
         if not msg == "":
             raise ValueError(str(msg))
     return text
 
 
+def get_scale_version(scalerte):
+    """Get the SCALE version by running scalerte."""
+    version = run_command(f"{scalerte} -V").split(" ")[2]
+    return version
+
+
+def get_history_caseid_column(scale_version):
+    """Helper for the get_history_from_f71 to return the column for the caseid,
+    which could depend on the SCALE version."""
+    major, minor, patch = scale_version.split(".")
+    if major == "6" and minor == "3":
+        return 8, 11
+    else:
+        return 9, 12
+
+
 def get_history_from_f71(obiwan, f71, caseid0):
     """
-     Parse the history of the form as follows:
-    pos         time        power         flux      fluence       energy    initialhm libpos   case   step DCGNAB
-    (-)          (s)         (MW)    (n/cm2-s)      (n/cm2)        (MWd)      (MTIHM)    (-)    (-)    (-)    (-)
-      1  0.00000e+00  4.00000e+01  8.11143e+14  0.00000e+00  0.00000e+00  1.00000e+00      1      1      0 DC----
-      2  2.16000e+06  4.00000e+01  6.22529e+14  1.53582e+21  1.00000e+03  1.00000e+00      1      1     10 DC----
-      3  2.16000e+07  4.00000e+01  4.26681e+14  8.78948e+21  1.00000e+04  1.00000e+00      2      1     10 DC----
-      4  5.40000e+07  4.00000e+01  4.26566e+14  1.34274e+22  2.50000e+04  1.00000e+00      3      1     10 DC----
-      5  1.08000e+08  4.00000e+01  4.31263e+14  2.30677e+22  5.00000e+04  1.00000e+00      4      1     10 DC----
-      6  1.51200e+08  4.00000e+01  4.32303e+14  1.86058e+22  7.00000e+04  1.00000e+00      5      1     10 DC----
-      7  1.94400e+08  4.00000e+01  4.33742e+14  1.86669e+22  9.00000e+04  1.00000e+00      6      1     10 DC----
-      8  2.37600e+08  4.00000e+01  4.35733e+14  1.87415e+22  1.10000e+05  1.00000e+00      7      1     10 DC----
+      Parse the history of the form as follows for 6.3 series:
+     pos         time        power         flux      fluence       energy    initialhm libpos   case   step DCGNAB
+     (-)          (s)         (MW)    (n/cm2-s)      (n/cm2)        (MWd)      (MTIHM)    (-)    (-)    (-)    (-)
+       1  0.00000e+00  4.00000e+01  8.11143e+14  0.00000e+00  0.00000e+00  1.00000e+00      1      1      0 DC----
+       2  2.16000e+06  4.00000e+01  6.22529e+14  1.53582e+21  1.00000e+03  1.00000e+00      1      1     10 DC----
+       3  2.16000e+07  4.00000e+01  4.26681e+14  8.78948e+21  1.00000e+04  1.00000e+00      2      1     10 DC----
+       4  5.40000e+07  4.00000e+01  4.26566e+14  1.34274e+22  2.50000e+04  1.00000e+00      3      1     10 DC----
+       5  1.08000e+08  4.00000e+01  4.31263e+14  2.30677e+22  5.00000e+04  1.00000e+00      4      1     10 DC----
+       6  1.51200e+08  4.00000e+01  4.32303e+14  1.86058e+22  7.00000e+04  1.00000e+00      5      1     10 DC----
+       7  1.94400e+08  4.00000e+01  4.33742e+14  1.86669e+22  9.00000e+04  1.00000e+00      6      1     10 DC----
+       8  2.37600e+08  4.00000e+01  4.35733e+14  1.87415e+22  1.10000e+05  1.00000e+00      7      1     10 DC----
+
+      Parse the history of the form as follows for 7.0 series:
+    pos         time        power         flux      fluence       energy    initialhm       volume libpos   case   step DCGNAB
+    (-)          (s)         (MW)   (n/cm^2-s)     (n/cm^2)        (MWd)      (MTIHM)       (cm^3)    (-)    (-)    (-)    (-)
+      1  0.00000e+00  0.00000e+00  0.00000e+00  0.00000e+00  0.00000e+00  1.00000e+00  1.09091e+05      1     10      0 DC----
+      2  2.16000e+06  3.99302e+01  2.77611e+14  5.99639e+20  9.98255e+02  1.00000e+00  1.09091e+05      2     10      1 DC----
+      3  2.16000e+07  3.99294e+01  2.88762e+14  6.21316e+21  9.98238e+03  1.00000e+00  1.09091e+05      3     10      2 DC----
+      4  5.40000e+07  3.99271e+01  3.13691e+14  1.63767e+22  2.49551e+04  1.00000e+00  1.09091e+05      4     10      3 DC----
+      5  8.10000e+07  3.99215e+01  3.42857e+14  2.56339e+22  3.74305e+04  1.00000e+00  1.09091e+05      5     10      4 DC----
+      6  1.08000e+08  3.99155e+01  3.70174e+14  3.56286e+22  4.99041e+04  1.00000e+00  1.09091e+05      6     10      5 DC----
+      7  1.29600e+08  3.99087e+01  3.95311e+14  4.41673e+22  5.98813e+04  1.00000e+00  1.09091e+05      7     10      6 DC----
+      8  1.51200e+08  3.99026e+01  4.18116e+14  5.31986e+22  6.98569e+04  1.00000e+00  1.09091e+05      8     10      7 DC----
     """
     logger.info(f"extracting history from {f71}")
-    text = run_command(f"{obiwan} view -format=info {f71}")
+    text0 = run_command(f"{obiwan} view -format=info {f71}")
+
+    # Start the text with " pos " which should be the first thing on the header column
+    # line always and the last thing the "D - state definition present" label.
+    text = text0[text0.find(" pos ") : text0.find("D - state definition present")]
+
+    scale_version = get_scale_version(Path(obiwan).parent / "scalerte")
+
+    j_caseid, ncolumns = get_history_caseid_column(scale_version)
+
     burndata = list()
     initialhm0 = None
     last_days = 0.0
+    i = 0
     for line in text.split("\n")[2:]:
-        if len(line) < 60:
-            break
+        i += 1
         tokens = line.rstrip().split()
-        caseid = tokens[8]
-        if caseid0 == int(caseid):
+        if len(tokens) != ncolumns:
+            break
+        caseid = tokens[j_caseid]
+        if str(caseid0) == str(caseid):
             days = float(tokens[1]) / 86400.0
             if days == 0.0:
                 initialhm0 = float(tokens[6])
@@ -114,10 +157,10 @@ class ArpInfo:
         elif self.fuel_type == "MOX":
             for im in range(len(self.mod_dens_list)):
                 self.lib_map.append(list())
-                for ipf in range(len(self.pufrac_list)):
-                    self.lib_map.append(list())
-                    for iff in range(len(self.fissilefrac_list)):
-                        self.lib_map[im][iff].append("")
+                for ie in range(len(self.pu239_frac_list)):
+                    self.lib_map[im].append(list())
+                    for ip in range(len(self.pu_frac_list)):
+                        self.lib_map[im][ie].append("")
         else:
             raise ValueError(
                 "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
@@ -128,6 +171,8 @@ class ArpInfo:
 
         self.name = name
         self.block = block
+        logger.info(f"parsing {name} block of arpdata.txt")
+
         if self.name.startswith("mox_"):
             self.fuel_type = "MOX"
         elif self.name.startswith("act_"):
@@ -155,26 +200,33 @@ class ArpInfo:
 
         elif self.fuel_type == "MOX":
             np = int(tokens[0])
-            nf = int(tokens[1])
+            ne = int(tokens[1])
             nd = int(tokens[2])
             nm = int(tokens[3])
             nb = int(tokens[4])
             s = 5
             self.pu_frac_list = [float(x) for x in tokens[s : s + np]]
             s += np
-            self.fissile_pu_frac_list = [float(x) for x in tokens[s : s + nf]]
-            s += nf
-            s += 1  # Skip dummy entry
+            self.pu239_frac_list = [float(x) for x in tokens[s : s + ne]]
+            s += ne
+            dummy_list = [float(x) for x in tokens[s : s + nd]]
+            s += nd  # Skip dummy entry
             self.mod_dens_list = [float(x) for x in tokens[s : s + nm]]
             s += nm
-            nfile = np * nf * nm
-            #### READ FILES
+            self.clear_lib_map()
+            for im in range(len(self.mod_dens_list)):
+                for ie in range(len(self.pu239_frac_list)):
+                    for ip in range(len(self.pu_frac_list)):
+                        filename = tokens[s].replace("'", "").replace('"', "")
+                        self.lib_map[im][ie][ip] = filename
+                        s += 1
 
             self.burnup_list = [float(x) for x in tokens[s : s + nb]]
         else:
             raise ValueError(
                 "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
             )
+        logger.info("finished parsing arpdatat.txt")
 
     @staticmethod
     def parse_arpdata(file):
@@ -209,12 +261,12 @@ class ArpInfo:
             im = self.mod_dens_list.index(m)
             self.lib_map[ie][im] = file_list[i]
 
-    def init_mox(self, name, file_list, fissilefrac_list, pufrac_list, mod_dens_list):
+    def init_mox(self, name, file_list, pu239_frac_list, pu_frac_list, mod_dens_list):
         # Convert to interpolation space, assuming correct set up.
         self.name = name
         self.fuel_type = "MOX"
-        self.fissilefrac_list = sorted(set(fissilefrac_list))
-        self.pufrac_list = sorted(set(pufrac_list))
+        self.pu239_frac_list = sorted(set(pu239_frac_list))
+        self.pu_frac_list = sorted(set(pu_frac_list))
         self.mod_dens_list = sorted(set(mod_dens_list))
         self.burnup_list = []
         self.block = ""
@@ -222,13 +274,13 @@ class ArpInfo:
 
         # Map flat list of file_list.
         for i in range(len(file_list)):
-            ff = fissilefrac_list[i]
-            pf = pufrac_list[i]
+            e = pu239_frac_list[i]
+            p = pu_frac_list[i]
             m = mod_dens_list[i]
-            iff = self.fissilefrac_list.index(ff)
-            ipf = self.pufrac_list.index(pf)
+            ie = self.pu239_frac_list.index(e)
+            ip = self.pu_frac_list.index(p)
             im = self.mod_dens_list.index(m)
-            self.lib_map[im][iff][ipf] = file_list[i]
+            self.lib_map[im][ie][ip] = file_list[i]
 
     def set_canonical_filenames(self, ext):
         # Keep track of filename counts so we are sure we don't create a duplicate.
@@ -253,24 +305,24 @@ class ArpInfo:
 
         elif self.fuel_type == "MOX":
             self.clear_lib_map()
-            (npf, nff, nm) = self.get_ndims()
+            (np, ne, nm) = self.get_ndims()
             # Moderator density iterated last
             for im in range(nm):
                 m = self.mod_dens_list[im]
                 # Fissile Pu vector iterated second
-                for iff in range(nff):
-                    ff = self.fissilefrac_list[iff]
+                for ie in range(ne):
+                    e = self.pu239_frac_list[ie]
                     # Pu fraction of HM iterated first
-                    for pufrac in range(npf):
-                        pf = self.pufrac_list[ipf]
-                        filename = "{}_e{}v{}w{}{}".format(
+                    for ip in range(np):
+                        p = self.pu_frac_list[ip]
+                        filename = "{}_e{:04d}v{:04d}w{:04d}{}".format(
                             self.name,
-                            int(1000 * pf),
-                            int(1000 * ff),
+                            int(1000 * p),
+                            int(1000 * e),
                             int(1000 * m),
                             ext,
                         )
-                        self.lib_map[pf][ff][m] = filename
+                        self.lib_map[im][ie][ip] = filename
 
                         if filename in counts:
                             raise ValueError(
@@ -288,8 +340,8 @@ class ArpInfo:
             (im, ie) = self.get_dim_by_index(i)
             return self.lib_map[ie][im]
         elif self.fuel_type == "MOX":
-            (ipf, iff, im) = self.get_dim_by_index(i)
-            return self.lib_map[ipf][iff][im]
+            (ip, ie, im) = self.get_dim_by_index(i)
+            return self.lib_map[im][ie][ip]
         else:
             raise ValueError(
                 "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
@@ -301,10 +353,10 @@ class ArpInfo:
             nm = len(self.mod_dens_list)
             return (nm, ne)
         elif self.fuel_type == "MOX":
-            npu = len(self.pufrac_list)
-            nfis = len(self.fissfrac_list)
-            nmod = len(self.mod_dens_list)
-            return (npu, nfis, nmod)
+            np = len(self.pu_frac_list)
+            ne = len(self.pu239_frac_list)
+            nm = len(self.mod_dens_list)
+            return (np, ne, nm)
         else:
             raise ValueError(
                 "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
@@ -329,8 +381,8 @@ class ArpInfo:
         elif self.fuel_type == "MOX":
             return {
                 "mod_dens": {"grid": self.mod_dens_list, "desc": ""},
-                "pufrac": {"grid": self.pufrac_list, "desc": ""},
-                "fissilefrac": {"grid": self.fissilefrac_list, "desc": ""},
+                "pu_frac": {"grid": self.pu_frac_list, "desc": ""},
+                "pu239_frac": {"grid": self.pu239_frac_list, "desc": ""},
                 "burnup": {"grid": self.burnup_list, "desc": ""},
             }
         else:
@@ -362,10 +414,10 @@ class ArpInfo:
                 "mod_dens": self.mod_dens_list[im],
             }
         elif self.fuel_type == "MOX":
-            (ipf, iff, im) = self.get_dim_by_index(i)
+            (ip, ie, im) = self.get_dim_by_index(i)
             return {
-                "fissile_fraction": self.fissilefrac_list[iff],
-                "pu_fraction": self.pufrac_list[ipf],
+                "pu239_frac": self.pu239_frac_list[ie],
+                "pu_frac": self.pu_frac_list[ip],
                 "mod_dens": self.mod_dens_list[im],
             }
         else:
@@ -387,19 +439,20 @@ class ArpInfo:
                     entry += "'{}'\n".format(self.lib_map[ie][im])
             entry += "\n".join([str(x) for x in self.burnup_list])
         elif self.fuel_type == "MOX":
-            npf = len(self.pufrac_list)
-            nff = len(self.fissilefrac_list)
+            np = len(self.pu_frac_list)
+            ne = len(self.pu239_frac_list)
             nm = len(self.mod_dens_list)
             nb = len(self.burnup_list)
-            entry += "{} {} 1 {} {}\n".format(npf, nff, nm, nb)
-            entry += "\n".join([str(x) for x in self.pufrac_list]) + "\n"
-            entry += "\n".join([str(x) for x in self.fissilefrac_list]) + "\n"
+            entry += "{} {} 1 {} {}\n".format(np, ne, nm, nb)
+            entry += "\n".join([str(x) for x in self.pu_frac_list]) + "\n"
+            entry += "\n".join([str(x) for x in self.pu239_frac_list]) + "\n"
             entry += "1\n"  # dummy entry
             entry += "\n".join([str(x) for x in self.mod_dens_list]) + "\n"
             for im in range(nm):
-                for iff in range(nff):
-                    for ipf in range(npf):
-                        entry += "'{}'\n".format(self.lib_map[im][iff][ipf])
+                for ip in range(np):
+                    for ie in range(ne):
+                        entry += "'{}'\n".format(self.lib_map[im][ie][ip])
+            entry += "\n".join([str(x) for x in self.burnup_list])
         else:
             raise ValueError(
                 "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
@@ -430,12 +483,12 @@ class ArpInfo:
                             arpdir / lib, "/incident/neutron/lib1"
                         )
 
-        elif arpinfo.fuel_type == "MOX":
-            (npf, nff, nm) = self.get_ndims()
+        elif self.fuel_type == "MOX":
+            (np, ne, nm) = self.get_ndims()
             for im in range(nm):
-                for iff in range(nff):
-                    for ipf in range(npf):
-                        lib = Path(self.lib_map[im][iff][ipf])
+                for ie in range(ne):
+                    for ip in range(np):
+                        lib = Path(self.lib_map[im][ie][ip])
                         if not h5arc:
                             logger.info(f"initializing temporary archive {temp_arc}")
                             shutil.copyfile(arpdir / lib, temp_arc)
@@ -466,7 +519,7 @@ def expand_template(template_text, data):
         return j2t.render(data)
     except exceptions.UndefinedError as ve:
         raise ValueError(
-            "Undefined variable reported (most likely template has a variable that is undefined in the configuration file). Error from template expansion: "
+            "Undefined variable reported (most likely template has a variable that is undefined in the data file). Error from template expansion: "
             + str(ve)
         )
 
@@ -564,36 +617,24 @@ def update_model(model):
 
 
 def get_function_handle(mod_fn):
-    """Takes module:function like scale.olm.common:fuelcomp_uox_simple and returns
-    the function handle to the function."""
+    """Takes module:function like uvw:xyz and returns the function handle to the
+    function 'xyz' within the module 'uvw'."""
     mod, fn = mod_fn.split(":")
     this_module = sys.modules[mod]
     fn_handle = getattr(this_module, fn)
     return fn_handle
 
 
-def fn_redirect(x):
-    """Takes a dictionary and uses the '.type' key to find a function handle of that name,
-    then executes with all the keys except that type."""
-    fn_x = get_function_handle(x[".type"])
-    del x[".type"]
+def fn_redirect(_type, **x):
+    """Uses the _type input to find a function handle of that name, then executes with all the
+    data except the _type."""
+    fn_x = get_function_handle(_type)
     return fn_x(**x)
 
 
 def pass_through(**x):
     """Simple pass through used with the olm.json function specification."""
     return x
-
-
-def execute_repo(model, generate, run, build, check, report):
-    return {
-        "model": fn_redirect(model),
-        "generate": fn_redirect({"model": model, **generate}),
-        "run": fn_redirect({"model": model, **run}),
-        "build": fn_redirect({"model": model, **build}),
-        "check": fn_redirect({"model": model, **check}),
-        "report": fn_redirect({"model": model, **report}),
-    }
 
 
 def update_registry(registry, path):
@@ -610,7 +651,7 @@ def update_registry(registry, path):
         r.resolve()
         if not r.exists():
             logger.warning(
-                "{} exists but the paired arplibs/ directory at {} does not--disregarding libraries".format(
+                "{} exists but the paired arplibs/ directory at {} does not--ignoring libraries listed".format(
                     q1, r
                 )
             )

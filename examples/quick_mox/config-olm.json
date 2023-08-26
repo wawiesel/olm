@@ -1,44 +1,50 @@
 {
     "model": {
-        "name": "mox_w17x17",
+        "name": "mox_w17x17_pin2",
         "work_dir": "_build",
-        "scale_env_var": "SCALE"
+        "scale_env_var": "SCALE",
+        "description": "A really simple MOX pin.",
+        "sources": { "1": "personal communication" }
     },
     "generate": {
-        ".type": "scale.olm.generate:expander",
+        "_type": "scale.olm.generate:expander",
         "template": "model.inp",
-        "fuelcomp": {
-            ".type": "scale.olm.generate:fuelcomp_mox_ornltm2003_2",
-            "pins_gd" : 0,
-            "pins_zone" : [144, 56, 52, 12],
-            "pct_gd" : 0.0,
-            "nuclide_prefix" : "wtpt_",
-            "density_fuel" : 10.4
+        "comp": {
+            "inner":
+            {
+                "_type": "scale.olm.generate:comp_mox_ornltm2003_2",
+                "density": 10.4,
+                "uo2": {
+                    "iso": {
+                        "u234": 0.001,
+                        "u235": 0.24,
+                        "u236": 0.001,
+                        "u238": 99.75
+                    }
+                },
+                "am241": 1.0
+            }
          },
         "params": {
-            ".type": "scale.olm.common:pass_through",
+            "_type": "scale.olm.common:pass_through",
             "addnux": 2,
             "xslib": "v7-56",
             "pitch": 1.26,
             "fuelr": 0.4095,
-            "cladr": 0.4750,
-            "input_desc": {
-                "xslib": "cross section library used in the neutron transport calculation",
-                "addnux": "nuclide set to perform high-fidelity self-shielding with XSProc"
-            },
-            "density_Am" : 0.0
+            "cladr": 0.4750
         },
         "states": {
-            ".type": "scale.olm.generate:all_permutations",
+            "_type": "scale.olm.generate:all_permutations",
             "coolant_density": [
-                0.723
+                0.65,
+                0.75
             ],
-            "wtpt_pu": [
+            "pu_frac": [
                 4.0,
                 7.0,
                 10.0
             ],
-            "wtpt_pu239": [
+            "pu239_frac": [
                 50.0,
                 55.0,
                 60.0,
@@ -51,7 +57,7 @@
             "boron_ppm": [ 600 ]
         },
         "time": {
-            ".type": "scale.olm.generate:triton_constpower_burndata",
+            "_type": "scale.olm.generate:triton_constpower_burndata",
             "gwd_burnups": [
                 0.0,
                 1.0,
@@ -62,32 +68,37 @@
         }
     },
     "run": {
-        ".type": "scale.olm.run:makefile",
+        "_type": "scale.olm.run:makefile",
         "nprocs": 3,
         "dry_run": false
     },
     "build": {
-        ".type": "scale.olm.build:arpdata_txt",
+        "_type": "scale.olm.build:arpdata_txt",
         "fuel_type": "MOX",
         "suffix": ".system.f33",
         "dim_map":
         {
-            "pu_frac": "wpt_pu",
-            "pu239_frac": "wpt_pu239",
+            "pu_frac": "pu_frac",
+            "pu239_frac": "pu239_frac",
             "mod_dens": "coolant_density"
         },
         "keep_every": 1
     },
     "check": {
-        ".type": "scale.olm.check:sequencer",
+        "_type": "scale.olm.check:sequencer",
         "sequence":
         [{
-            "eps0": 0.0001,
-            ".type": "scale.olm.check:GridGradient"
+            "template": "check-origami.inp",
+            "_type": "scale.olm.check:LowOrderConsistency",
+            "target_q1": 0.75,
+            "target_q2": 0.96,
+            "eps0": 1e-12,
+            "epsa": 1e-6,
+            "epsr": 1e-3
         }]
     },
     "report": {
-        ".type": "scale.olm.report:stub1",
+        "_type": "scale.olm.report:stub1",
         "template": "report.rst"
     }
 }

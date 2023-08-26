@@ -1,0 +1,53 @@
+=shell
+olm link -p {{model.work_dir}} {{model.name}}
+end
+
+=origami
+
+libs=[ {{model.name}} ]
+
+options{ ft71=all mtu={{history.initialhm}} }
+
+fuelcomp{
+    stdcomp(c_uo2){ base=uo2 dens={{generate.comp.inner.density}}
+        iso[
+            92234={{generate.comp.inner.uo2.iso.u234}}
+            92235={{generate.comp.inner.uo2.iso.u235}}
+            92236={{generate.comp.inner.uo2.iso.u236}}
+            92238={{generate.comp.inner.uo2.iso.u238}}
+        ]
+    }
+    stdcomp(c_puo2){ base=puo2 dens={{generate.comp.inner.density}}
+        iso[
+            94238={{generate.comp.inner.puo2.iso.pu238}}
+            94239={{generate.comp.inner.puo2.iso.pu239}}
+            94240={{generate.comp.inner.puo2.iso.pu240}}
+            94241={{generate.comp.inner.puo2.iso.pu241}}
+            94242={{generate.comp.inner.puo2.iso.pu242}}
+        ]
+    }
+    stdcomp(c_am){ base=am  dens={{generate.comp.inner.density}}
+        iso[
+            95241={{generate.comp.inner.amo2.iso.am241}}
+        ]
+    }
+    stdcomp(c_o2){ base=o  dens={{generate.comp.inner.density}}
+    }
+    mix(1){ comps[
+        c_uo2 = {{100*generate.comp.inner.uo2.dens_frac}}
+        c_puo2 = {{100*generate.comp.inner.puo2.dens_frac}}
+        c_am = {{100*generate.comp.inner.amo2.dens_frac*generate.comp.inner.info.amo2_hm_frac}}
+        c_o2 = {{100*generate.comp.inner.amo2.dens_frac*(1.0-generate.comp.inner.info.amo2_hm_frac)}}
+    ] }
+}
+
+modz = [ {{build.interpvars.mod_dens}} ]
+pz = [ 1.0 ]
+
+hist[
+  {%- for pb in history.burndata %}
+  cycle{ power={{pb.power}} burn={{pb.burn}} nlib=1 }
+  {%- endfor %}
+]
+
+end

@@ -5,15 +5,15 @@ pincell model
 read composition
 '
 ' fuel
-  uo2   10 den=10.4 1 
+  uo2   10 den=10.4 1
            900
-           92234 {{fuelcomp.wt_u234}} 
-           92235 {{fuelcomp.wt_u235}} 
-           92236 {{fuelcomp.wt_u236}} 
-           92238 {{fuelcomp.wt_u238}} end 
+           92234 {{comp.fuel.wt_u234}}
+           92235 {{comp.fuel.wt_u235}}
+           92236 {{comp.fuel.wt_u236}}
+           92238 {{comp.fuel.wt_u238}} end
 '
 ' clad
-  zirc4 20 1 622 end 
+  zirc4 20 1 622 end
 '
 ' coolant
   h2o   30 den={{state.coolant_density}} 1.000000 575 end
@@ -22,9 +22,9 @@ read composition
 end composition
 
 read celldata
-  latticecell squarepitch 
-    pitch={{params.pitch}} 30 
-    fuelr={{params.fuelr}} 10 
+  latticecell squarepitch
+    pitch={{params.pitch}} 30
+    fuelr={{params.fuelr}} 10
     cladr={{params.cladr}} 20 end
 end celldata
 
@@ -34,7 +34,7 @@ end depletion
 
 read burndata
   {%- for pb in time.burndata %}
-  power={{pb.power}} burn={{pb.burn}} down=0 end 
+  power={{pb.power}} burn={{pb.burn}} down=0 end
   {%- endfor %}
 end burndata
 

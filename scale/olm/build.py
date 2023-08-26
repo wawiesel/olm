@@ -160,14 +160,50 @@ def __get_arpinfo_uox(name, perms, file_list, dim_map):
     return arpinfo
 
 
+def __get_arpinfo_mox(name, perms, file_list, dim_map):
+    """For MOX, get the relative ARP interpolation information."""
+
+    # Get the names of the keys in the state.
+    key_e = dim_map["pu239_frac"]
+    key_p = dim_map["pu_frac"]
+    key_m = dim_map["mod_dens"]
+
+    # Build these lists for each permutation to use in init_uox below.
+    pu239_frac_list = []
+    pu_frac_list = []
+    mod_dens_list = []
+    lib_list = []
+    for i in range(len(perms)):
+        # Get the interpolation variables from the state.
+        state = perms[i]["state"]
+        e = state[key_e]
+        pu239_frac_list.append(e)
+        p = state[key_p]
+        pu_frac_list.append(p)
+        m = state[key_m]
+        mod_dens_list.append(m)
+
+        # Get the library name.
+        lib_list.append(file_list[i]["lib"])
+
+    # Create and return arpinfo.
+    arpinfo = common.ArpInfo()
+    arpinfo.init_mox(name, lib_list, pu239_frac_list, pu_frac_list, mod_dens_list)
+    return arpinfo
+
+
 def __get_arpinfo(name, perms, file_list, fuel_type, dim_map):
     """Populate the ArpInfo data."""
 
     # Initialize info based on fuel type.
     if fuel_type == "UOX":
         arpinfo = __get_arpinfo_uox(name, perms, file_list, dim_map)
+    elif fuel_type == "MOX":
+        arpinfo = __get_arpinfo_mox(name, perms, file_list, dim_map)
     else:
-        raise ValueError("only fuel_type==UOX is supported right now")
+        raise ValueError(
+            "Unknown fuel_type={fuel_type} (only MOX/UOX is supported right now)"
+        )
 
     # Get the burnups.
     arpinfo.burnup_list = __get_burnup_list(file_list)

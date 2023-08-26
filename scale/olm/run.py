@@ -32,7 +32,7 @@ clean:
     with open(file, "w") as f:
         f.write(contents)
 
-    version = common.run_command(f"{scalerte} -V").split(" ")[2]
+    version = common.get_scale_version(scalerte)
     common.logger.info(f"Running SCALE version {version}")
 
     command_line = f"cd {work_dir} && make -j {nprocs}"
