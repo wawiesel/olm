@@ -1,0 +1,29 @@
+#!/bin/bash
+
+#PBS -V
+#PBS -m ea
+#PBS -M username@ornl.gov
+#PBS -N inputname-arplibs 
+#PBS -q batch
+#PBS -l nodes=numnode:ppn=numproc
+#PBS -l pmem=3gb
+#PBS -l walltime=timeest
+
+
+NUM_PROCS=`/bin/awk 'END {print NR}' $PBS_NODEFILE`
+
+cd $PBS_O_WORKDIR
+echo "Current working directory `pwd`"
+echo "Current Path is:"
+echo $PATH
+echo "Node file: $PBS_NODEFILE"
+echo "------------------------"
+cat $PBS_NODEFILE
+echo $NUM_PROCS
+echo "--------------------"
+echo "Starting run at: `date`"
+echo "---------------------"
+
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/scale/staging/6.2.beta5-rev16776/lib/
+module load toolchain/gcc/4.8.3
+pathtoscale inputname

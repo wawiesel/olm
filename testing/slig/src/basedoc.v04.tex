@@ -1,0 +1,76 @@
+
+\documentclass[12pt]{article}
+
+\usepackage{calc}
+\usepackage{scrextend}
+\usepackage{fullpage}
+
+\usepackage{tabls}
+\usepackage{epsf}
+\usepackage{appendix}
+\usepackage{subfigure}
+\usepackage{xfrac}
+
+\usepackage{hyperref}
+\hypersetup{colorlinks,
+		   citecolor=black,
+		   filecolor=black,
+		   linkcolor=black,
+		   urlcolor=black}
+
+% BRB - table packages
+\usepackage{booktabs} 
+\usepackage{caption}
+\captionsetup[table]{belowskip=12pt}
+% BRB - table packages
+
+%\makeatletter
+%\newcommand{\DESCRIPTION@original@item}{}
+%\let\DESCRIPTION@original@item\item
+%\newcommand*{\DESCRIPTION@envir}{DESCRIPTION}
+%\newlength{\DESCRIPTION@totalleftmargin}
+%\newlength{\DESCRIPTION@linewidth}
+%\newcommand{\DESCRIPTION@makelabel}[1]{\llap{#1}}%
+%\newcommand{\DESCRIPTION@item}[1][]{%
+%  \setlength{\@totalleftmargin}%
+%       {\DESCRIPTION@totalleftmargin+\widthof{\textbf{#1 }}-\leftmargin}%
+%  \setlength{\linewidth}
+%       {\DESCRIPTION@linewidth-\widthof{\textbf{#1 }}+\leftmargin}%
+%  \par\parshape \@ne \@totalleftmargin \linewidth
+%  \DESCRIPTION@original@item[\textbf{#1}]%
+%}
+%\newenvironment{DESCRIPTION}
+%  {\list{}{\setlength{\labelwidth}{0cm}%
+%           \let\makelabel\DESCRIPTION@makelabel}%
+%   \setlength{\DESCRIPTION@totalleftmargin}{\@totalleftmargin}%
+%   \setlength{\DESCRIPTION@linewidth}{\linewidth}%
+%   \renewcommand{\item}{\ifx\@currenvir\DESCRIPTION@envir
+%                           \expandafter\DESCRIPTION@item
+%                        \else
+%                           \expandafter\DESCRIPTION@original@item
+%                        \fi}}
+%  {\endlist}
+%\makeatother
+
+
+\title{ORIGEN Reactor Libraries}
+\author{Brian Ade and Benjamin Betzler, ORNL, <date>}
+\date{}							% Activate to display a given date or no date
+
+\graphicspath{{./}{<graphicsfolder>/}}
+
+\begin{document}
+\raggedright
+\maketitle
+
+Initial development of more detailed reactor library verification information.   Collection of various libraries and associated input files, and development of a repository for information associated with reactor libraries (using Git). 
+
+\clearpage
+\tableofcontents
+
+
+%<libinfo>
+
+
+\end{document}  
+

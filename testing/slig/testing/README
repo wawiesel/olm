@@ -1,0 +1,7 @@
+% For testing SLIG:
+
+Copy contents of ../slig/src/ into this directory.
+
+Run "./slig.py -g".
+
+See sligManual.pdf for more instructions.

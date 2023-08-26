@@ -1,0 +1,867 @@
+!abb8x8-1
+ 10 5 38
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.1 0.3 0.5 0.7 0.9
+ 'abb_e05w01.f33cmb' 'abb_e05w03.f33cmb' 'abb_e05w05.f33cmb'
+ 'abb_e05w07.f33cmb' 'abb_e05w09.f33cmb' 'abb_e15w01.f33cmb'
+ 'abb_e15w03.f33cmb' 'abb_e15w05.f33cmb' 'abb_e15w07.f33cmb'
+ 'abb_e15w09.f33cmb' 'abb_e20w01.f33cmb' 'abb_e20w03.f33cmb'
+ 'abb_e20w05.f33cmb' 'abb_e20w07.f33cmb' 'abb_e20w09.f33cmb'
+ 'abb_e30w01.f33cmb' 'abb_e30w03.f33cmb' 'abb_e30w05.f33cmb'
+ 'abb_e30w07.f33cmb' 'abb_e30w09.f33cmb' 'abb_e40w01.f33cmb'
+ 'abb_e40w03.f33cmb' 'abb_e40w05.f33cmb' 'abb_e40w07.f33cmb'
+ 'abb_e40w09.f33cmb' 'abb_e50w01.f33cmb' 'abb_e50w03.f33cmb'
+ 'abb_e50w05.f33cmb' 'abb_e50w07.f33cmb' 'abb_e50w09.f33cmb'
+ 'abb_e60w01.f33cmb' 'abb_e60w03.f33cmb' 'abb_e60w05.f33cmb'
+ 'abb_e60w07.f33cmb' 'abb_e60w09.f33cmb' 'abb_e70w01.f33cmb'
+ 'abb_e70w03.f33cmb' 'abb_e70w05.f33cmb' 'abb_e70w07.f33cmb'
+ 'abb_e70w09.f33cmb' 'abb_e80w01.f33cmb' 'abb_e80w03.f33cmb'
+ 'abb_e80w05.f33cmb' 'abb_e80w07.f33cmb' 'abb_e80w09.f33cmb'
+ 'abb_e85w01.f33cmb' 'abb_e85w03.f33cmb' 'abb_e85w05.f33cmb'
+ 'abb_e85w07.f33cmb' 'abb_e85w09.f33cmb'
+ abb8x8-1BurnupList
+!agr
+ 6 1 35
+ 0.5 1.5 2.0 3.0 4.0 5.0
+ 1.65
+ 'agr_e05.f33cmb' 'agr_e15.f33cmb' 'agr_e20.f33cmb'
+ 'agr_e30.f33cmb' 'agr_e40.f33cmb' 'agr_e50.f33cmb'
+ agrBurnupList
+!atrium10x10-9
+ 10 5 38
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.1 0.3 0.5 0.7 0.9
+ 'a10_e05w01.f33cmb' 'a10_e05w03.f33cmb' 'a10_e05w05.f33cmb'
+ 'a10_e05w07.f33cmb' 'a10_e05w09.f33cmb' 'a10_e15w01.f33cmb'
+ 'a10_e15w03.f33cmb' 'a10_e15w05.f33cmb' 'a10_e15w07.f33cmb'
+ 'a10_e15w09.f33cmb' 'a10_e20w01.f33cmb' 'a10_e20w03.f33cmb'
+ 'a10_e20w05.f33cmb' 'a10_e20w07.f33cmb' 'a10_e20w09.f33cmb'
+ 'a10_e30w01.f33cmb' 'a10_e30w03.f33cmb' 'a10_e30w05.f33cmb'
+ 'a10_e30w07.f33cmb' 'a10_e30w09.f33cmb' 'a10_e40w01.f33cmb'
+ 'a10_e40w03.f33cmb' 'a10_e40w05.f33cmb' 'a10_e40w07.f33cmb'
+ 'a10_e40w09.f33cmb' 'a10_e50w01.f33cmb' 'a10_e50w03.f33cmb'
+ 'a10_e50w05.f33cmb' 'a10_e50w07.f33cmb' 'a10_e50w09.f33cmb'
+ 'a10_e60w01.f33cmb' 'a10_e60w03.f33cmb' 'a10_e60w05.f33cmb'
+ 'a10_e60w07.f33cmb' 'a10_e60w09.f33cmb' 'a10_e70w01.f33cmb'
+ 'a10_e70w03.f33cmb' 'a10_e70w05.f33cmb' 'a10_e70w07.f33cmb'
+ 'a10_e70w09.f33cmb' 'a10_e80w01.f33cmb' 'a10_e80w03.f33cmb'
+ 'a10_e80w05.f33cmb' 'a10_e80w07.f33cmb' 'a10_e80w09.f33cmb'
+ 'a10_e85w01.f33cmb' 'a10_e85w03.f33cmb' 'a10_e85w05.f33cmb'
+ 'a10_e85w07.f33cmb' 'a10_e85w09.f33cmb'
+ atrium10x10-9BurnupList
+!atrium9x9-9
+ 10 5 38
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.1 0.3 0.5 0.7 0.9
+ 'a9_e05w01.f33cmb' 'a9_e05w03.f33cmb' 'a9_e05w05.f33cmb'
+ 'a9_e05w07.f33cmb' 'a9_e05w09.f33cmb' 'a9_e15w01.f33cmb'
+ 'a9_e15w03.f33cmb' 'a9_e15w05.f33cmb' 'a9_e15w07.f33cmb'
+ 'a9_e15w09.f33cmb' 'a9_e20w01.f33cmb' 'a9_e20w03.f33cmb'
+ 'a9_e20w05.f33cmb' 'a9_e20w07.f33cmb' 'a9_e20w09.f33cmb'
+ 'a9_e30w01.f33cmb' 'a9_e30w03.f33cmb' 'a9_e30w05.f33cmb'
+ 'a9_e30w07.f33cmb' 'a9_e30w09.f33cmb' 'a9_e40w01.f33cmb'
+ 'a9_e40w03.f33cmb' 'a9_e40w05.f33cmb' 'a9_e40w07.f33cmb'
+ 'a9_e40w09.f33cmb' 'a9_e50w01.f33cmb' 'a9_e50w03.f33cmb'
+ 'a9_e50w05.f33cmb' 'a9_e50w07.f33cmb' 'a9_e50w09.f33cmb'
+ 'a9_e60w01.f33cmb' 'a9_e60w03.f33cmb' 'a9_e60w05.f33cmb'
+ 'a9_e60w07.f33cmb' 'a9_e60w09.f33cmb' 'a9_e70w01.f33cmb'
+ 'a9_e70w03.f33cmb' 'a9_e70w05.f33cmb' 'a9_e70w07.f33cmb'
+ 'a9_e70w09.f33cmb' 'a9_e80w01.f33cmb' 'a9_e80w03.f33cmb'
+ 'a9_e80w05.f33cmb' 'a9_e80w07.f33cmb' 'a9_e80w09.f33cmb'
+ 'a9_e85w01.f33cmb' 'a9_e85w03.f33cmb' 'a9_e85w05.f33cmb'
+ 'a9_e85w07.f33cmb' 'a9_e85w09.f33cmb'
+ atrium9x9-9BurnupList
+!bw15x15
+ 10 1 31
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.7135
+ 'bw15_e05.f33cmb' 'bw15_e15.f33cmb' 'bw15_e20.f33cmb'
+ 'bw15_e30.f33cmb' 'bw15_e40.f33cmb' 'bw15_e50.f33cmb'
+ 'bw15_e60.f33cmb' 'bw15_e70.f33cmb' 'bw15_e80.f33cmb'
+ 'bw15_e85.f33cmb'
+ bw15x15BurnupList
+!candu19
+ 1 1 33
+ 0.7114
+ 0.8445
+ 'candu19_e07.f33cmb'
+ candu19BurnupList
+!candu28
+ 1 1 33
+ 0.711
+ 0.8445
+ 'candu28_e07.f33cmb'
+ candu28BurnupList
+!candu37
+ 1 1 33
+ 0.711
+ 0.8360
+ 'candu37_e07.f33cmb'
+ candu37BurnupList
+!ce14x14
+ 10 1 31
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.7332
+ 'ce14_e05.f33cmb' 'ce14_e15.f33cmb' 'ce14_e20.f33cmb'
+ 'ce14_e30.f33cmb' 'ce14_e40.f33cmb' 'ce14_e50.f33cmb'
+ 'ce14_e60.f33cmb' 'ce14_e70.f33cmb' 'ce14_e80.f33cmb'
+ 'ce14_e85.f33cmb'
+ ce14x14BurnupList
+!ce16x16
+ 10 1 31
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.71
+ 'ce16_e05.f33cmb' 'ce16_e15.f33cmb' 'ce16_e20.f33cmb'
+ 'ce16_e30.f33cmb' 'ce16_e40.f33cmb' 'ce16_e50.f33cmb'
+ 'ce16_e60.f33cmb' 'ce16_e70.f33cmb' 'ce16_e80.f33cmb'
+ 'ce16_e85.f33cmb'
+ ce16x16BurnupList
+!ge10x10-8
+ 10 5 38
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.1 0.3 0.5 0.7 0.9
+ 'g10_e05w01.f33cmb' 'g10_e05w03.f33cmb' 'g10_e05w05.f33cmb'
+ 'g10_e05w07.f33cmb' 'g10_e05w09.f33cmb' 'g10_e15w01.f33cmb'
+ 'g10_e15w03.f33cmb' 'g10_e15w05.f33cmb' 'g10_e15w07.f33cmb'
+ 'g10_e15w09.f33cmb' 'g10_e20w01.f33cmb' 'g10_e20w03.f33cmb'
+ 'g10_e20w05.f33cmb' 'g10_e20w07.f33cmb' 'g10_e20w09.f33cmb'
+ 'g10_e30w01.f33cmb' 'g10_e30w03.f33cmb' 'g10_e30w05.f33cmb'
+ 'g10_e30w07.f33cmb' 'g10_e30w09.f33cmb' 'g10_e40w01.f33cmb'
+ 'g10_e40w03.f33cmb' 'g10_e40w05.f33cmb' 'g10_e40w07.f33cmb'
+ 'g10_e40w09.f33cmb' 'g10_e50w01.f33cmb' 'g10_e50w03.f33cmb'
+ 'g10_e50w05.f33cmb' 'g10_e50w07.f33cmb' 'g10_e50w09.f33cmb'
+ 'g10_e60w01.f33cmb' 'g10_e60w03.f33cmb' 'g10_e60w05.f33cmb'
+ 'g10_e60w07.f33cmb' 'g10_e60w09.f33cmb' 'g10_e70w01.f33cmb'
+ 'g10_e70w03.f33cmb' 'g10_e70w05.f33cmb' 'g10_e70w07.f33cmb'
+ 'g10_e70w09.f33cmb' 'g10_e80w01.f33cmb' 'g10_e80w03.f33cmb'
+ 'g10_e80w05.f33cmb' 'g10_e80w07.f33cmb' 'g10_e80w09.f33cmb'
+ 'g10_e85w01.f33cmb' 'g10_e85w03.f33cmb' 'g10_e85w05.f33cmb'
+ 'g10_e85w07.f33cmb' 'g10_e85w09.f33cmb'
+ ge10x10-8BurnupList
+!ge7x7-0
+ 10 5 38
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.1 0.3 0.5 0.7 0.9
+ 'g7_e05w01.f33cmb' 'g7_e05w03.f33cmb' 'g7_e05w05.f33cmb'
+ 'g7_e05w07.f33cmb' 'g7_e05w09.f33cmb' 'g7_e15w01.f33cmb'
+ 'g7_e15w03.f33cmb' 'g7_e15w05.f33cmb' 'g7_e15w07.f33cmb'
+ 'g7_e15w09.f33cmb' 'g7_e20w01.f33cmb' 'g7_e20w03.f33cmb'
+ 'g7_e20w05.f33cmb' 'g7_e20w07.f33cmb' 'g7_e20w09.f33cmb'
+ 'g7_e30w01.f33cmb' 'g7_e30w03.f33cmb' 'g7_e30w05.f33cmb'
+ 'g7_e30w07.f33cmb' 'g7_e30w09.f33cmb' 'g7_e40w01.f33cmb'
+ 'g7_e40w03.f33cmb' 'g7_e40w05.f33cmb' 'g7_e40w07.f33cmb'
+ 'g7_e40w09.f33cmb' 'g7_e50w01.f33cmb' 'g7_e50w03.f33cmb'
+ 'g7_e50w05.f33cmb' 'g7_e50w07.f33cmb' 'g7_e50w09.f33cmb'
+ 'g7_e60w01.f33cmb' 'g7_e60w03.f33cmb' 'g7_e60w05.f33cmb'
+ 'g7_e60w07.f33cmb' 'g7_e60w09.f33cmb' 'g7_e70w01.f33cmb'
+ 'g7_e70w03.f33cmb' 'g7_e70w05.f33cmb' 'g7_e70w07.f33cmb'
+ 'g7_e70w09.f33cmb' 'g7_e80w01.f33cmb' 'g7_e80w03.f33cmb'
+ 'g7_e80w05.f33cmb' 'g7_e80w07.f33cmb' 'g7_e80w09.f33cmb'
+ 'g7_e85w01.f33cmb' 'g7_e85w03.f33cmb' 'g7_e85w05.f33cmb'
+ 'g7_e85w07.f33cmb' 'g7_e85w09.f33cmb'
+ ge7x7-0BurnupList
+!ge8x8-1
+ 10 5 38
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.1 0.3 0.5 0.7 0.9
+ 'g8m1_e05w01.f33cmb' 'g8m1_e05w03.f33cmb' 'g8m1_e05w05.f33cmb'
+ 'g8m1_e05w07.f33cmb' 'g8m1_e05w09.f33cmb' 'g8m1_e15w01.f33cmb'
+ 'g8m1_e15w03.f33cmb' 'g8m1_e15w05.f33cmb' 'g8m1_e15w07.f33cmb'
+ 'g8m1_e15w09.f33cmb' 'g8m1_e20w01.f33cmb' 'g8m1_e20w03.f33cmb'
+ 'g8m1_e20w05.f33cmb' 'g8m1_e20w07.f33cmb' 'g8m1_e20w09.f33cmb'
+ 'g8m1_e30w01.f33cmb' 'g8m1_e30w03.f33cmb' 'g8m1_e30w05.f33cmb'
+ 'g8m1_e30w07.f33cmb' 'g8m1_e30w09.f33cmb' 'g8m1_e40w01.f33cmb'
+ 'g8m1_e40w03.f33cmb' 'g8m1_e40w05.f33cmb' 'g8m1_e40w07.f33cmb'
+ 'g8m1_e40w09.f33cmb' 'g8m1_e50w01.f33cmb' 'g8m1_e50w03.f33cmb'
+ 'g8m1_e50w05.f33cmb' 'g8m1_e50w07.f33cmb' 'g8m1_e50w09.f33cmb'
+ 'g8m1_e60w01.f33cmb' 'g8m1_e60w03.f33cmb' 'g8m1_e60w05.f33cmb'
+ 'g8m1_e60w07.f33cmb' 'g8m1_e60w09.f33cmb' 'g8m1_e70w01.f33cmb'
+ 'g8m1_e70w03.f33cmb' 'g8m1_e70w05.f33cmb' 'g8m1_e70w07.f33cmb'
+ 'g8m1_e70w09.f33cmb' 'g8m1_e80w01.f33cmb' 'g8m1_e80w03.f33cmb'
+ 'g8m1_e80w05.f33cmb' 'g8m1_e80w07.f33cmb' 'g8m1_e80w09.f33cmb'
+ 'g8m1_e85w01.f33cmb' 'g8m1_e85w03.f33cmb' 'g8m1_e85w05.f33cmb'
+ 'g8m1_e85w07.f33cmb' 'g8m1_e85w09.f33cmb'
+ ge8x8-1BurnupList
+!ge8x8-2
+ 10 5 38
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.1 0.3 0.5 0.7 0.9
+ 'g8m2_e05w01.f33cmb' 'g8m2_e05w03.f33cmb' 'g8m2_e05w05.f33cmb'
+ 'g8m2_e05w07.f33cmb' 'g8m2_e05w09.f33cmb' 'g8m2_e15w01.f33cmb'
+ 'g8m2_e15w03.f33cmb' 'g8m2_e15w05.f33cmb' 'g8m2_e15w07.f33cmb'
+ 'g8m2_e15w09.f33cmb' 'g8m2_e20w01.f33cmb' 'g8m2_e20w03.f33cmb'
+ 'g8m2_e20w05.f33cmb' 'g8m2_e20w07.f33cmb' 'g8m2_e20w09.f33cmb'
+ 'g8m2_e30w01.f33cmb' 'g8m2_e30w03.f33cmb' 'g8m2_e30w05.f33cmb'
+ 'g8m2_e30w07.f33cmb' 'g8m2_e30w09.f33cmb' 'g8m2_e40w01.f33cmb'
+ 'g8m2_e40w03.f33cmb' 'g8m2_e40w05.f33cmb' 'g8m2_e40w07.f33cmb'
+ 'g8m2_e40w09.f33cmb' 'g8m2_e50w01.f33cmb' 'g8m2_e50w03.f33cmb'
+ 'g8m2_e50w05.f33cmb' 'g8m2_e50w07.f33cmb' 'g8m2_e50w09.f33cmb'
+ 'g8m2_e60w01.f33cmb' 'g8m2_e60w03.f33cmb' 'g8m2_e60w05.f33cmb'
+ 'g8m2_e60w07.f33cmb' 'g8m2_e60w09.f33cmb' 'g8m2_e70w01.f33cmb'
+ 'g8m2_e70w03.f33cmb' 'g8m2_e70w05.f33cmb' 'g8m2_e70w07.f33cmb'
+ 'g8m2_e70w09.f33cmb' 'g8m2_e80w01.f33cmb' 'g8m2_e80w03.f33cmb'
+ 'g8m2_e80w05.f33cmb' 'g8m2_e80w07.f33cmb' 'g8m2_e80w09.f33cmb'
+ 'g8m2_e85w01.f33cmb' 'g8m2_e85w03.f33cmb' 'g8m2_e85w05.f33cmb'
+ 'g8m2_e85w07.f33cmb' 'g8m2_e85w09.f33cmb'
+ ge8x8-2BurnupList
+!ge9x9-2
+ 10 5 38
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.1 0.3 0.5 0.7 0.9
+ 'g9_e05w01.f33cmb' 'g9_e05w03.f33cmb' 'g9_e05w05.f33cmb'
+ 'g9_e05w07.f33cmb' 'g9_e05w09.f33cmb' 'g9_e15w01.f33cmb'
+ 'g9_e15w03.f33cmb' 'g9_e15w05.f33cmb' 'g9_e15w07.f33cmb'
+ 'g9_e15w09.f33cmb' 'g9_e20w01.f33cmb' 'g9_e20w03.f33cmb'
+ 'g9_e20w05.f33cmb' 'g9_e20w07.f33cmb' 'g9_e20w09.f33cmb'
+ 'g9_e30w01.f33cmb' 'g9_e30w03.f33cmb' 'g9_e30w05.f33cmb'
+ 'g9_e30w07.f33cmb' 'g9_e30w09.f33cmb' 'g9_e40w01.f33cmb'
+ 'g9_e40w03.f33cmb' 'g9_e40w05.f33cmb' 'g9_e40w07.f33cmb'
+ 'g9_e40w09.f33cmb' 'g9_e50w01.f33cmb' 'g9_e50w03.f33cmb'
+ 'g9_e50w05.f33cmb' 'g9_e50w07.f33cmb' 'g9_e50w09.f33cmb'
+ 'g9_e60w01.f33cmb' 'g9_e60w03.f33cmb' 'g9_e60w05.f33cmb'
+ 'g9_e60w07.f33cmb' 'g9_e60w09.f33cmb' 'g9_e70w01.f33cmb'
+ 'g9_e70w03.f33cmb' 'g9_e70w05.f33cmb' 'g9_e70w07.f33cmb'
+ 'g9_e70w09.f33cmb' 'g9_e80w01.f33cmb' 'g9_e80w03.f33cmb'
+ 'g9_e80w05.f33cmb' 'g9_e80w07.f33cmb' 'g9_e80w09.f33cmb'
+ 'g9_e85w01.f33cmb' 'g9_e85w03.f33cmb' 'g9_e85w05.f33cmb'
+ 'g9_e85w07.f33cmb' 'g9_e85w09.f33cmb'
+ ge9x9-2BurnupList
+!irt2m3tube
+ 2 1 32
+ 80.0 90.0
+ 0.989
+ 'irt2m3t_thin_e80.f33cmb' 'irt2m3t_thin_e90.f33cmb'
+ irt2m3tubeBurnupList
+!irt2m3tube36enrich
+ 1 1 32
+ 36.0
+ 0.989
+ 'irt2m3t_thick_e36.f33cmb'
+ irt2m3tube36enrichBurnupList
+!irt2m4tube
+ 2 1 32
+ 80.0 90.0
+ 0.989
+ 'irt2m4t_thin_e80.f33cmb' 'irt2m4t_thin_e90.f33cmb'
+ irt2m4tubeBurnupList
+!irt2m4tube36enrich
+ 1 1 32
+ 36.0
+ 0.989
+ 'irt2m4t_thick_e36.f33cmb'
+ irt2m4tube36enrichBurnupList
+!irt3m6tube36enrich
+ 1 1 32
+ 36
+ 0.989
+ 'irt3m6t_thick_e36.f33cmb'
+ irt3m6tube36enrichBurnupList
+!irt3m6tube90enrich
+ 1 1 32
+ 90
+ 0.989
+ 'irt3m6t_thin_e90.f33cmb'
+ irt3m6tube90enrichBurnupList
+!irt3m8tube36enrich
+ 1 1 32
+ 36
+ 0.989
+ 'irt3m8t_thick_e36.f33cmb'
+ irt3m8tube36enrichBurnupList
+!irt3m8tube90enrich
+ 1 1 32
+ 90
+ 0.989
+ 'irt3m8t_thin_e90.f33cmb'
+ irt3m8tube90enrichBurnupList
+!irt4m6tube
+ 1 1 32
+ 19.75
+ 0.989
+ 'irt4m6t_e19.f33cmb'
+ irt4m6tubeBurnupList
+!irt4m8tube
+ 1 1 32
+ 19.75
+ 0.989
+ 'irt4m8t_e19.f33cmb'
+ irt4m8tubeBurnupList
+!magnox
+ 4 1 33
+ 0.7 0.8 0.9 1.0
+ 1.628
+ 'magnox_e07.f33cmb' 'magnox_e08.f33cmb' 'magnox_e09.f33cmb'
+ 'magnox_e10.f33cmb'
+ magnoxBurnupList
+!mox_abb8x8-1
+ 3 5 1 5 38
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.1 0.3 0.5 0.7 0.9
+ 'mox_abb_e40v50w01.f33cmb' 'mox_abb_e70v50w01.f33cmb' 'mox_abb_e10v50w01.f33cmb'
+ 'mox_abb_e40v55w01.f33cmb' 'mox_abb_e70v55w01.f33cmb' 'mox_abb_e10v55w01.f33cmb'
+ 'mox_abb_e40v60w01.f33cmb' 'mox_abb_e70v60w01.f33cmb' 'mox_abb_e10v60w01.f33cmb'
+ 'mox_abb_e40v65w01.f33cmb' 'mox_abb_e70v65w01.f33cmb' 'mox_abb_e10v65w01.f33cmb'
+ 'mox_abb_e40v70w01.f33cmb' 'mox_abb_e70v70w01.f33cmb' 'mox_abb_e10v70w01.f33cmb'
+ 'mox_abb_e40v50w03.f33cmb' 'mox_abb_e70v50w03.f33cmb' 'mox_abb_e10v50w03.f33cmb'
+ 'mox_abb_e40v55w03.f33cmb' 'mox_abb_e70v55w03.f33cmb' 'mox_abb_e10v55w03.f33cmb'
+ 'mox_abb_e40v60w03.f33cmb' 'mox_abb_e70v60w03.f33cmb' 'mox_abb_e10v60w03.f33cmb'
+ 'mox_abb_e40v65w03.f33cmb' 'mox_abb_e70v65w03.f33cmb' 'mox_abb_e10v65w03.f33cmb'
+ 'mox_abb_e40v70w03.f33cmb' 'mox_abb_e70v70w03.f33cmb' 'mox_abb_e10v70w03.f33cmb'
+ 'mox_abb_e40v50w05.f33cmb' 'mox_abb_e70v50w05.f33cmb' 'mox_abb_e10v50w05.f33cmb'
+ 'mox_abb_e40v55w05.f33cmb' 'mox_abb_e70v55w05.f33cmb' 'mox_abb_e10v55w05.f33cmb'
+ 'mox_abb_e40v60w05.f33cmb' 'mox_abb_e70v60w05.f33cmb' 'mox_abb_e10v60w05.f33cmb'
+ 'mox_abb_e40v65w05.f33cmb' 'mox_abb_e70v65w05.f33cmb' 'mox_abb_e10v65w05.f33cmb'
+ 'mox_abb_e40v70w05.f33cmb' 'mox_abb_e70v70w05.f33cmb' 'mox_abb_e10v70w05.f33cmb'
+ 'mox_abb_e40v50w07.f33cmb' 'mox_abb_e70v50w07.f33cmb' 'mox_abb_e10v50w07.f33cmb'
+ 'mox_abb_e40v55w07.f33cmb' 'mox_abb_e70v55w07.f33cmb' 'mox_abb_e10v55w07.f33cmb'
+ 'mox_abb_e40v60w07.f33cmb' 'mox_abb_e70v60w07.f33cmb' 'mox_abb_e10v60w07.f33cmb'
+ 'mox_abb_e40v65w07.f33cmb' 'mox_abb_e70v65w07.f33cmb' 'mox_abb_e10v65w07.f33cmb'
+ 'mox_abb_e40v70w07.f33cmb' 'mox_abb_e70v70w07.f33cmb' 'mox_abb_e10v70w07.f33cmb'
+ 'mox_abb_e40v50w09.f33cmb' 'mox_abb_e70v50w09.f33cmb' 'mox_abb_e10v50w09.f33cmb'
+ 'mox_abb_e40v55w09.f33cmb' 'mox_abb_e70v55w09.f33cmb' 'mox_abb_e10v55w09.f33cmb'
+ 'mox_abb_e40v60w09.f33cmb' 'mox_abb_e70v60w09.f33cmb' 'mox_abb_e10v60w09.f33cmb'
+ 'mox_abb_e40v65w09.f33cmb' 'mox_abb_e70v65w09.f33cmb' 'mox_abb_e10v65w09.f33cmb'
+ 'mox_abb_e40v70w09.f33cmb' 'mox_abb_e70v70w09.f33cmb' 'mox_abb_e10v70w09.f33cmb'
+ mox_abb8x8-1BurnupList
+!mox_atrium10x10-9
+ 3 5 1 5 38
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.1 0.3 0.5 0.7 0.9
+ 'mox_a10_e40v50w01.f33cmb' 'mox_a10_e70v50w01.f33cmb' 'mox_a10_e10v50w01.f33cmb'
+ 'mox_a10_e40v55w01.f33cmb' 'mox_a10_e70v55w01.f33cmb' 'mox_a10_e10v55w01.f33cmb'
+ 'mox_a10_e40v60w01.f33cmb' 'mox_a10_e70v60w01.f33cmb' 'mox_a10_e10v60w01.f33cmb'
+ 'mox_a10_e40v65w01.f33cmb' 'mox_a10_e70v65w01.f33cmb' 'mox_a10_e10v65w01.f33cmb'
+ 'mox_a10_e40v70w01.f33cmb' 'mox_a10_e70v70w01.f33cmb' 'mox_a10_e10v70w01.f33cmb'
+ 'mox_a10_e40v50w03.f33cmb' 'mox_a10_e70v50w03.f33cmb' 'mox_a10_e10v50w03.f33cmb'
+ 'mox_a10_e40v55w03.f33cmb' 'mox_a10_e70v55w03.f33cmb' 'mox_a10_e10v55w03.f33cmb'
+ 'mox_a10_e40v60w03.f33cmb' 'mox_a10_e70v60w03.f33cmb' 'mox_a10_e10v60w03.f33cmb'
+ 'mox_a10_e40v65w03.f33cmb' 'mox_a10_e70v65w03.f33cmb' 'mox_a10_e10v65w03.f33cmb'
+ 'mox_a10_e40v70w03.f33cmb' 'mox_a10_e70v70w03.f33cmb' 'mox_a10_e10v70w03.f33cmb'
+ 'mox_a10_e40v50w05.f33cmb' 'mox_a10_e70v50w05.f33cmb' 'mox_a10_e10v50w05.f33cmb'
+ 'mox_a10_e40v55w05.f33cmb' 'mox_a10_e70v55w05.f33cmb' 'mox_a10_e10v55w05.f33cmb'
+ 'mox_a10_e40v60w05.f33cmb' 'mox_a10_e70v60w05.f33cmb' 'mox_a10_e10v60w05.f33cmb'
+ 'mox_a10_e40v65w05.f33cmb' 'mox_a10_e70v65w05.f33cmb' 'mox_a10_e10v65w05.f33cmb'
+ 'mox_a10_e40v70w05.f33cmb' 'mox_a10_e70v70w05.f33cmb' 'mox_a10_e10v70w05.f33cmb'
+ 'mox_a10_e40v50w07.f33cmb' 'mox_a10_e70v50w07.f33cmb' 'mox_a10_e10v50w07.f33cmb'
+ 'mox_a10_e40v55w07.f33cmb' 'mox_a10_e70v55w07.f33cmb' 'mox_a10_e10v55w07.f33cmb'
+ 'mox_a10_e40v60w07.f33cmb' 'mox_a10_e70v60w07.f33cmb' 'mox_a10_e10v60w07.f33cmb'
+ 'mox_a10_e40v65w07.f33cmb' 'mox_a10_e70v65w07.f33cmb' 'mox_a10_e10v65w07.f33cmb'
+ 'mox_a10_e40v70w07.f33cmb' 'mox_a10_e70v70w07.f33cmb' 'mox_a10_e10v70w07.f33cmb'
+ 'mox_a10_e40v50w09.f33cmb' 'mox_a10_e70v50w09.f33cmb' 'mox_a10_e10v50w09.f33cmb'
+ 'mox_a10_e40v55w09.f33cmb' 'mox_a10_e70v55w09.f33cmb' 'mox_a10_e10v55w09.f33cmb'
+ 'mox_a10_e40v60w09.f33cmb' 'mox_a10_e70v60w09.f33cmb' 'mox_a10_e10v60w09.f33cmb'
+ 'mox_a10_e40v65w09.f33cmb' 'mox_a10_e70v65w09.f33cmb' 'mox_a10_e10v65w09.f33cmb'
+ 'mox_a10_e40v70w09.f33cmb' 'mox_a10_e70v70w09.f33cmb' 'mox_a10_e10v70w09.f33cmb'
+ mox_atrium10x10-9BurnupList
+!mox_atrium9x9-9
+ 3 5 1 5 38
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.1 0.3 0.5 0.7 0.9
+ 'mox_a9_e40v50w01.f33cmb' 'mox_a9_e70v50w01.f33cmb' 'mox_a9_e10v50w01.f33cmb'
+ 'mox_a9_e40v55w01.f33cmb' 'mox_a9_e70v55w01.f33cmb' 'mox_a9_e10v55w01.f33cmb'
+ 'mox_a9_e40v60w01.f33cmb' 'mox_a9_e70v60w01.f33cmb' 'mox_a9_e10v60w01.f33cmb'
+ 'mox_a9_e40v65w01.f33cmb' 'mox_a9_e70v65w01.f33cmb' 'mox_a9_e10v65w01.f33cmb'
+ 'mox_a9_e40v70w01.f33cmb' 'mox_a9_e70v70w01.f33cmb' 'mox_a9_e10v70w01.f33cmb'
+ 'mox_a9_e40v50w03.f33cmb' 'mox_a9_e70v50w03.f33cmb' 'mox_a9_e10v50w03.f33cmb'
+ 'mox_a9_e40v55w03.f33cmb' 'mox_a9_e70v55w03.f33cmb' 'mox_a9_e10v55w03.f33cmb'
+ 'mox_a9_e40v60w03.f33cmb' 'mox_a9_e70v60w03.f33cmb' 'mox_a9_e10v60w03.f33cmb'
+ 'mox_a9_e40v65w03.f33cmb' 'mox_a9_e70v65w03.f33cmb' 'mox_a9_e10v65w03.f33cmb'
+ 'mox_a9_e40v70w03.f33cmb' 'mox_a9_e70v70w03.f33cmb' 'mox_a9_e10v70w03.f33cmb'
+ 'mox_a9_e40v50w05.f33cmb' 'mox_a9_e70v50w05.f33cmb' 'mox_a9_e10v50w05.f33cmb'
+ 'mox_a9_e40v55w05.f33cmb' 'mox_a9_e70v55w05.f33cmb' 'mox_a9_e10v55w05.f33cmb'
+ 'mox_a9_e40v60w05.f33cmb' 'mox_a9_e70v60w05.f33cmb' 'mox_a9_e10v60w05.f33cmb'
+ 'mox_a9_e40v65w05.f33cmb' 'mox_a9_e70v65w05.f33cmb' 'mox_a9_e10v65w05.f33cmb'
+ 'mox_a9_e40v70w05.f33cmb' 'mox_a9_e70v70w05.f33cmb' 'mox_a9_e10v70w05.f33cmb'
+ 'mox_a9_e40v50w07.f33cmb' 'mox_a9_e70v50w07.f33cmb' 'mox_a9_e10v50w07.f33cmb'
+ 'mox_a9_e40v55w07.f33cmb' 'mox_a9_e70v55w07.f33cmb' 'mox_a9_e10v55w07.f33cmb'
+ 'mox_a9_e40v60w07.f33cmb' 'mox_a9_e70v60w07.f33cmb' 'mox_a9_e10v60w07.f33cmb'
+ 'mox_a9_e40v65w07.f33cmb' 'mox_a9_e70v65w07.f33cmb' 'mox_a9_e10v65w07.f33cmb'
+ 'mox_a9_e40v70w07.f33cmb' 'mox_a9_e70v70w07.f33cmb' 'mox_a9_e10v70w07.f33cmb'
+ 'mox_a9_e40v50w09.f33cmb' 'mox_a9_e70v50w09.f33cmb' 'mox_a9_e10v50w09.f33cmb'
+ 'mox_a9_e40v55w09.f33cmb' 'mox_a9_e70v55w09.f33cmb' 'mox_a9_e10v55w09.f33cmb'
+ 'mox_a9_e40v60w09.f33cmb' 'mox_a9_e70v60w09.f33cmb' 'mox_a9_e10v60w09.f33cmb'
+ 'mox_a9_e40v65w09.f33cmb' 'mox_a9_e70v65w09.f33cmb' 'mox_a9_e10v65w09.f33cmb'
+ 'mox_a9_e40v70w09.f33cmb' 'mox_a9_e70v70w09.f33cmb' 'mox_a9_e10v70w09.f33cmb'
+ mox_atrium9x9-9BurnupList
+!mox_bw15x15
+ 3 5 1 1 31
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.7135
+ 'mox_bw15_e40v50.f33cmb' 'mox_bw15_e70v50.f33cmb' 'mox_bw15_e10v50.f33cmb'
+ 'mox_bw15_e40v55.f33cmb' 'mox_bw15_e70v55.f33cmb' 'mox_bw15_e10v55.f33cmb'
+ 'mox_bw15_e40v60.f33cmb' 'mox_bw15_e70v60.f33cmb' 'mox_bw15_e10v60.f33cmb'
+ 'mox_bw15_e40v65.f33cmb' 'mox_bw15_e70v65.f33cmb' 'mox_bw15_e10v65.f33cmb'
+ 'mox_bw15_e40v70.f33cmb' 'mox_bw15_e70v70.f33cmb' 'mox_bw15_e10v70.f33cmb'
+ mox_bw15x15BurnupList
+!mox_ce14x14
+ 3 5 1 1 31
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.7332
+ 'mox_ce14_e40v50.f33cmb' 'mox_ce14_e70v50.f33cmb' 'mox_ce14_e10v50.f33cmb'
+ 'mox_ce14_e40v55.f33cmb' 'mox_ce14_e70v55.f33cmb' 'mox_ce14_e10v55.f33cmb'
+ 'mox_ce14_e40v60.f33cmb' 'mox_ce14_e70v60.f33cmb' 'mox_ce14_e10v60.f33cmb'
+ 'mox_ce14_e40v65.f33cmb' 'mox_ce14_e70v65.f33cmb' 'mox_ce14_e10v65.f33cmb'
+ 'mox_ce14_e40v70.f33cmb' 'mox_ce14_e70v70.f33cmb' 'mox_ce14_e10v70.f33cmb'
+ mox_ce14x14BurnupList
+!mox_ce16x16
+ 3 5 1 1 31
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.71
+ 'mox_ce16_e40v50.f33cmb' 'mox_ce16_e70v50.f33cmb' 'mox_ce16_e10v50.f33cmb'
+ 'mox_ce16_e40v55.f33cmb' 'mox_ce16_e70v55.f33cmb' 'mox_ce16_e10v55.f33cmb'
+ 'mox_ce16_e40v60.f33cmb' 'mox_ce16_e70v60.f33cmb' 'mox_ce16_e10v60.f33cmb'
+ 'mox_ce16_e40v65.f33cmb' 'mox_ce16_e70v65.f33cmb' 'mox_ce16_e10v65.f33cmb'
+ 'mox_ce16_e40v70.f33cmb' 'mox_ce16_e70v70.f33cmb' 'mox_ce16_e10v70.f33cmb'
+ mox_ce16x16BurnupList
+!mox_ge10x10-8
+ 3 5 1 5 38
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.1 0.3 0.5 0.7 0.9
+ 'mox_g10_e40v50w01.f33cmb' 'mox_g10_e70v50w01.f33cmb' 'mox_g10_e10v50w01.f33cmb'
+ 'mox_g10_e40v55w01.f33cmb' 'mox_g10_e70v55w01.f33cmb' 'mox_g10_e10v55w01.f33cmb'
+ 'mox_g10_e40v60w01.f33cmb' 'mox_g10_e70v60w01.f33cmb' 'mox_g10_e10v60w01.f33cmb'
+ 'mox_g10_e40v65w01.f33cmb' 'mox_g10_e70v65w01.f33cmb' 'mox_g10_e10v65w01.f33cmb'
+ 'mox_g10_e40v70w01.f33cmb' 'mox_g10_e70v70w01.f33cmb' 'mox_g10_e10v70w01.f33cmb'
+ 'mox_g10_e40v50w03.f33cmb' 'mox_g10_e70v50w03.f33cmb' 'mox_g10_e10v50w03.f33cmb'
+ 'mox_g10_e40v55w03.f33cmb' 'mox_g10_e70v55w03.f33cmb' 'mox_g10_e10v55w03.f33cmb'
+ 'mox_g10_e40v60w03.f33cmb' 'mox_g10_e70v60w03.f33cmb' 'mox_g10_e10v60w03.f33cmb'
+ 'mox_g10_e40v65w03.f33cmb' 'mox_g10_e70v65w03.f33cmb' 'mox_g10_e10v65w03.f33cmb'
+ 'mox_g10_e40v70w03.f33cmb' 'mox_g10_e70v70w03.f33cmb' 'mox_g10_e10v70w03.f33cmb'
+ 'mox_g10_e40v50w05.f33cmb' 'mox_g10_e70v50w05.f33cmb' 'mox_g10_e10v50w05.f33cmb'
+ 'mox_g10_e40v55w05.f33cmb' 'mox_g10_e70v55w05.f33cmb' 'mox_g10_e10v55w05.f33cmb'
+ 'mox_g10_e40v60w05.f33cmb' 'mox_g10_e70v60w05.f33cmb' 'mox_g10_e10v60w05.f33cmb'
+ 'mox_g10_e40v65w05.f33cmb' 'mox_g10_e70v65w05.f33cmb' 'mox_g10_e10v65w05.f33cmb'
+ 'mox_g10_e40v70w05.f33cmb' 'mox_g10_e70v70w05.f33cmb' 'mox_g10_e10v70w05.f33cmb'
+ 'mox_g10_e40v50w07.f33cmb' 'mox_g10_e70v50w07.f33cmb' 'mox_g10_e10v50w07.f33cmb'
+ 'mox_g10_e40v55w07.f33cmb' 'mox_g10_e70v55w07.f33cmb' 'mox_g10_e10v55w07.f33cmb'
+ 'mox_g10_e40v60w07.f33cmb' 'mox_g10_e70v60w07.f33cmb' 'mox_g10_e10v60w07.f33cmb'
+ 'mox_g10_e40v65w07.f33cmb' 'mox_g10_e70v65w07.f33cmb' 'mox_g10_e10v65w07.f33cmb'
+ 'mox_g10_e40v70w07.f33cmb' 'mox_g10_e70v70w07.f33cmb' 'mox_g10_e10v70w07.f33cmb'
+ 'mox_g10_e40v50w09.f33cmb' 'mox_g10_e70v50w09.f33cmb' 'mox_g10_e10v50w09.f33cmb'
+ 'mox_g10_e40v55w09.f33cmb' 'mox_g10_e70v55w09.f33cmb' 'mox_g10_e10v55w09.f33cmb'
+ 'mox_g10_e40v60w09.f33cmb' 'mox_g10_e70v60w09.f33cmb' 'mox_g10_e10v60w09.f33cmb'
+ 'mox_g10_e40v65w09.f33cmb' 'mox_g10_e70v65w09.f33cmb' 'mox_g10_e10v65w09.f33cmb'
+ 'mox_g10_e40v70w09.f33cmb' 'mox_g10_e70v70w09.f33cmb' 'mox_g10_e10v70w09.f33cmb'
+ mox_ge10x10-8BurnupList
+!mox_ge7x7-0
+ 3 5 1 5 38
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.1 0.3 0.5 0.7 0.9
+ 'mox_g7_e40v50w01.f33cmb' 'mox_g7_e70v50w01.f33cmb' 'mox_g7_e10v50w01.f33cmb'
+ 'mox_g7_e40v55w01.f33cmb' 'mox_g7_e70v55w01.f33cmb' 'mox_g7_e10v55w01.f33cmb'
+ 'mox_g7_e40v60w01.f33cmb' 'mox_g7_e70v60w01.f33cmb' 'mox_g7_e10v60w01.f33cmb'
+ 'mox_g7_e40v65w01.f33cmb' 'mox_g7_e70v65w01.f33cmb' 'mox_g7_e10v65w01.f33cmb'
+ 'mox_g7_e40v70w01.f33cmb' 'mox_g7_e70v70w01.f33cmb' 'mox_g7_e10v70w01.f33cmb'
+ 'mox_g7_e40v50w03.f33cmb' 'mox_g7_e70v50w03.f33cmb' 'mox_g7_e10v50w03.f33cmb'
+ 'mox_g7_e40v55w03.f33cmb' 'mox_g7_e70v55w03.f33cmb' 'mox_g7_e10v55w03.f33cmb'
+ 'mox_g7_e40v60w03.f33cmb' 'mox_g7_e70v60w03.f33cmb' 'mox_g7_e10v60w03.f33cmb'
+ 'mox_g7_e40v65w03.f33cmb' 'mox_g7_e70v65w03.f33cmb' 'mox_g7_e10v65w03.f33cmb'
+ 'mox_g7_e40v70w03.f33cmb' 'mox_g7_e70v70w03.f33cmb' 'mox_g7_e10v70w03.f33cmb'
+ 'mox_g7_e40v50w05.f33cmb' 'mox_g7_e70v50w05.f33cmb' 'mox_g7_e10v50w05.f33cmb'
+ 'mox_g7_e40v55w05.f33cmb' 'mox_g7_e70v55w05.f33cmb' 'mox_g7_e10v55w05.f33cmb'
+ 'mox_g7_e40v60w05.f33cmb' 'mox_g7_e70v60w05.f33cmb' 'mox_g7_e10v60w05.f33cmb'
+ 'mox_g7_e40v65w05.f33cmb' 'mox_g7_e70v65w05.f33cmb' 'mox_g7_e10v65w05.f33cmb'
+ 'mox_g7_e40v70w05.f33cmb' 'mox_g7_e70v70w05.f33cmb' 'mox_g7_e10v70w05.f33cmb'
+ 'mox_g7_e40v50w07.f33cmb' 'mox_g7_e70v50w07.f33cmb' 'mox_g7_e10v50w07.f33cmb'
+ 'mox_g7_e40v55w07.f33cmb' 'mox_g7_e70v55w07.f33cmb' 'mox_g7_e10v55w07.f33cmb'
+ 'mox_g7_e40v60w07.f33cmb' 'mox_g7_e70v60w07.f33cmb' 'mox_g7_e10v60w07.f33cmb'
+ 'mox_g7_e40v65w07.f33cmb' 'mox_g7_e70v65w07.f33cmb' 'mox_g7_e10v65w07.f33cmb'
+ 'mox_g7_e40v70w07.f33cmb' 'mox_g7_e70v70w07.f33cmb' 'mox_g7_e10v70w07.f33cmb'
+ 'mox_g7_e40v50w09.f33cmb' 'mox_g7_e70v50w09.f33cmb' 'mox_g7_e10v50w09.f33cmb'
+ 'mox_g7_e40v55w09.f33cmb' 'mox_g7_e70v55w09.f33cmb' 'mox_g7_e10v55w09.f33cmb'
+ 'mox_g7_e40v60w09.f33cmb' 'mox_g7_e70v60w09.f33cmb' 'mox_g7_e10v60w09.f33cmb'
+ 'mox_g7_e40v65w09.f33cmb' 'mox_g7_e70v65w09.f33cmb' 'mox_g7_e10v65w09.f33cmb'
+ 'mox_g7_e40v70w09.f33cmb' 'mox_g7_e70v70w09.f33cmb' 'mox_g7_e10v70w09.f33cmb'
+ mox_ge7x7-0BurnupList
+!mox_ge8x8-1
+ 3 5 1 5 38
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.1 0.3 0.5 0.7 0.9
+ 'mox_g8m1_e40v50w01.f33cmb' 'mox_g8m1_e70v50w01.f33cmb' 'mox_g8m1_e10v50w01.f33cmb'
+ 'mox_g8m1_e40v55w01.f33cmb' 'mox_g8m1_e70v55w01.f33cmb' 'mox_g8m1_e10v55w01.f33cmb'
+ 'mox_g8m1_e40v60w01.f33cmb' 'mox_g8m1_e70v60w01.f33cmb' 'mox_g8m1_e10v60w01.f33cmb'
+ 'mox_g8m1_e40v65w01.f33cmb' 'mox_g8m1_e70v65w01.f33cmb' 'mox_g8m1_e10v65w01.f33cmb'
+ 'mox_g8m1_e40v70w01.f33cmb' 'mox_g8m1_e70v70w01.f33cmb' 'mox_g8m1_e10v70w01.f33cmb'
+ 'mox_g8m1_e40v50w03.f33cmb' 'mox_g8m1_e70v50w03.f33cmb' 'mox_g8m1_e10v50w03.f33cmb'
+ 'mox_g8m1_e40v55w03.f33cmb' 'mox_g8m1_e70v55w03.f33cmb' 'mox_g8m1_e10v55w03.f33cmb'
+ 'mox_g8m1_e40v60w03.f33cmb' 'mox_g8m1_e70v60w03.f33cmb' 'mox_g8m1_e10v60w03.f33cmb'
+ 'mox_g8m1_e40v65w03.f33cmb' 'mox_g8m1_e70v65w03.f33cmb' 'mox_g8m1_e10v65w03.f33cmb'
+ 'mox_g8m1_e40v70w03.f33cmb' 'mox_g8m1_e70v70w03.f33cmb' 'mox_g8m1_e10v70w03.f33cmb'
+ 'mox_g8m1_e40v50w05.f33cmb' 'mox_g8m1_e70v50w05.f33cmb' 'mox_g8m1_e10v50w05.f33cmb'
+ 'mox_g8m1_e40v55w05.f33cmb' 'mox_g8m1_e70v55w05.f33cmb' 'mox_g8m1_e10v55w05.f33cmb'
+ 'mox_g8m1_e40v60w05.f33cmb' 'mox_g8m1_e70v60w05.f33cmb' 'mox_g8m1_e10v60w05.f33cmb'
+ 'mox_g8m1_e40v65w05.f33cmb' 'mox_g8m1_e70v65w05.f33cmb' 'mox_g8m1_e10v65w05.f33cmb'
+ 'mox_g8m1_e40v70w05.f33cmb' 'mox_g8m1_e70v70w05.f33cmb' 'mox_g8m1_e10v70w05.f33cmb'
+ 'mox_g8m1_e40v50w07.f33cmb' 'mox_g8m1_e70v50w07.f33cmb' 'mox_g8m1_e10v50w07.f33cmb'
+ 'mox_g8m1_e40v55w07.f33cmb' 'mox_g8m1_e70v55w07.f33cmb' 'mox_g8m1_e10v55w07.f33cmb'
+ 'mox_g8m1_e40v60w07.f33cmb' 'mox_g8m1_e70v60w07.f33cmb' 'mox_g8m1_e10v60w07.f33cmb'
+ 'mox_g8m1_e40v65w07.f33cmb' 'mox_g8m1_e70v65w07.f33cmb' 'mox_g8m1_e10v65w07.f33cmb'
+ 'mox_g8m1_e40v70w07.f33cmb' 'mox_g8m1_e70v70w07.f33cmb' 'mox_g8m1_e10v70w07.f33cmb'
+ 'mox_g8m1_e40v50w09.f33cmb' 'mox_g8m1_e70v50w09.f33cmb' 'mox_g8m1_e10v50w09.f33cmb'
+ 'mox_g8m1_e40v55w09.f33cmb' 'mox_g8m1_e70v55w09.f33cmb' 'mox_g8m1_e10v55w09.f33cmb'
+ 'mox_g8m1_e40v60w09.f33cmb' 'mox_g8m1_e70v60w09.f33cmb' 'mox_g8m1_e10v60w09.f33cmb'
+ 'mox_g8m1_e40v65w09.f33cmb' 'mox_g8m1_e70v65w09.f33cmb' 'mox_g8m1_e10v65w09.f33cmb'
+ 'mox_g8m1_e40v70w09.f33cmb' 'mox_g8m1_e70v70w09.f33cmb' 'mox_g8m1_e10v70w09.f33cmb'
+ mox_ge8x8-1BurnupList
+!mox_ge8x8-2
+ 3 5 1 5 38
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.1 0.3 0.5 0.7 0.9
+ 'mox_g8m2_e40v50w01.f33cmb' 'mox_g8m2_e70v50w01.f33cmb' 'mox_g8m2_e10v50w01.f33cmb'
+ 'mox_g8m2_e40v55w01.f33cmb' 'mox_g8m2_e70v55w01.f33cmb' 'mox_g8m2_e10v55w01.f33cmb'
+ 'mox_g8m2_e40v60w01.f33cmb' 'mox_g8m2_e70v60w01.f33cmb' 'mox_g8m2_e10v60w01.f33cmb'
+ 'mox_g8m2_e40v65w01.f33cmb' 'mox_g8m2_e70v65w01.f33cmb' 'mox_g8m2_e10v65w01.f33cmb'
+ 'mox_g8m2_e40v70w01.f33cmb' 'mox_g8m2_e70v70w01.f33cmb' 'mox_g8m2_e10v70w01.f33cmb'
+ 'mox_g8m2_e40v50w03.f33cmb' 'mox_g8m2_e70v50w03.f33cmb' 'mox_g8m2_e10v50w03.f33cmb'
+ 'mox_g8m2_e40v55w03.f33cmb' 'mox_g8m2_e70v55w03.f33cmb' 'mox_g8m2_e10v55w03.f33cmb'
+ 'mox_g8m2_e40v60w03.f33cmb' 'mox_g8m2_e70v60w03.f33cmb' 'mox_g8m2_e10v60w03.f33cmb'
+ 'mox_g8m2_e40v65w03.f33cmb' 'mox_g8m2_e70v65w03.f33cmb' 'mox_g8m2_e10v65w03.f33cmb'
+ 'mox_g8m2_e40v70w03.f33cmb' 'mox_g8m2_e70v70w03.f33cmb' 'mox_g8m2_e10v70w03.f33cmb'
+ 'mox_g8m2_e40v50w05.f33cmb' 'mox_g8m2_e70v50w05.f33cmb' 'mox_g8m2_e10v50w05.f33cmb'
+ 'mox_g8m2_e40v55w05.f33cmb' 'mox_g8m2_e70v55w05.f33cmb' 'mox_g8m2_e10v55w05.f33cmb'
+ 'mox_g8m2_e40v60w05.f33cmb' 'mox_g8m2_e70v60w05.f33cmb' 'mox_g8m2_e10v60w05.f33cmb'
+ 'mox_g8m2_e40v65w05.f33cmb' 'mox_g8m2_e70v65w05.f33cmb' 'mox_g8m2_e10v65w05.f33cmb'
+ 'mox_g8m2_e40v70w05.f33cmb' 'mox_g8m2_e70v70w05.f33cmb' 'mox_g8m2_e10v70w05.f33cmb'
+ 'mox_g8m2_e40v50w07.f33cmb' 'mox_g8m2_e70v50w07.f33cmb' 'mox_g8m2_e10v50w07.f33cmb'
+ 'mox_g8m2_e40v55w07.f33cmb' 'mox_g8m2_e70v55w07.f33cmb' 'mox_g8m2_e10v55w07.f33cmb'
+ 'mox_g8m2_e40v60w07.f33cmb' 'mox_g8m2_e70v60w07.f33cmb' 'mox_g8m2_e10v60w07.f33cmb'
+ 'mox_g8m2_e40v65w07.f33cmb' 'mox_g8m2_e70v65w07.f33cmb' 'mox_g8m2_e10v65w07.f33cmb'
+ 'mox_g8m2_e40v70w07.f33cmb' 'mox_g8m2_e70v70w07.f33cmb' 'mox_g8m2_e10v70w07.f33cmb'
+ 'mox_g8m2_e40v50w09.f33cmb' 'mox_g8m2_e70v50w09.f33cmb' 'mox_g8m2_e10v50w09.f33cmb'
+ 'mox_g8m2_e40v55w09.f33cmb' 'mox_g8m2_e70v55w09.f33cmb' 'mox_g8m2_e10v55w09.f33cmb'
+ 'mox_g8m2_e40v60w09.f33cmb' 'mox_g8m2_e70v60w09.f33cmb' 'mox_g8m2_e10v60w09.f33cmb'
+ 'mox_g8m2_e40v65w09.f33cmb' 'mox_g8m2_e70v65w09.f33cmb' 'mox_g8m2_e10v65w09.f33cmb'
+ 'mox_g8m2_e40v70w09.f33cmb' 'mox_g8m2_e70v70w09.f33cmb' 'mox_g8m2_e10v70w09.f33cmb'
+ mox_ge8x8-2BurnupList
+!mox_ge9x9-2
+ 3 5 1 5 38
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.1 0.3 0.5 0.7 0.9
+ 'mox_g9_e40v50w01.f33cmb' 'mox_g9_e70v50w01.f33cmb' 'mox_g9_e10v50w01.f33cmb'
+ 'mox_g9_e40v55w01.f33cmb' 'mox_g9_e70v55w01.f33cmb' 'mox_g9_e10v55w01.f33cmb'
+ 'mox_g9_e40v60w01.f33cmb' 'mox_g9_e70v60w01.f33cmb' 'mox_g9_e10v60w01.f33cmb'
+ 'mox_g9_e40v65w01.f33cmb' 'mox_g9_e70v65w01.f33cmb' 'mox_g9_e10v65w01.f33cmb'
+ 'mox_g9_e40v70w01.f33cmb' 'mox_g9_e70v70w01.f33cmb' 'mox_g9_e10v70w01.f33cmb'
+ 'mox_g9_e40v50w03.f33cmb' 'mox_g9_e70v50w03.f33cmb' 'mox_g9_e10v50w03.f33cmb'
+ 'mox_g9_e40v55w03.f33cmb' 'mox_g9_e70v55w03.f33cmb' 'mox_g9_e10v55w03.f33cmb'
+ 'mox_g9_e40v60w03.f33cmb' 'mox_g9_e70v60w03.f33cmb' 'mox_g9_e10v60w03.f33cmb'
+ 'mox_g9_e40v65w03.f33cmb' 'mox_g9_e70v65w03.f33cmb' 'mox_g9_e10v65w03.f33cmb'
+ 'mox_g9_e40v70w03.f33cmb' 'mox_g9_e70v70w03.f33cmb' 'mox_g9_e10v70w03.f33cmb'
+ 'mox_g9_e40v50w05.f33cmb' 'mox_g9_e70v50w05.f33cmb' 'mox_g9_e10v50w05.f33cmb'
+ 'mox_g9_e40v55w05.f33cmb' 'mox_g9_e70v55w05.f33cmb' 'mox_g9_e10v55w05.f33cmb'
+ 'mox_g9_e40v60w05.f33cmb' 'mox_g9_e70v60w05.f33cmb' 'mox_g9_e10v60w05.f33cmb'
+ 'mox_g9_e40v65w05.f33cmb' 'mox_g9_e70v65w05.f33cmb' 'mox_g9_e10v65w05.f33cmb'
+ 'mox_g9_e40v70w05.f33cmb' 'mox_g9_e70v70w05.f33cmb' 'mox_g9_e10v70w05.f33cmb'
+ 'mox_g9_e40v50w07.f33cmb' 'mox_g9_e70v50w07.f33cmb' 'mox_g9_e10v50w07.f33cmb'
+ 'mox_g9_e40v55w07.f33cmb' 'mox_g9_e70v55w07.f33cmb' 'mox_g9_e10v55w07.f33cmb'
+ 'mox_g9_e40v60w07.f33cmb' 'mox_g9_e70v60w07.f33cmb' 'mox_g9_e10v60w07.f33cmb'
+ 'mox_g9_e40v65w07.f33cmb' 'mox_g9_e70v65w07.f33cmb' 'mox_g9_e10v65w07.f33cmb'
+ 'mox_g9_e40v70w07.f33cmb' 'mox_g9_e70v70w07.f33cmb' 'mox_g9_e10v70w07.f33cmb'
+ 'mox_g9_e40v50w09.f33cmb' 'mox_g9_e70v50w09.f33cmb' 'mox_g9_e10v50w09.f33cmb'
+ 'mox_g9_e40v55w09.f33cmb' 'mox_g9_e70v55w09.f33cmb' 'mox_g9_e10v55w09.f33cmb'
+ 'mox_g9_e40v60w09.f33cmb' 'mox_g9_e70v60w09.f33cmb' 'mox_g9_e10v60w09.f33cmb'
+ 'mox_g9_e40v65w09.f33cmb' 'mox_g9_e70v65w09.f33cmb' 'mox_g9_e10v65w09.f33cmb'
+ 'mox_g9_e40v70w09.f33cmb' 'mox_g9_e70v70w09.f33cmb' 'mox_g9_e10v70w09.f33cmb'
+ mox_ge9x9-2BurnupList
+!mox_s14x14
+ 3 5 1 1 31
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.7283
+ 'mox_s14_e40v50.f33cmb' 'mox_s14_e70v50.f33cmb' 'mox_s14_e10v50.f33cmb'
+ 'mox_s14_e40v55.f33cmb' 'mox_s14_e70v55.f33cmb' 'mox_s14_e10v55.f33cmb'
+ 'mox_s14_e40v60.f33cmb' 'mox_s14_e70v60.f33cmb' 'mox_s14_e10v60.f33cmb'
+ 'mox_s14_e40v65.f33cmb' 'mox_s14_e70v65.f33cmb' 'mox_s14_e10v65.f33cmb'
+ 'mox_s14_e40v70.f33cmb' 'mox_s14_e70v70.f33cmb' 'mox_s14_e10v70.f33cmb'
+ mox_s14x14BurnupList
+!mox_s18x18
+ 3 5 1 1 31
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.71
+ 'mox_s18_e40v50.f33cmb' 'mox_s18_e70v50.f33cmb' 'mox_s18_e10v50.f33cmb'
+ 'mox_s18_e40v55.f33cmb' 'mox_s18_e70v55.f33cmb' 'mox_s18_e10v55.f33cmb'
+ 'mox_s18_e40v60.f33cmb' 'mox_s18_e70v60.f33cmb' 'mox_s18_e10v60.f33cmb'
+ 'mox_s18_e40v65.f33cmb' 'mox_s18_e70v65.f33cmb' 'mox_s18_e10v65.f33cmb'
+ 'mox_s18_e40v70.f33cmb' 'mox_s18_e70v70.f33cmb' 'mox_s18_e10v70.f33cmb'
+ mox_s18x18BurnupList
+!mox_svea100-0
+ 3 5 1 5 38
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.1 0.3 0.5 0.7 0.9
+ 'mox_svea100_e40v50w01.f33cmb' 'mox_svea100_e70v50w01.f33cmb' 'mox_svea100_e10v50w01.f33cmb'
+ 'mox_svea100_e40v55w01.f33cmb' 'mox_svea100_e70v55w01.f33cmb' 'mox_svea100_e10v55w01.f33cmb'
+ 'mox_svea100_e40v60w01.f33cmb' 'mox_svea100_e70v60w01.f33cmb' 'mox_svea100_e10v60w01.f33cmb'
+ 'mox_svea100_e40v65w01.f33cmb' 'mox_svea100_e70v65w01.f33cmb' 'mox_svea100_e10v65w01.f33cmb'
+ 'mox_svea100_e40v70w01.f33cmb' 'mox_svea100_e70v70w01.f33cmb' 'mox_svea100_e10v70w01.f33cmb'
+ 'mox_svea100_e40v50w03.f33cmb' 'mox_svea100_e70v50w03.f33cmb' 'mox_svea100_e10v50w03.f33cmb'
+ 'mox_svea100_e40v55w03.f33cmb' 'mox_svea100_e70v55w03.f33cmb' 'mox_svea100_e10v55w03.f33cmb'
+ 'mox_svea100_e40v60w03.f33cmb' 'mox_svea100_e70v60w03.f33cmb' 'mox_svea100_e10v60w03.f33cmb'
+ 'mox_svea100_e40v65w03.f33cmb' 'mox_svea100_e70v65w03.f33cmb' 'mox_svea100_e10v65w03.f33cmb'
+ 'mox_svea100_e40v70w03.f33cmb' 'mox_svea100_e70v70w03.f33cmb' 'mox_svea100_e10v70w03.f33cmb'
+ 'mox_svea100_e40v50w05.f33cmb' 'mox_svea100_e70v50w05.f33cmb' 'mox_svea100_e10v50w05.f33cmb'
+ 'mox_svea100_e40v55w05.f33cmb' 'mox_svea100_e70v55w05.f33cmb' 'mox_svea100_e10v55w05.f33cmb'
+ 'mox_svea100_e40v60w05.f33cmb' 'mox_svea100_e70v60w05.f33cmb' 'mox_svea100_e10v60w05.f33cmb'
+ 'mox_svea100_e40v65w05.f33cmb' 'mox_svea100_e70v65w05.f33cmb' 'mox_svea100_e10v65w05.f33cmb'
+ 'mox_svea100_e40v70w05.f33cmb' 'mox_svea100_e70v70w05.f33cmb' 'mox_svea100_e10v70w05.f33cmb'
+ 'mox_svea100_e40v50w07.f33cmb' 'mox_svea100_e70v50w07.f33cmb' 'mox_svea100_e10v50w07.f33cmb'
+ 'mox_svea100_e40v55w07.f33cmb' 'mox_svea100_e70v55w07.f33cmb' 'mox_svea100_e10v55w07.f33cmb'
+ 'mox_svea100_e40v60w07.f33cmb' 'mox_svea100_e70v60w07.f33cmb' 'mox_svea100_e10v60w07.f33cmb'
+ 'mox_svea100_e40v65w07.f33cmb' 'mox_svea100_e70v65w07.f33cmb' 'mox_svea100_e10v65w07.f33cmb'
+ 'mox_svea100_e40v70w07.f33cmb' 'mox_svea100_e70v70w07.f33cmb' 'mox_svea100_e10v70w07.f33cmb'
+ 'mox_svea100_e40v50w09.f33cmb' 'mox_svea100_e70v50w09.f33cmb' 'mox_svea100_e10v50w09.f33cmb'
+ 'mox_svea100_e40v55w09.f33cmb' 'mox_svea100_e70v55w09.f33cmb' 'mox_svea100_e10v55w09.f33cmb'
+ 'mox_svea100_e40v60w09.f33cmb' 'mox_svea100_e70v60w09.f33cmb' 'mox_svea100_e10v60w09.f33cmb'
+ 'mox_svea100_e40v65w09.f33cmb' 'mox_svea100_e70v65w09.f33cmb' 'mox_svea100_e10v65w09.f33cmb'
+ 'mox_svea100_e40v70w09.f33cmb' 'mox_svea100_e70v70w09.f33cmb' 'mox_svea100_e10v70w09.f33cmb'
+ mox_svea100-0BurnupList
+!mox_svea64-1
+ 3 5 1 5 38
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.1 0.3 0.5 0.7 0.9
+ 'mox_svea64_e40v50w01.f33cmb' 'mox_svea64_e70v50w01.f33cmb' 'mox_svea64_e10v50w01.f33cmb'
+ 'mox_svea64_e40v55w01.f33cmb' 'mox_svea64_e70v55w01.f33cmb' 'mox_svea64_e10v55w01.f33cmb'
+ 'mox_svea64_e40v60w01.f33cmb' 'mox_svea64_e70v60w01.f33cmb' 'mox_svea64_e10v60w01.f33cmb'
+ 'mox_svea64_e40v65w01.f33cmb' 'mox_svea64_e70v65w01.f33cmb' 'mox_svea64_e10v65w01.f33cmb'
+ 'mox_svea64_e40v70w01.f33cmb' 'mox_svea64_e70v70w01.f33cmb' 'mox_svea64_e10v70w01.f33cmb'
+ 'mox_svea64_e40v50w03.f33cmb' 'mox_svea64_e70v50w03.f33cmb' 'mox_svea64_e10v50w03.f33cmb'
+ 'mox_svea64_e40v55w03.f33cmb' 'mox_svea64_e70v55w03.f33cmb' 'mox_svea64_e10v55w03.f33cmb'
+ 'mox_svea64_e40v60w03.f33cmb' 'mox_svea64_e70v60w03.f33cmb' 'mox_svea64_e10v60w03.f33cmb'
+ 'mox_svea64_e40v65w03.f33cmb' 'mox_svea64_e70v65w03.f33cmb' 'mox_svea64_e10v65w03.f33cmb'
+ 'mox_svea64_e40v70w03.f33cmb' 'mox_svea64_e70v70w03.f33cmb' 'mox_svea64_e10v70w03.f33cmb'
+ 'mox_svea64_e40v50w05.f33cmb' 'mox_svea64_e70v50w05.f33cmb' 'mox_svea64_e10v50w05.f33cmb'
+ 'mox_svea64_e40v55w05.f33cmb' 'mox_svea64_e70v55w05.f33cmb' 'mox_svea64_e10v55w05.f33cmb'
+ 'mox_svea64_e40v60w05.f33cmb' 'mox_svea64_e70v60w05.f33cmb' 'mox_svea64_e10v60w05.f33cmb'
+ 'mox_svea64_e40v65w05.f33cmb' 'mox_svea64_e70v65w05.f33cmb' 'mox_svea64_e10v65w05.f33cmb'
+ 'mox_svea64_e40v70w05.f33cmb' 'mox_svea64_e70v70w05.f33cmb' 'mox_svea64_e10v70w05.f33cmb'
+ 'mox_svea64_e40v50w07.f33cmb' 'mox_svea64_e70v50w07.f33cmb' 'mox_svea64_e10v50w07.f33cmb'
+ 'mox_svea64_e40v55w07.f33cmb' 'mox_svea64_e70v55w07.f33cmb' 'mox_svea64_e10v55w07.f33cmb'
+ 'mox_svea64_e40v60w07.f33cmb' 'mox_svea64_e70v60w07.f33cmb' 'mox_svea64_e10v60w07.f33cmb'
+ 'mox_svea64_e40v65w07.f33cmb' 'mox_svea64_e70v65w07.f33cmb' 'mox_svea64_e10v65w07.f33cmb'
+ 'mox_svea64_e40v70w07.f33cmb' 'mox_svea64_e70v70w07.f33cmb' 'mox_svea64_e10v70w07.f33cmb'
+ 'mox_svea64_e40v50w09.f33cmb' 'mox_svea64_e70v50w09.f33cmb' 'mox_svea64_e10v50w09.f33cmb'
+ 'mox_svea64_e40v55w09.f33cmb' 'mox_svea64_e70v55w09.f33cmb' 'mox_svea64_e10v55w09.f33cmb'
+ 'mox_svea64_e40v60w09.f33cmb' 'mox_svea64_e70v60w09.f33cmb' 'mox_svea64_e10v60w09.f33cmb'
+ 'mox_svea64_e40v65w09.f33cmb' 'mox_svea64_e70v65w09.f33cmb' 'mox_svea64_e10v65w09.f33cmb'
+ 'mox_svea64_e40v70w09.f33cmb' 'mox_svea64_e70v70w09.f33cmb' 'mox_svea64_e10v70w09.f33cmb'
+ mox_svea64-1BurnupList
+!mox_w14x14
+ 3 5 1 1 31
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.7264
+ 'mox_w14_e40v50.f33cmb' 'mox_w14_e70v50.f33cmb' 'mox_w14_e10v50.f33cmb'
+ 'mox_w14_e40v55.f33cmb' 'mox_w14_e70v55.f33cmb' 'mox_w14_e10v55.f33cmb'
+ 'mox_w14_e40v60.f33cmb' 'mox_w14_e70v60.f33cmb' 'mox_w14_e10v60.f33cmb'
+ 'mox_w14_e40v65.f33cmb' 'mox_w14_e70v65.f33cmb' 'mox_w14_e10v65.f33cmb'
+ 'mox_w14_e40v70.f33cmb' 'mox_w14_e70v70.f33cmb' 'mox_w14_e10v70.f33cmb'
+ mox_w14x14BurnupList
+!mox_w15x15
+ 3 5 1 1 31
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.7135
+ 'mox_w15_e40v50.f33cmb' 'mox_w15_e70v50.f33cmb' 'mox_w15_e10v50.f33cmb'
+ 'mox_w15_e40v55.f33cmb' 'mox_w15_e70v55.f33cmb' 'mox_w15_e10v55.f33cmb'
+ 'mox_w15_e40v60.f33cmb' 'mox_w15_e70v60.f33cmb' 'mox_w15_e10v60.f33cmb'
+ 'mox_w15_e40v65.f33cmb' 'mox_w15_e70v65.f33cmb' 'mox_w15_e10v65.f33cmb'
+ 'mox_w15_e40v70.f33cmb' 'mox_w15_e70v70.f33cmb' 'mox_w15_e10v70.f33cmb'
+ mox_w15x15BurnupList
+!mox_w17x17
+ 3 5 1 1 31
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.723
+ 'mox_w17_e40v50.f33cmb' 'mox_w17_e70v50.f33cmb' 'mox_w17_e10v50.f33cmb'
+ 'mox_w17_e40v55.f33cmb' 'mox_w17_e70v55.f33cmb' 'mox_w17_e10v55.f33cmb'
+ 'mox_w17_e40v60.f33cmb' 'mox_w17_e70v60.f33cmb' 'mox_w17_e10v60.f33cmb'
+ 'mox_w17_e40v65.f33cmb' 'mox_w17_e70v65.f33cmb' 'mox_w17_e10v65.f33cmb'
+ 'mox_w17_e40v70.f33cmb' 'mox_w17_e70v70.f33cmb' 'mox_w17_e10v70.f33cmb'
+ mox_w17x17BurnupList
+!mox_w17x17_ofa
+ 3 5 1 1 31
+ 4.0 7.0 10.0
+ 50.0 55.0 60.0 65.0 70.0
+ 1.0
+ 0.71
+ 'mox_w17_ofa_e40v50.f33cmb' 'mox_w17_ofa_e70v50.f33cmb' 'mox_w17_ofa_e10v50.f33cmb'
+ 'mox_w17_ofa_e40v55.f33cmb' 'mox_w17_ofa_e70v55.f33cmb' 'mox_w17_ofa_e10v55.f33cmb'
+ 'mox_w17_ofa_e40v60.f33cmb' 'mox_w17_ofa_e70v60.f33cmb' 'mox_w17_ofa_e10v60.f33cmb'
+ 'mox_w17_ofa_e40v65.f33cmb' 'mox_w17_ofa_e70v65.f33cmb' 'mox_w17_ofa_e10v65.f33cmb'
+ 'mox_w17_ofa_e40v70.f33cmb' 'mox_w17_ofa_e70v70.f33cmb' 'mox_w17_ofa_e10v70.f33cmb'
+ mox_w17x17_ofaBurnupList
+!rbmk1000
+ 4 6 22
+ 1.8 2.2 2.6 3.0
+ 0.15 0.28 0.41 0.54 0.67 0.8
+ 'rbmk_e18w01.f33cmb' 'rbmk_e18w02.f33cmb' 'rbmk_e18w04.f33cmb'
+ 'rbmk_e18w05.f33cmb' 'rbmk_e18w06.f33cmb' 'rbmk_e18w08.f33cmb'
+ 'rbmk_e22w01.f33cmb' 'rbmk_e22w02.f33cmb' 'rbmk_e22w04.f33cmb'
+ 'rbmk_e22w05.f33cmb' 'rbmk_e22w06.f33cmb' 'rbmk_e22w08.f33cmb'
+ 'rbmk_e26w01.f33cmb' 'rbmk_e26w02.f33cmb' 'rbmk_e26w04.f33cmb'
+ 'rbmk_e26w05.f33cmb' 'rbmk_e26w06.f33cmb' 'rbmk_e26w08.f33cmb'
+ 'rbmk_e30w01.f33cmb' 'rbmk_e30w02.f33cmb' 'rbmk_e30w04.f33cmb'
+ 'rbmk_e30w05.f33cmb' 'rbmk_e30w06.f33cmb' 'rbmk_e30w08.f33cmb'
+ rbmk1000BurnupList
+!s14x14
+ 10 1 31
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.7283
+ 's14_e05.f33cmb' 's14_e15.f33cmb' 's14_e20.f33cmb'
+ 's14_e30.f33cmb' 's14_e40.f33cmb' 's14_e50.f33cmb'
+ 's14_e60.f33cmb' 's14_e70.f33cmb' 's14_e80.f33cmb'
+ 's14_e85.f33cmb'
+ s14x14BurnupList
+!s18x18
+ 10 1 31
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.71
+ 's18_e05.f33cmb' 's18_e15.f33cmb' 's18_e20.f33cmb'
+ 's18_e30.f33cmb' 's18_e40.f33cmb' 's18_e50.f33cmb'
+ 's18_e60.f33cmb' 's18_e70.f33cmb' 's18_e80.f33cmb'
+ 's18_e85.f33cmb'
+ s18x18BurnupList
+!svea100-0
+ 10 5 38
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.1 0.3 0.5 0.7 0.9
+ 'svea100_e05w01.f33cmb' 'svea100_e05w03.f33cmb' 'svea100_e05w05.f33cmb'
+ 'svea100_e05w07.f33cmb' 'svea100_e05w09.f33cmb' 'svea100_e15w01.f33cmb'
+ 'svea100_e15w03.f33cmb' 'svea100_e15w05.f33cmb' 'svea100_e15w07.f33cmb'
+ 'svea100_e15w09.f33cmb' 'svea100_e20w01.f33cmb' 'svea100_e20w03.f33cmb'
+ 'svea100_e20w05.f33cmb' 'svea100_e20w07.f33cmb' 'svea100_e20w09.f33cmb'
+ 'svea100_e30w01.f33cmb' 'svea100_e30w03.f33cmb' 'svea100_e30w05.f33cmb'
+ 'svea100_e30w07.f33cmb' 'svea100_e30w09.f33cmb' 'svea100_e40w01.f33cmb'
+ 'svea100_e40w03.f33cmb' 'svea100_e40w05.f33cmb' 'svea100_e40w07.f33cmb'
+ 'svea100_e40w09.f33cmb' 'svea100_e50w01.f33cmb' 'svea100_e50w03.f33cmb'
+ 'svea100_e50w05.f33cmb' 'svea100_e50w07.f33cmb' 'svea100_e50w09.f33cmb'
+ 'svea100_e60w01.f33cmb' 'svea100_e60w03.f33cmb' 'svea100_e60w05.f33cmb'
+ 'svea100_e60w07.f33cmb' 'svea100_e60w09.f33cmb' 'svea100_e70w01.f33cmb'
+ 'svea100_e70w03.f33cmb' 'svea100_e70w05.f33cmb' 'svea100_e70w07.f33cmb'
+ 'svea100_e70w09.f33cmb' 'svea100_e80w01.f33cmb' 'svea100_e80w03.f33cmb'
+ 'svea100_e80w05.f33cmb' 'svea100_e80w07.f33cmb' 'svea100_e80w09.f33cmb'
+ 'svea100_e85w01.f33cmb' 'svea100_e85w03.f33cmb' 'svea100_e85w05.f33cmb'
+ 'svea100_e85w07.f33cmb' 'svea100_e85w09.f33cmb'
+ svea100-0BurnupList
+!svea64-1
+ 10 5 38
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.1 0.3 0.5 0.7 0.9
+ 'svea64_e05w01.f33cmb' 'svea64_e05w03.f33cmb' 'svea64_e05w05.f33cmb'
+ 'svea64_e05w07.f33cmb' 'svea64_e05w09.f33cmb' 'svea64_e15w01.f33cmb'
+ 'svea64_e15w03.f33cmb' 'svea64_e15w05.f33cmb' 'svea64_e15w07.f33cmb'
+ 'svea64_e15w09.f33cmb' 'svea64_e20w01.f33cmb' 'svea64_e20w03.f33cmb'
+ 'svea64_e20w05.f33cmb' 'svea64_e20w07.f33cmb' 'svea64_e20w09.f33cmb'
+ 'svea64_e30w01.f33cmb' 'svea64_e30w03.f33cmb' 'svea64_e30w05.f33cmb'
+ 'svea64_e30w07.f33cmb' 'svea64_e30w09.f33cmb' 'svea64_e40w01.f33cmb'
+ 'svea64_e40w03.f33cmb' 'svea64_e40w05.f33cmb' 'svea64_e40w07.f33cmb'
+ 'svea64_e40w09.f33cmb' 'svea64_e50w01.f33cmb' 'svea64_e50w03.f33cmb'
+ 'svea64_e50w05.f33cmb' 'svea64_e50w07.f33cmb' 'svea64_e50w09.f33cmb'
+ 'svea64_e60w01.f33cmb' 'svea64_e60w03.f33cmb' 'svea64_e60w05.f33cmb'
+ 'svea64_e60w07.f33cmb' 'svea64_e60w09.f33cmb' 'svea64_e70w01.f33cmb'
+ 'svea64_e70w03.f33cmb' 'svea64_e70w05.f33cmb' 'svea64_e70w07.f33cmb'
+ 'svea64_e70w09.f33cmb' 'svea64_e80w01.f33cmb' 'svea64_e80w03.f33cmb'
+ 'svea64_e80w05.f33cmb' 'svea64_e80w07.f33cmb' 'svea64_e80w09.f33cmb'
+ 'svea64_e85w01.f33cmb' 'svea64_e85w03.f33cmb' 'svea64_e85w05.f33cmb'
+ 'svea64_e85w07.f33cmb' 'svea64_e85w09.f33cmb'
+ svea64-1BurnupList
+!vver1000
+ 10 1 31
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.7145
+ 'vver1000_e05.f33cmb' 'vver1000_e15.f33cmb' 'vver1000_e20.f33cmb'
+ 'vver1000_e30.f33cmb' 'vver1000_e40.f33cmb' 'vver1000_e50.f33cmb'
+ 'vver1000_e60.f33cmb' 'vver1000_e70.f33cmb' 'vver1000_e80.f33cmb'
+ 'vver1000_e85.f33cmb'
+ vver1000BurnupList
+!vver440
+ 3 1 31
+ 1.6 2.4 3.6
+ 0.73
+ 'vver440_e16.f33cmb' 'vver440_e24.f33cmb' 'vver440_e36.f33cmb'
+ vver440BurnupList
+!vver440_3.82
+ 1 1 31
+ 3.82
+ 0.73
+ 'vver440_rad_e38.f33cmb'
+ vver440_3.82BurnupList
+!vver440_4.25
+ 1 1 31
+ 4.25
+ 0.73
+ 'vver440_rad_e42.f33cmb'
+ vver440_4.25BurnupList
+!vver440_4.38
+ 1 1 31
+ 4.38
+ 0.73
+ 'vver440_rad_e43.f33cmb'
+ vver440_4.38BurnupList
+!w14x14
+ 10 1 31
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.7264
+ 'w14_e05.f33cmb' 'w14_e15.f33cmb' 'w14_e20.f33cmb'
+ 'w14_e30.f33cmb' 'w14_e40.f33cmb' 'w14_e50.f33cmb'
+ 'w14_e60.f33cmb' 'w14_e70.f33cmb' 'w14_e80.f33cmb'
+ 'w14_e85.f33cmb'
+ w14x14BurnupList
+!w15x15
+ 10 1 31
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.7135
+ 'w15_e05.f33cmb' 'w15_e15.f33cmb' 'w15_e20.f33cmb'
+ 'w15_e30.f33cmb' 'w15_e40.f33cmb' 'w15_e50.f33cmb'
+ 'w15_e60.f33cmb' 'w15_e70.f33cmb' 'w15_e80.f33cmb'
+ 'w15_e85.f33cmb'
+ w15x15BurnupList
+!w17x17
+ 10 1 31
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.723
+ 'w17_e05.f33cmb' 'w17_e15.f33cmb' 'w17_e20.f33cmb'
+ 'w17_e30.f33cmb' 'w17_e40.f33cmb' 'w17_e50.f33cmb'
+ 'w17_e60.f33cmb' 'w17_e70.f33cmb' 'w17_e80.f33cmb'
+ 'w17_e85.f33cmb'
+ w17x17BurnupList
+!w17x17_ofa
+ 10 1 31
+ 0.5 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 8.5
+ 0.71
+ 'w17_ofa_e05.f33cmb' 'w17_ofa_e15.f33cmb' 'w17_ofa_e20.f33cmb'
+ 'w17_ofa_e30.f33cmb' 'w17_ofa_e40.f33cmb' 'w17_ofa_e50.f33cmb'
+ 'w17_ofa_e60.f33cmb' 'w17_ofa_e70.f33cmb' 'w17_ofa_e80.f33cmb'
+ 'w17_ofa_e85.f33cmb'
+ w17x17_ofaBurnupList
