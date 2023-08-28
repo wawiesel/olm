@@ -328,6 +328,9 @@ class LowOrderConsistency:
                         "(lo-hi)/max(|hi|)": list(err),
                     }
                 )
+                #### Add to spaghetti plot for each permutation, err vs. time
+                #### <INSERT HERE>
+                #### annotate each line the permutation index k but draw them very light
 
         # Get maximum and min error across all permutations.
         common.logger.info("Calculating max/min across permutations...")
@@ -338,9 +341,12 @@ class LowOrderConsistency:
                 for j in range(len(self.time_list)):
                     d["max_diff"][j] = np.amax([err[j], d["max_diff"][j]])
                     d["min_diff"][j] = np.amin([err[j], d["min_diff"][j]])
+                #### Add to the plot here the max_diff and min_diff as darker lines.
             d["max_diff0"] = np.amax(
                 [np.absolute(d["max_diff"]), np.absolute(d["min_diff"])]
             )
+
+        #### Write the plots as a PNG to disk on for each nuclide.
 
         self.ahist = np.ndarray.flatten(self.ahist)
         self.rhist = np.ndarray.flatten(self.rhist)
