@@ -54,7 +54,11 @@ def run_command(command_line, check_return_code=True):
         if not line:
             break
     has_error = p.returncode and p.returncode < 0
-    if check_return_code and has_error:
+    if p.returncode == None:
+        raise ValueError(
+            f"command line='{command_line}' failed to run in the shell. Check this is a valid path or recognized executable."
+        )
+    elif check_return_code and p.returncode < 0:
         logger.info(
             f"Nonzero return code {p.returncode} on last command:\n{command_line}\n"
         )
