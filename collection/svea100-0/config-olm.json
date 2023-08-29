@@ -1,0 +1,139 @@
+{
+	"model": {
+		"name": "svea100-0",
+		"work_dir": "_build",
+		"scale_env_var": "SCALE"
+	},
+	"generate": {
+		".type": "scale.olm.generate:expander",
+	    "template": "model.inp",
+		"fuelcomp": {
+		    ".type": "scale.olm.generate:fuelcomp_uox_simple",
+                    "nuclide_prefix" : "wtpt_",
+                    "fuel_density" : [ 10.5 ]
+                 },
+		"params": {
+			".type": "scale.olm.common:pass_through",
+			"addnux": 4,
+			"xslib": "xn252"
+		},
+                "dynamic" : {
+                    "dancoff1" : {
+                        ".type": "scale.olm.generate:nearest_match",
+                         "state_vector" : ["coolant_density"],
+                         "data_list" : 
+                         [ 
+                             [ 0.1, 0.4734 ],
+                             [ 0.3, 0.3669 ],
+                             [ 0.5, 0.2947 ],
+                             [ 0.7, 0.2424 ],
+                             [ 0.9, 0.2027 ]
+                         ]
+                    },
+                    "dancoff2" : {
+                        ".type": "scale.olm.generate:nearest_match",
+                         "state_vector" : ["coolant_density"],
+                         "data_list" :
+                         [
+                             [ 0.1, 0.3290 ],
+                             [ 0.3, 0.2575 ],
+                             [ 0.5, 0.2085 ],
+                             [ 0.7, 0.1726 ],
+                             [ 0.9, 0.1452 ]
+                         ]
+                    }
+                },
+		"states": {
+			".type": "scale.olm.generate:all_permutations",
+			"coolant_density": [
+				0.1,
+                                0.3,
+                                0.5,
+                                0.7,
+                                0.9
+			],
+                        "enrichment" : [
+                                0.5,
+                                1.5, 
+                                2.0,
+                                3.0,
+                                4.0,
+                                5.0,
+                                6.0,
+                                7.0,
+                                8.0,
+                                8.5
+                        ],
+                        "wtpt_gd" : [
+                                4.4
+                        ],
+ 			"specific_power": [
+				25.0
+			]
+		},
+		"time": {
+			".type": "scale.olm.generate:triton_constpower_burndata",
+			"gwd_burnups": [
+				0.0,
+                                0.025,
+				0.525,
+                                1.50,
+                                2.50, 
+                                3.75,
+                                5.25,
+                                6.75,
+                                8.25,
+                                9.75,
+                                11.25,
+                                12.75,
+                                14.25,
+                                15.75,
+                                17.25,
+                                18.75,
+                                20.25,
+                                22.50,
+                                25.50,
+                                28.50,
+                                31.50,
+                                34.50,
+                                37.50,
+                                40.50,
+                                43.50,
+                                46.50,
+                                49.50,
+                                52.50,
+                                55.50,
+                                58.50,
+                                61.50,
+                                64.50,
+                                67.50,
+                                70.50,
+                                73.50,
+                                76.50,
+                                79.50,
+                                82.50
+			]
+		}
+	},
+	"run": {
+		".type": "scale.olm.run:makefile",
+		"nprocs": 3
+	},
+	"build": {
+		".type": "scale.olm.build:arpdata_txt",
+		"fuel_type": "UOX",
+		"suffix": ".system.f33"
+	},
+	"check": {
+	    ".type": "scale.olm.check:sequencer",
+	    "sequence": 
+	    [{
+			"eps0": 0.0001,
+			".type": "scale.olm.check:GridGradient"
+		}]
+	},
+	"report": {
+		".type": "scale.olm.report:generate_rst",
+		"template": "report.rst"
+	}
+}

@@ -96,16 +96,17 @@ read celldata
                           gapd= 0.894  4
                           cladd=1.026  2
                           pitch=1.295  3 end
+  centrmdata alump=0 pmc_dilute=1e30 pmc_omit=0 end centrmdata
   latticecell squarepitch fueld=0.876 11
                           gapd= 0.894 14
                           cladd=1.026 12
                           pitch=1.295 13 end
-  centrmdata dan2pitch={{dynamic.dancoff1}} end centrmdata
+  centrmdata alump=0 pmc_dilute=1e30 dan2pitch={{dynamic.dancoff1}} end centrmdata
   latticecell squarepitch fueld=0.876 21
                           gapd= 0.894 24
                           cladd=1.026 22
                           pitch=1.295 23 end
-  centrmdata dan2pitch={{dynamic.dancoff2}} end centrmdata
+  centrmdata alump=0 pmc_dilute=1e30 dan2pitch={{dynamic.dancoff2}} end centrmdata
   multiregion cylindrical left_bdy=reflected right_bdy=white end
       311   0.16555
       312   0.23412
@@ -118,6 +119,7 @@ read celldata
        32   0.51300
        33   0.73063
     end zone
+  centrmdata alump=0 pmc_dilute=1e30 pmc_omit=0 end centrmdata
 end celldata
 '
 ' ----------------------------------------------------------------
@@ -144,6 +146,8 @@ read parm
   fillmix=5
   run=yes  
   xycmfd=4
+  sn=8
+  cell_tol=1e-8
 end parm
 '
 read materials
@@ -218,17 +222,17 @@ com='assembly'
   cuboid   20 14.52625 0.71375 14.52625 0.71375
   cuboid   30 15.24 0 15.24  0
 ' for rounded corners, bottom right to top left
-  cylinder 11 0.9652 chord -x=1.88215 chord -y=1.88215 origin x=1.88215 y=1.88215 sides=16
-  cylinder 12 1.1684 chord -x=1.88215 chord -y=1.88215 origin x=1.88215 y=1.88215 sides=16
+  cylinder 11 0.9652 chord -x=1.88215 chord -y=1.88215 origin x=1.88215 y=1.88215 sides=18
+  cylinder 12 1.1684 chord -x=1.88215 chord -y=1.88215 origin x=1.88215 y=1.88215 sides=18
   cuboid   13 1.88215  0.71375  1.88215  0.71375
-  cylinder 21 0.9652 chord +x=13.35785 chord -y=1.88215 origin x=13.35785 y=1.88215 sides=16
-  cylinder 22 1.1684 chord +x=13.35785 chord -y=1.88215 origin x=13.35785 y=1.88215 sides=16
+  cylinder 21 0.9652 chord +x=13.35785 chord -y=1.88215 origin x=13.35785 y=1.88215 sides=18
+  cylinder 22 1.1684 chord +x=13.35785 chord -y=1.88215 origin x=13.35785 y=1.88215 sides=18
   cuboid   23 14.52625 13.35785  1.88215  0.71375
-  cylinder 31 0.9652 chord -x=1.88215 chord +y=13.35785 origin x=1.88215 y=13.35785 sides=16
-  cylinder 32 1.1684 chord -x=1.88215 chord +y=13.35785 origin x=1.88215 y=13.35785 sides=16
+  cylinder 31 0.9652 chord -x=1.88215 chord +y=13.35785 origin x=1.88215 y=13.35785 sides=18
+  cylinder 32 1.1684 chord -x=1.88215 chord +y=13.35785 origin x=1.88215 y=13.35785 sides=18
   cuboid   33 1.88215  0.71375 14.52625 13.35785
-  cylinder 41 0.9652 chord +x=13.35785 chord +y=13.35785 origin x=13.35785 y=13.35785 sides=16
-  cylinder 42 1.1684 chord +x=13.35785 chord +y=13.35785 origin x=13.35785 y=13.35785 sides=16
+  cylinder 41 0.9652 chord +x=13.35785 chord +y=13.35785 origin x=13.35785 y=13.35785 sides=18
+  cylinder 42 1.1684 chord +x=13.35785 chord +y=13.35785 origin x=13.35785 y=13.35785 sides=18
   cuboid   43 14.52625 13.35785 14.52625 13.35785
 ' pin-by-pin construction
   hole 3 origin x= 1.79250 y= 1.79250
@@ -341,7 +345,7 @@ com='assembly'
   media 5 1 23 -22
   media 5 1 33 -32
   media 5 1 43 -42
-  boundary 30 48 48
+  boundary 30 60 60
 end geom
 '
 read bnds
