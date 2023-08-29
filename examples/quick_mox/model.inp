@@ -8,6 +8,7 @@ read composition
   uo2  10 den={{comp.inner.density}}
         {{comp.inner.uo2.dens_frac}}  900
         92234 {{comp.inner.uo2.iso.u234}}
+        92236 {{comp.inner.uo2.iso.u236}}
         92235 {{comp.inner.uo2.iso.u235}}
         92238 {{comp.inner.uo2.iso.u238}}
         end
