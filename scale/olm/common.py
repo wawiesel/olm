@@ -31,7 +31,7 @@ def get_runtime(output):
     return 0
 
 
-def run_command(command_line, check_return_code=True):
+def run_command(command_line, check_return_code=True, echo=True, error_match="Error"):
     """Run a command as a subprocess. Throw on bad error code or finding 'Error' in the output."""
     logger.info(f"running command:\n{command_line}")
     p = subprocess.Popen(
@@ -47,15 +47,15 @@ def run_command(command_line, check_return_code=True):
     while True:
         line = p.stdout.readline()
         text += line
-        if "Error" in line:
+        if error_match in line:
             raise ValueError(line.strip())
-        else:
+        elif echo:
             logger.info(line.rstrip())
         if not line:
             break
 
     if not p.returncode:
-        retcode = -1
+        retcode = 1
     else:
         retcode = p.returncode
 
@@ -63,8 +63,10 @@ def run_command(command_line, check_return_code=True):
         raise ValueError(
             f"command line='{command_line}' failed to run in the shell. Check this is a valid path or recognized executable."
         )
-    elif check_return_code and retcode != 0:
-        logger.info(f"Nonzero return code {retcode} on last command:\n{command_line}\n")
+    elif check_return_code and retcode < 0:
+        logger.info(
+            f"Negative return code {retcode} on last command:\n{command_line}\n"
+        )
         msg = p.stderr.read().strip()
         if not msg == "":
             raise ValueError(str(msg))

@@ -457,12 +457,14 @@ class LowOrderConsistency:
             lo_ii_json = lo_f71.with_suffix(".ii.json")
             if do_run:
                 hi = common.run_command(
-                    f"{self.obiwan} view -format=ii.json {hi_f71} -cases='[{self.hi_case}]'"
+                    f"{self.obiwan} view -format=ii.json {hi_f71} -cases='[{self.hi_case}]'",
+                    echo=False,
                 )
                 with open(hi_ii_json, "w") as f:
                     f.write(hi)
                 lo = common.run_command(
-                    f"{self.obiwan} view -format=ii.json {lo_f71} -cases='[{self.lo_case}]'"
+                    f"{self.obiwan} view -format=ii.json {lo_f71} -cases='[{self.lo_case}]'",
+                    echo=False,
                 )
                 with open(lo_ii_json, "w") as f:
                     f.write(lo)
