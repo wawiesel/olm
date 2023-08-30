@@ -91,6 +91,7 @@ def command_do(config_file, generate, run, build, check, report, do_all, nprocs)
         # If nprocs is present, override.
         if nprocs:
             data["run"]["nprocs"] = nprocs
+            data["check"]["nprocs"] = nprocs
 
         # Update paths in the model block.
         model = common.update_model(data["model"])

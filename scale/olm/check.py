@@ -13,7 +13,7 @@ class CheckInfo:
         self.test_pass = False
 
 
-def sequencer(model, sequence):
+def sequencer(model, sequence, nprocs):
     output = []
 
     try:
@@ -27,6 +27,7 @@ def sequencer(model, sequence):
                 name = "scale.olm.check:" + name
             s["_type"] = name
             s["model"] = model
+            s["nprocs"] = nprocs
 
             common.logger.info(
                 "Checking options for check={}, sequence={}".format(name, i)
@@ -90,13 +91,21 @@ class GridGradient:
         }
 
     def __init__(
-        self, model=None, eps0=1e-20, epsa=1e-1, epsr=1e-1, target_q1=0.5, target_q2=0.7
+        self,
+        model=None,
+        eps0=1e-20,
+        epsa=1e-1,
+        epsr=1e-1,
+        target_q1=0.5,
+        target_q2=0.7,
+        nprocs=3,
     ):
         self.eps0 = eps0
         self.epsa = epsa
         self.epsr = epsr
         self.target_q1 = target_q1
         self.target_q2 = target_q2
+        self.nprocs = nprocs
 
     def run(self, archive):
         """Run the calculation and return post-processed results"""
@@ -447,12 +456,16 @@ class LowOrderConsistency:
             hi_ii_json = hi_f71.with_suffix(".ii.json")
             lo_ii_json = lo_f71.with_suffix(".ii.json")
             if do_run:
-                common.run_command(
-                    f"{self.obiwan} view -format=ii.json {hi_f71} -cases='[{self.hi_case}]' >{hi_ii_json}"
+                hi = common.run_command(
+                    f"{self.obiwan} view -format=ii.json {hi_f71} -cases='[{self.hi_case}]'"
                 )
-                common.run_command(
-                    f"{self.obiwan} view -format=ii.json {lo_f71} -cases='[{self.lo_case}]' >{lo_ii_json}"
+                with open(hi_ii_json, "w") as f:
+                    f.write(hi)
+                lo = common.run_command(
+                    f"{self.obiwan} view -format=ii.json {lo_f71} -cases='[{self.lo_case}]'"
                 )
+                with open(lo_ii_json, "w") as f:
+                    f.write(lo)
             ii_json_list.append((hi_ii_json, lo_ii_json))
 
         return ii_json_list
