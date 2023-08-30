@@ -53,15 +53,18 @@ def run_command(command_line, check_return_code=True):
             logger.info(line.rstrip())
         if not line:
             break
-    has_error = p.returncode and p.returncode < 0
-    if p.returncode == None:
+
+    if not p.returncode:
+        retcode = -1
+    else:
+        retcode = p.returncode
+
+    if retcode != 0 and text.strip() == "":
         raise ValueError(
             f"command line='{command_line}' failed to run in the shell. Check this is a valid path or recognized executable."
         )
-    elif check_return_code and p.returncode < 0:
-        logger.info(
-            f"Nonzero return code {p.returncode} on last command:\n{command_line}\n"
-        )
+    elif check_return_code and retcode != 0:
+        logger.info(f"Nonzero return code {retcode} on last command:\n{command_line}\n")
         msg = p.stderr.read().strip()
         if not msg == "":
             raise ValueError(str(msg))
