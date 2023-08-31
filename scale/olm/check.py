@@ -331,7 +331,13 @@ class LowOrderConsistency:
                 err = (lo - hi) / (self.eps0 + np.amax(np.absolute(hi)))
                 info.nuclide_compare[n]["perms"].append(
                     {
-                        "k": k,
+                        "hi_ii_json": str(
+                            self.ii_json_list[k][0].relative_to(self.work_dir)
+                        ),
+                        "lo_ii_json": str(
+                            self.ii_json_list[k][1].relative_to(self.work_dir)
+                        ),
+                        "point_index": k,
                         "lo": list(lo),
                         "hi": list(hi),
                         "(lo-hi)/max(|hi|)": list(err),
@@ -388,55 +394,52 @@ class LowOrderConsistency:
         with open(self.config_dir / self.template, "r") as f:
             template_text = f.read()
 
-        # Load the generate data.
-        generate_json = self.work_dir / "generate.json"
-        with open(generate_json, "r") as f:
-            generate_d = json.load(f)
-
         # Load the build data.
         build_json = self.work_dir / "build.json"
         with open(build_json, "r") as f:
             build_d = json.load(f)
 
-        # For each permutation.
+        # For each point in space.
+        ii_json_list = list()
         f71_list = list()
-        for j in range(len(build_d["perms"])):
-            # Convenience variables.
-            generate = generate_d["perms"][j]
-            build = build_d["perms"][j]
-            base = generate["file"]
+        for point in build_d["points"]:
+            # Create the check input path.
+            lib = Path(point["files"]["lib"])
+            base = lib.stem
+            check_input = self.check_dir / base / (base + ".inp")
 
-            # Save HIGH fidelity and LOWER fidelity f71 in a list.
-            run_input = self.work_dir / base
-            run_f71 = run_input.with_suffix(".f71")
-            check_input = self.check_dir / base
-            check_f71 = check_input.with_suffix(".f71")
-            f71_list.append((run_f71, check_f71))
+            # Save the list.
+            hi_ii_json = self.work_dir / point["files"]["ii_json"]
+            lo_ii_json = check_input.with_suffix(".ii.json")
+            f71_list.append(check_input.with_suffix(".f71"))
+            ii_json_list.append((hi_ii_json, lo_ii_json))
 
-            if do_run:
-                # Extract the fuel power / burnup output from base f71.
-                history = common.get_history_from_f71(
-                    self.obiwan, run_f71, self.hi_case
-                )
+            # Create the directory.
+            check_input.parent.mkdir(parents=True, exist_ok=True)
 
-                # Fill the template.
-                filled_text = common.expand_template(
-                    template_text,
-                    {
-                        "history": history,
-                        "model": {"work_dir": self.work_dir, "name": self.name},
-                        "build": build,
-                        "generate": generate,
-                    },
-                )
+            # Populate data.
+            check_data = {
+                "model": {"work_dir": str(self.work_dir), "name": self.name},
+                **point,
+            }
 
-                # Write the check input file.
-                check_input.parent.mkdir(parents=True, exist_ok=True)
-                common.logger.info(
-                    f"Writing input file={input} for LowOrderConsistency check"
-                )
-                with open(check_input, "w") as f:
-                    f.write(filled_text)
+            # Write out data file.
+            check_data_file = check_input.with_suffix(".olm.json")
+            with open(check_data_file, "w") as f:
+                f.write(json.dumps(check_data, indent=4))
+            common.logger.info(
+                f"Writing json data file={check_data_file} for LowOrderConsistency check"
+            )
+
+            # Fill the template.
+            filled_text = common.expand_template(template_text, check_data)
+
+            # Write the check input file.
+            common.logger.info(
+                f"Writing input file={check_input} for LowOrderConsistency check"
+            )
+            with open(check_input, "w") as f:
+                f.write(filled_text)
 
         # Run all the check inputs.
         run.makefile(
@@ -445,55 +448,47 @@ class LowOrderConsistency:
             nprocs=self.nprocs,
         )
 
-        return f71_list
-
-    def __write_ii_json(self, do_run, f71_list):
-        """Run obiwan to write the ii.json data to disk."""
-
-        # Conver the f71 to ii.json and extract the relevant information into memory.
-        ii_json_list = list()
-        for hi_f71, lo_f71 in f71_list:
-            hi_ii_json = hi_f71.with_suffix(".ii.json")
-            lo_ii_json = lo_f71.with_suffix(".ii.json")
-            if do_run:
-                hi = common.run_command(
-                    f"{self.obiwan} view -format=ii.json {hi_f71} -cases='[{self.hi_case}]'",
-                    echo=False,
-                )
-                with open(hi_ii_json, "w") as f:
-                    f.write(hi)
+        # Actually generate the ii.json for the low fidelity calcs we just ran.
+        if do_run:
+            for f71 in f71_list:
                 lo = common.run_command(
-                    f"{self.obiwan} view -format=ii.json {lo_f71} -cases='[{self.lo_case}]'",
+                    f"{self.obiwan} view -format=ii.json {f71} -cases='[{self.lo_case}]'",
                     echo=False,
                 )
+                lo_ii_json = f71.with_suffix(".ii.json")
                 with open(lo_ii_json, "w") as f:
                     f.write(lo)
-            ii_json_list.append((hi_ii_json, lo_ii_json))
 
         return ii_json_list
 
     def __load_ii_json(self, ii_json_list):
         """Load the ii.json data that exists on disk for HIGH and LOWER fidelity into memory."""
 
-        # Conver the f71 to ii.json and extract the relevant information into memory.
+        # Convert the f71 to ii.json and extract the relevant information into memory.
         self.hi_list = list()
         self.lo_list = list()
         for hi_ii_json, lo_ii_json in ii_json_list:
+            common.logger.info(f"loading HI {hi_ii_json}")
             # Load the json data into HIGH fidelity and LOWER fidelity data structures.
+            # Note there's a little duplicate code here, but probably not worth refactoring.
             with open(hi_ii_json, "r") as f:
                 jt = json.load(f)
-                case = jt["responses"][f"case({self.hi_case})"]
+                case = jt["responses"]["system"]
                 hi = np.array(case["amount"])
                 hi_vector = case["nuclideVectorHash"]
                 self.hi_list.append(hi)
                 self.names = jt["definitions"]["nuclideVectors"][hi_vector]
                 self.time_list = case["time"]
 
+            common.logger.info(f"loading LO {lo_ii_json}")
             with open(lo_ii_json, "r") as f:
                 jo = json.load(f)
                 case = jo["responses"][f"case({self.lo_case})"]
                 lo = np.array(case["amount"])
                 lo_time = case["time"]
+                self.lo_list.append(lo)
+
+                # Check consistency.
                 if not np.array_equal(lo_time, self.time_list):
                     raise ValueError(
                         f"HIGH fidelity list of times={self.time_list} is inconsistent with LOWER fidelity list of times {lo_time}"
@@ -503,7 +498,6 @@ class LowOrderConsistency:
                     raise ValueError(
                         f"HIGH fidelity nuclide vector hash {hi_vector} is not the same as LOWER fidelity vector hash {lo_vector}, meaning the two nuclide sets are somehow inconsistent, which should not be possible."
                     )
-                self.lo_list.append(lo)
 
     def run(self, archive):
         """Run a consistent set of LOWER fidelity calculations which also produce an
@@ -523,9 +517,8 @@ class LowOrderConsistency:
         self.lo_case = 1
 
         try:
-            f71_list = self.__run_lo_fidelity(do_run)
-            ii_json_list = self.__write_ii_json(do_run, f71_list)
-            self.__load_ii_json(ii_json_list)
+            self.ii_json_list = self.__run_lo_fidelity(do_run)
+            self.__load_ii_json(self.ii_json_list)
             self.run_success = True
 
         except ValueError as ve:

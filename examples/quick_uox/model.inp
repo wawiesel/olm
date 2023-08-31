@@ -5,12 +5,12 @@ pincell model
 read composition
 '
 ' fuel
-  uo2   10 den=10.4 1
+  uo2   10 den={{comp.fuel.density}} 1
            900
-           92234 {{comp.fuel.wt_u234}}
-           92235 {{comp.fuel.wt_u235}}
-           92236 {{comp.fuel.wt_u236}}
-           92238 {{comp.fuel.wt_u238}} end
+           92234 {{comp.fuel.uo2.iso.u234}}
+           92235 {{comp.fuel.uo2.iso.u235}}
+           92236 {{comp.fuel.uo2.iso.u236}}
+           92238 {{comp.fuel.uo2.iso.u238}} end
 '
 ' clad
   zirc4 20 1 622 end

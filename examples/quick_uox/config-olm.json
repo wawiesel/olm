@@ -15,8 +15,10 @@
         "_type": "scale.olm.generate:expander",
         "template": "model.inp",
         "comp": {
-            "_type": "scale.olm.generate:fuelcomp_uox_nuregcr5625",
-            "nuclide_prefix": "wt_"
+            "fuel":{
+                "_type": "scale.olm.generate:comp_uo2_nuregcr5625",
+                "density": 10.4
+            }
         },
         "params": {
             "_type": "scale.olm.common:pass_through",
@@ -65,7 +67,6 @@
     "build": {
         "_type": "scale.olm.build:arpdata_txt",
         "fuel_type": "UOX",
-        "suffix": ".system.f33",
         "dim_map":
         {
             "enrichment": "enrichment",
@@ -75,6 +76,7 @@
     },
     "check": {
         "_type": "scale.olm.check:sequencer",
+        "nprocs": 3,
         "sequence":
         [
         {

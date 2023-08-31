@@ -9,19 +9,19 @@ libs=[ {{model.name}} ]
 options{ ft71=all mtu={{history.initialhm}} }
 
 fuelcomp{
-    % uox(fuel){ enrich={{build.interpvars.enrichment}} }
+    % uox(fuel){ enrich={{_arpinfo.interpvars.enrichment}} }
     stdcomp(fuel){ base=uo2
         iso[
-            92234={{generate.comp.fuel.wt_u234}}
-            92235={{generate.comp.fuel.wt_u235*( 1 + 1e-5*(1.0 - build.interpvars.enrichment/3.5) )}}
-            92236={{generate.comp.fuel.wt_u236}}
-            92238={{generate.comp.fuel.wt_u238}}
+            92234={{comp.system.uo2.iso.u234}}
+            92235={{comp.system.uo2.iso.u235}}
+            92236={{comp.system.uo2.iso.u236}}
+            92238={{comp.system.uo2.iso.u238}}
         ]
     }
     mix(1){ comps[fuel=100] }
 }
 
-modz = [ {{build.interpvars.mod_dens}} ]
+modz = [ {{_arpinfo.interpvars.mod_dens}} ]
 pz = [ 1.0 ]
 
 hist[
