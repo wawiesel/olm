@@ -281,9 +281,7 @@ def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
 
     # Generate burnup string for thin list.
     thin_bu_str = ",".join([str(bu) for bu in thinned_burnup_list])
-    common.logger.info(
-        f"Replacing burnup list {bu_str} with thinned list {thin_bu_str}..."
-    )
+    common.logger.info("burnup thinning:", original_bu=bu_str, thinned_bu=thin_bu_str)
     arpinfo.burnup_list = thinned_burnup_list
 
     # Create a temporary directory for libraries in process.
