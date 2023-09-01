@@ -12,8 +12,16 @@ import subprocess
 import shutil
 from jinja2 import Template, StrictUndefined, exceptions
 import re
+import logging
 
-logger = structlog.getLogger(__name__)
+structlog.configure(
+    wrapper_class=structlog.make_filtering_bound_logger(
+        int(os.environ.get("SCALE_OLM_LEVEL", logging.INFO))
+    ),
+    logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
+)
+
+logger = structlog.get_logger(__name__)
 
 
 def get_runtime(output):

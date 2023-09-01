@@ -172,7 +172,8 @@ def command_link(names, paths, env, dest, show, dry_run):
 
             registry[name] = registry0[name]
 
-        link.make_mini_arpdatatxt(dry_run, registry, dest)
+        if not show:
+            link.make_mini_arpdatatxt(dry_run, registry, dest)
 
         return 0
 
