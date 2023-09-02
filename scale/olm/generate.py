@@ -1,4 +1,5 @@
 import scale.olm.common as common
+import scale.olm.core as core
 import numpy as np
 import math
 from pathlib import Path
@@ -146,7 +147,7 @@ def all_permutations(**states):
     axes = []
     for dim in states:
         axes.append(sorted(states[dim]))
-        common.logger.info(f"Processing dimension '{dim}'")
+        core.logger.debug(f"Processing dimension '{dim}'")
         dims.append(dim)
 
     permutations = []
@@ -155,7 +156,7 @@ def all_permutations(**states):
         y = dict()
         for i in range(len(dims)):
             y[dims[i]] = x[i]
-        common.logger.info(f"Generated permutation '{y}'")
+        core.logger.debug(f"Generated permutation '{y}'")
         permutations.append(y)
 
     return permutations
@@ -165,6 +166,8 @@ def expander(model, template, params, states, comp, time):
     """First expand the state to all the individual state combinations, then calculate the
     times and the compositions which may require state. The params just pass through."""
 
+    core.logger.info(f"Generating with scale.olm.expander ...")
+
     # Handle parameters.
     params2 = common.fn_redirect(**params)
 
@@ -172,12 +175,17 @@ def expander(model, template, params, states, comp, time):
     states2 = common.fn_redirect(**states)
 
     # Create a formatting statement for the files.
-    n = int(1 + math.log10(len(states2)))
+    nstates = len(states2)
+    core.logger.info(
+        f"Initiating expansion of template file={template} into {nstates} permutations ..."
+    )
+    n = int(1 + math.log10(nstates))
     work_dir = model["work_dir"]
     fmt = f"{work_dir}/perm{{0:0{n}d}}/perm{{0:0{n}d}}.inp"
 
     # Load the template file.
-    with open(Path(model["dir"]) / template, "r") as f:
+    template_file = Path(model["dir"]) / template
+    with open(template_file, "r") as f:
         template_text = f.read()
 
     # Create all the permutation information.
@@ -214,5 +222,7 @@ def expander(model, template, params, states, comp, time):
 
         # Save the data.
         perms2.append(data)
+
+    core.logger.info(f"Finished scale.olm.expander!")
 
     return {"work_dir": str(work_dir), "perms": perms2, "params": params2}

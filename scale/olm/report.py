@@ -1,5 +1,6 @@
 from pathlib import Path
 import scale.olm.common as common
+import scale.olm.core as core
 import json
 
 
@@ -12,7 +13,7 @@ def __stub1_summary_lib():
 
 
 def stub1(model, template):
-    common.logger.info(f"reading RST template={template}")
+    core.logger.info(f"reading RST template={template}")
 
     # Load the template file.
     with open(Path(model["dir"]) / template, "r") as f:
@@ -32,13 +33,13 @@ def stub1(model, template):
     # Fill template.
     rst = Path(model["work_dir"]) / (model["name"] + ".rst")
     with open(rst, "w") as f:
-        common.logger.info(f"writing RST report {rst}")
+        core.logger.info(f"writing RST report {rst}")
         f.write(filled_text)
 
     # Generate PDF.
     pdf = rst.with_suffix(".pdf")
     common.run_command(f"rst2pdf {rst}")
-    common.logger.info(f"Generated PDF report {pdf}")
+    core.logger.info(f"Generated PDF report {pdf}")
 
     return {
         "work_dir": str(work_dir),

@@ -33,6 +33,15 @@
         - {{v.grid-}}
     {% endfor %}
 
+..  image:: {{check.check-origami.nuclides.0092235.image}}
+    :alt: U235 hi/lo error
+    :class: with-shadow float-left
+
+    *   - ` max_diff0`
+        - {{check.check-origami.nuclides.0092235.max_diff0}}
+
+
+..  rst-class::  clear-both
 
 Model info
 ~~~~~~~~~~

@@ -1,5 +1,6 @@
 from pathlib import Path
 import scale.olm.common as common
+import scale.olm.core as core
 import glob
 
 
@@ -33,11 +34,11 @@ clean:
         f.write(contents)
 
     version = common.get_scale_version(scalerte)
-    common.logger.info(f"Running SCALE version {version}")
+    core.logger.info(f"Running SCALE version {version}")
 
     command_line = f"cd {work_dir} && make -j {nprocs}"
     if dry_run:
-        common.logger.warning("No SCALE runs will be performed because dry_run=True!")
+        core.logger.warning("No SCALE runs will be performed because dry_run=True!")
     else:
         common.run_command(command_line)
 

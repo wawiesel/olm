@@ -1,50 +1,10 @@
-### ORIGEN Library Manager (OLM)
+## What is OLM?
 
-Here's the current repo structure. The main code is in `scale/olm/__main__.py`.
+OLM is the ORIGEN Library Manager, a command line utility that streamlines
+aspects of using the ORIGEN library to solve nuclide inventory generation problems.
 
-```
-tree -I venv -I _build
-.
-├── LICENSE
-├── README.md
-├── data
-│   ├── ge10x10-8.h5
-│   ├── mox_w17x17.h5
-│   ├── vver440.h5
-│   └── w17x17.h5
-├── docs
-│   └── index.rst
-├── examples
-│   └── w17x17
-│       ├── config-olm.json
-│       └── model.inp
-├── notebooks
-│   └── debug.ipynb
-├── requirements-dev.txt
-├── scale
-│   └── olm
-│       ├── __init__.py
-│       ├── __main__.py
-│       ├── build.py
-│       ├── check.py
-│       ├── common.py
-│       ├── generate.py
-│       ├── link.py
-│       ├── report.py
-│       └── run.py
-├── setup.py
-└── testing
-    ├── check_test.py
-    ├── common_test.py
-    └── generate_test.py
-
-9 directories, 30 files
-```
-
-In order to create data/w17x17.h5 do this:
-```
-obiwan convert -alias=w17x17 -format=hdf5 ${DATA}/arpdata.txt
-```
+If you would like to learn how to use OLM, see the (online manual)[scale-olm.readthedocs.io].
+If you would like to learn how to develop OLM, continue reading.
 
 ### Enable virtual environment
 
@@ -53,24 +13,27 @@ virtualenv venv
 . venv/bin/activate
 which python
 ```
+
 If you get an error about missing `virtualenv`, you may need to run this
 `pip install virtualenv`.
 
 ### Install requirements
 
-Enable the virtual environment, then run this command to install dependencies.
+After enabling the virtual environment, run this command to install dependencies.
 
 ```
 pip install -r requirements-dev.txt
 ```
 
-Regenerate the requirements file like this.
-
+NOTE: if you need to regenerate the requirements file after adding dependencies.
 ```
 pip freeze | grep -v '^\-e'>requirements-dev.txt
 ```
 
-### Local install for testing
+### Enable a local install for testing
+
+This command will enable any changes you make to instantly propagate to the executable
+you can run just with `olm`.
 
 ```
 pip install --editable .
@@ -80,14 +43,17 @@ which olm
 
 ### Notebooks
 
-You may need to install your virtual environment kernel for the notebooks to
-work.
+There are notebooks contained in `notebooks` which may be helpful for debugging or
+understanding how something is working. You may need to install your virtual environment
+kernel for the notebooks to work.
 
 ```
 ipython kernel install --name "venv" --user
 ```
 
 Now, you can select the created kernel "venv" when you start Jupyter notebook or lab.
+
+## Notes about development
 
 ### Click for CLI
 
@@ -99,59 +65,7 @@ Here's a nice video.
 https://www.youtube.com/watch?v=kNke39OZ2k0
 
 
-### Run a check
-
-Here's how you run a check from the command line.
-
-```
-olm check -s '{".type": "GridGradient" }' data/w17x17.h5
-```
-
-### Use an OLM configuration file
-
-The configuration file contains all the information to move through all the stages
-of library generation, checking, and reporting. It requires knowing the SCALE 
-install you want to use.
-
-```
-export SCALE=/Applications/SCALE-6.3.0.app/Contents/Resources
-```
-
-The stages are:
-
-1. **generate** inputs
-2. **run** inputs
-3. **build** ORIGEN library from outputs
-4. **check** ORIGEN library
-5. **report** on aspects of the library
-
-See `olm do` help screen for details. For example, this command 
-generates the different file permutations.
-
-```
-olm do --generate examples/w17x17/config-olm.json
-```
-
-This command runs them with 3 local processors.
-
-```
-olm do --run examples/w17x17/config-olm.json --nprocs 3
-```
-
-Multiple stages can be run at once.
-
-```
-olm do --generate --run --build examples/w17x17/config-olm.json
-```
-
-All stages can be run with `--all`.
-
-```
-cd examples/quick2
-olm do --all config-olm.json
-```
-
-### Run the unit tests
+### Pytest for unit tests
 
 Locally for unit tests we use the pytest framework under the `testing` directory.
 All tests can be run simply like this from the root directory.
@@ -160,11 +74,23 @@ All tests can be run simply like this from the root directory.
 pytest .
 ```
 
-### Local formatting on commit
+### Black for commit formatting
 
 The first time you do work on a clone, do this.
 ```
 pre-commit install
 ```
 
-This will use the black formatter, https://medium.com/gousto-engineering-techbrunch/automate-python-code-formatting-with-black-and-pre-commit-ebc69dcc5e03
+This will use the black formatter,
+https://medium.com/gousto-engineering-techbrunch/automate-python-code-formatting-with-black-and-pre-commit-ebc69dcc5e03
+
+### Docstrings and Doctest
+
+Our goal is to have each function, module, and class with standard docstrings and
+a few doctests. Doctests should be run like this (not `python -m doctest -v scale/olm/core.py`)
+due to usage of some reusable global class instances that are only enabled when the module
+itself is `__main__`.
+
+```
+python scale/olm/core.py -v
+```

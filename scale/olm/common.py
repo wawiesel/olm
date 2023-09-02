@@ -2,7 +2,7 @@ import pathlib
 import h5py
 from tqdm import tqdm, tqdm_notebook
 import numpy as np
-import structlog
+
 import json
 from pathlib import Path
 import os
@@ -13,16 +13,7 @@ import subprocess
 import shutil
 from jinja2 import Template, StrictUndefined, exceptions
 import re
-import logging
-
-structlog.configure(
-    wrapper_class=structlog.make_filtering_bound_logger(
-        int(os.environ.get("SCALE_OLM_LEVEL", logging.INFO))
-    ),
-    logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
-)
-
-logger = structlog.get_logger(__name__)
+import scale.olm.core as core
 
 
 def get_runtime(output):
@@ -42,7 +33,7 @@ def get_runtime(output):
 
 def run_command(command_line, check_return_code=True, echo=True, error_match="Error"):
     """Run a command as a subprocess. Throw on bad error code or finding 'Error' in the output."""
-    logger.info(f"running command:\n{command_line}")
+    core.logger.info(f"running command:\n{command_line}")
     p = subprocess.Popen(
         command_line,
         shell=True,
@@ -59,7 +50,7 @@ def run_command(command_line, check_return_code=True, echo=True, error_match="Er
         if error_match in line:
             raise ValueError(line.strip())
         elif echo:
-            logger.info(line.rstrip())
+            core.logger.debug(line.rstrip())
         if not line:
             break
 
@@ -73,7 +64,7 @@ def run_command(command_line, check_return_code=True, echo=True, error_match="Er
             f"command line='{command_line}' failed to run in the shell. Check this is a valid path or recognized executable."
         )
     elif check_return_code and retcode < 0:
-        logger.info(
+        core.logger.info(
             f"Negative return code {retcode} on last command:\n{command_line}\n"
         )
         msg = p.stderr.read().strip()
@@ -247,7 +238,7 @@ def get_history_from_f71(obiwan, f71, caseid0):
       7  1.29600e+08  3.99087e+01  3.95311e+14  4.41673e+22  5.98813e+04  1.00000e+00  1.09091e+05      7     10      6 DC----
       8  1.51200e+08  3.99026e+01  4.18116e+14  5.31986e+22  6.98569e+04  1.00000e+00  1.09091e+05      8     10      7 DC----
     """
-    logger.info(f"extracting history from {f71}")
+    core.logger.info(f"extracting history from {f71}")
     text0 = run_command(f"{obiwan} view -format=info {f71}")
 
     # Start the text with " pos " which should be the first thing on the header column
@@ -292,7 +283,7 @@ class ArpInfo:
 
         self.name = name
         self.block = block
-        logger.info(f"parsing {name} block of arpdata.txt")
+        core.logger.info(f"parsing {name} block of arpdata.txt")
 
         if self.name.startswith("mox_"):
             self.fuel_type = "MOX"
@@ -343,18 +334,18 @@ class ArpInfo:
             raise ValueError(
                 "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
             )
-        logger.info("finished parsing arpdatat.txt")
+        core.logger.info("finished parsing arpdatat.txt")
 
     @staticmethod
     def parse_arpdata(file):
         """Simple function to parse the blocks of arpdata.txt"""
-        logger.debug(f"reading {file} ...")
+        core.logger.debug(f"reading {file} ...")
         blocks = dict()
         with open(file, "r") as f:
             for line in f.readlines():
                 if line.startswith("!"):
                     name = line.strip()[1:]
-                    logger.debug(f"reading {name} ...")
+                    core.logger.debug(f"reading {name} ...")
                     blocks[name] = ""
                 else:
                     blocks[name] += line
@@ -364,7 +355,7 @@ class ArpInfo:
         """Initialize UOX data for arpdata.txt format from a list of data."""
 
         # Convert to interpolation space, assuming correct set up.
-        logger.info("Initializing UOX")
+        core.logger.info("Initializing UOX")
         self.name = name
         self.fuel_type = "UOX"
         self.enrichment_list = sorted(set(enrichment_list))
@@ -394,7 +385,7 @@ class ArpInfo:
             i = self.get_index_by_dim((ie, im))
             self.perm_index[i] = k
             self.lib_list[i] = lib_list[k]
-        logger.info("Finished loading UOX")
+        core.logger.info("Finished loading UOX")
 
     def init_mox(self, name, lib_list, pu239_frac_list, pu_frac_list, mod_dens_list):
         """Initialize MOX data for arpdata.txt format from a list of data."""
@@ -629,14 +620,14 @@ class ArpInfo:
         for i in range(self.num_libs()):
             lib = Path(self.lib_list[i])
             if not h5arc:
-                logger.info(
+                core.logger.info(
                     f"initializing temporary archive {temp_arc} with lib1 from {lib}"
                 )
                 shutil.copyfile(arpdir / lib, temp_arc)
                 h5arc = h5py.File(temp_arc, "a")
             else:
                 j = i + 1
-                logger.info(
+                core.logger.info(
                     f"adding library {lib} as lib{j} to temporary archive {temp_arc}"
                 )
                 h5arc["incident"]["neutron"][f"lib{j}"] = h5py.ExternalLink(
@@ -705,7 +696,7 @@ def parse_burnups_from_triton_output(output):
                 elif n > 4:
                     bu = float(line.split()[-1])
                     burnup_list.append(bu)
-    logger.info(
+    core.logger.info(
         "found burnup_list=[{}]".format(",".join([str(x) for x in burnup_list]))
     )
     return burnup_list
@@ -777,7 +768,7 @@ def update_registry(registry, path):
     """Update a registry of library names using all the paths"""
 
     p = Path(path)
-    logger.info("searching path={}".format(p))
+    core.logger.info("searching path={}".format(p))
 
     # Look for arpdata.txt version.
     q1 = p / "arpdata.txt"
@@ -786,23 +777,23 @@ def update_registry(registry, path):
         r = p / "arplibs"
         r.resolve()
         if not r.exists():
-            logger.warning(
+            core.logger.warning(
                 "{} exists but the paired arplibs/ directory at {} does not--ignoring libraries listed".format(
                     q1, r
                 )
             )
         else:
-            logger.info("found arpdata.txt!")
+            core.logger.info("found arpdata.txt!")
             blocks = ArpInfo.parse_arpdata(q1)
             for n in blocks:
                 if n in registry:
-                    logger.warning(
+                    core.logger.warning(
                         "library name {} has already been registered at path={} ignoring same name found at {}".format(
                             n, registry[n].path, p
                         )
                     )
                 else:
-                    logger.info("found library name {} in {}!".format(n, q1))
+                    core.logger.info("found library name {} in {}!".format(n, q1))
                     arpinfo = ArpInfo()
                     arpinfo.init_block(n, blocks[n])
                     arpinfo.path = q1
@@ -815,13 +806,15 @@ def create_registry(paths, env):
     environment variable SCALE_OLM_PATH"""
     registry = dict()
 
-    logger.info("searching provided paths ({})...".format(len(paths)))
+    core.logger.info("searching provided paths ({})...".format(len(paths)))
     for path in paths:
         update_registry(registry, path)
 
     if env and "SCALE_OLM_PATH" in os.environ:
         env_paths = os.environ["SCALE_OLM_PATH"].split(":")
-        logger.info("searching SCALE_OLM_PATH paths ({})...".format(len(env_paths)))
+        core.logger.info(
+            "searching SCALE_OLM_PATH paths ({})...".format(len(env_paths))
+        )
         for path in env_paths:
             update_registry(registry, path)
 
@@ -868,7 +861,7 @@ class Archive:
     interpolatable space of Libraries."""
 
     def __init__(self, file, name=""):
-        logger.info("Loading archive file={}".format(file))
+        core.logger.info("Loading archive file={}".format(file))
 
         self.file_name = file
 
@@ -971,7 +964,7 @@ class Archive:
         axes_names.append("times")
         axes_values[i] = times[0]
 
-        logger.info(f"axes={axes_values} with names={axes_names}")
+        core.logger.info(f"axes={axes_values} with names={axes_names}")
 
         # determine the shape/size of each dimension
         axes_shape = list(axes_values)

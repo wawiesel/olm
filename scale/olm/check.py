@@ -1,6 +1,7 @@
 import numpy as np
 from tqdm import tqdm, tqdm_notebook
 import scale.olm.common as common
+import scale.olm.core as core
 import scale.olm.run as run
 import json
 from pathlib import Path
@@ -29,7 +30,7 @@ def sequencer(model, sequence, nprocs):
             s["model"] = model
             s["nprocs"] = nprocs
 
-            common.logger.info(
+            core.logger.info(
                 "Checking options for check={}, sequence={}".format(name, i)
             )
             i += 1
@@ -40,7 +41,7 @@ def sequencer(model, sequence, nprocs):
 
         # Read the archive.
         work_dir = Path(model["work_dir"])
-        common.logger.info(f"Running checking in work dir={work_dir}")
+        core.logger.info(f"Running checking in work dir={work_dir}")
         arpdata_txt = work_dir / "arpdata.txt"
         if arpdata_txt.exists():
             archive = common.Archive(arpdata_txt, model["name"])
@@ -51,7 +52,7 @@ def sequencer(model, sequence, nprocs):
         test_pass = True
         i = 0
         for r in run_list:
-            common.logger.info("Running checking sequence={}".format(i))
+            core.logger.info("Running checking sequence={}".format(i))
 
             info = r.run(archive)
             output.append(info.__dict__)
@@ -60,10 +61,10 @@ def sequencer(model, sequence, nprocs):
             if not info.test_pass:
                 test_pass = False
 
-        common.logger.info("Finished without exception test_pass={}".format(test_pass))
+        core.logger.info("Finished without exception test_pass={}".format(test_pass))
 
     except ValueError as ve:
-        common.logger.error(str(ve))
+        core.logger.error(str(ve))
 
     return {"test_pass": test_pass, "sequence": output}
 
@@ -110,7 +111,7 @@ class GridGradient:
     def run(self, archive):
         """Run the calculation and return post-processed results"""
 
-        common.logger.info(
+        core.logger.info(
             "Running "
             + self.__class__.__name__
             + " check with params={}".format(json.dumps(self.__dict__))
@@ -120,7 +121,7 @@ class GridGradient:
         # After calc the self.ahist, rhist, khist, and rel_axes variables are ready to
         # compute metrics.
         info = self.info()
-        common.logger.info(
+        core.logger.info(
             "Completed "
             + self.__class__.__name__
             + " with q1={:.2f} and q2={:.2f}".format(info.q1, info.q2)
@@ -161,16 +162,16 @@ class GridGradient:
             for x in x_list:
                 z.append((x - x0) / dx)
             self.rel_axes.append(z)
-        common.logger.info("Finished computing relative values on axes")
+        core.logger.info("Finished computing relative values on axes")
 
         self.yreshape = np.moveaxis(archive.coeff, [-1], [0])
-        common.logger.info("Finished reshaping coefficients")
+        core.logger.info("Finished reshaping coefficients")
 
-        common.logger.info("Computing grid gradients ...")
+        core.logger.info("Computing grid gradients ...")
         self.ahist, self.rhist, self.khist = GridGradient.__kernel(
             self.rel_axes, self.yreshape, self.eps0
         )
-        common.logger.info("Finished computing grid gradients")
+        core.logger.info("Finished computing grid gradients")
 
     @staticmethod
     def __kernel(rel_axes, yreshape, eps0):
@@ -283,12 +284,12 @@ class LowOrderConsistency:
             return info
 
         # Create a base comparison data structure to repeat for every permutation.
-        common.logger.info("Setting up detailed comparison structures...")
+        core.logger.info("Setting up detailed comparison structures...")
         info.nuclide_compare = dict()
         ntime = len(self.time_list)
         for nuclide in self.nuclide_compare:
             i = self.names.index(nuclide)
-            common.logger.info(
+            core.logger.info(
                 f"Found nuclide={nuclide} at index {i} for detailed comparison"
             )
             info.nuclide_compare[nuclide] = {
@@ -306,7 +307,7 @@ class LowOrderConsistency:
         self.lo = np.array(self.lo_list)
 
         # For each permutation.
-        common.logger.info("Calculating all comparison histogram data...")
+        core.logger.info("Calculating all comparison histogram data...")
         for k in range(len(self.lo_list)):
             # For each time.
             for j in range(len(self.lo_list[k])):
@@ -322,7 +323,7 @@ class LowOrderConsistency:
                 )
 
         # Extract each nuclide time series.
-        common.logger.info("Calculating nuclide-wise comparisons...")
+        core.logger.info("Calculating nuclide-wise comparisons...")
         for n in info.nuclide_compare:
             i_nuclide = info.nuclide_compare[n]["nuclide_index"]
             for k in range(len(self.lo_list)):
@@ -348,7 +349,7 @@ class LowOrderConsistency:
                 #### annotate each line the permutation index k but draw them very light
 
         # Get maximum and min error across all permutations.
-        common.logger.info("Calculating max/min across permutations...")
+        core.logger.info("Calculating max/min across permutations...")
         for n, d in info.nuclide_compare.items():
             i_nuclide = d["nuclide_index"]
             for k in range(len(self.lo_list)):
@@ -427,7 +428,7 @@ class LowOrderConsistency:
             check_data_file = check_input.with_suffix(".olm.json")
             with open(check_data_file, "w") as f:
                 f.write(json.dumps(check_data, indent=4))
-            common.logger.info(
+            core.logger.info(
                 f"Writing json data file={check_data_file} for LowOrderConsistency check"
             )
 
@@ -435,7 +436,7 @@ class LowOrderConsistency:
             filled_text = common.expand_template(template_text, check_data)
 
             # Write the check input file.
-            common.logger.info(
+            core.logger.info(
                 f"Writing input file={check_input} for LowOrderConsistency check"
             )
             with open(check_input, "w") as f:
@@ -468,7 +469,7 @@ class LowOrderConsistency:
         self.hi_list = list()
         self.lo_list = list()
         for hi_ii_json, lo_ii_json in ii_json_list:
-            common.logger.info(f"loading HI {hi_ii_json}")
+            core.logger.info(f"loading HI {hi_ii_json}")
             # Load the json data into HIGH fidelity and LOWER fidelity data structures.
             # Note there's a little duplicate code here, but probably not worth refactoring.
             with open(hi_ii_json, "r") as f:
@@ -480,7 +481,7 @@ class LowOrderConsistency:
                 self.names = jt["definitions"]["nuclideVectors"][hi_vector]
                 self.time_list = case["time"]
 
-            common.logger.info(f"loading LO {lo_ii_json}")
+            core.logger.info(f"loading LO {lo_ii_json}")
             with open(lo_ii_json, "r") as f:
                 jo = json.load(f)
                 case = jo["responses"][f"case({self.lo_case})"]
@@ -508,7 +509,7 @@ class LowOrderConsistency:
         # to disable long SCALE runs while trying to debug checking.
         do_run = os.environ.get("SCALE_OLM_DO_RUN", "True") in ["True"]
         if not do_run:
-            common.logger.warning(
+            core.logger.warning(
                 "Runs suppressed by environment variable SCALE_OLM_DO_RUN!"
             )
 
@@ -523,7 +524,7 @@ class LowOrderConsistency:
 
         except ValueError as ve:
             self.run_success = False
-            common.logger.error(str(ve))
+            core.logger.error(str(ve))
 
         return self.info()
 

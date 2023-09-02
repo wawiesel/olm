@@ -1,6 +1,7 @@
 import click
 import sys
 import scale.olm.common as common
+import scale.olm.core as core
 import json
 import structlog
 import os
@@ -101,12 +102,12 @@ def command_do(config_file, generate, run, build, check, report, do_all, nprocs)
             if do[mode]:
                 output = common.fn_redirect(**data[mode], model=model)
                 output_file = str(Path(model["work_dir"]) / mode) + ".json"
-                common.logger.info(f"Writing {output_file} ...")
+                core.logger.info(f"Writing {output_file}")
                 with open(output_file, "w") as f:
                     f.write(json.dumps(output, indent=4))
 
     except ValueError as ve:
-        common.logger.error(str(ve))
+        core.logger.error(str(ve))
         return str(ve)
 
 
@@ -178,7 +179,7 @@ def command_link(names, paths, env, dest, show, dry_run):
         return 0
 
     except ValueError as ve:
-        common.logger.error(str(ve))
+        core.logger.error(str(ve))
         return str(ve)
 
 
@@ -234,7 +235,7 @@ def command_check(archive_file, output_file, text_sequence):
     model = {"archive_file": archive_file}
     output = check.sequencer(model, sequence)
 
-    common.logger.info(f"Writing {output_file} ...")
+    core.logger.info(f"Writing {output_file} ...")
     with open(output_file, "w") as f:
         f.write(json.dumps(output, indent=4))
 

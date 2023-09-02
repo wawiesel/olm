@@ -1,4 +1,5 @@
 import scale.olm.common as common
+import scale.olm.core as core
 from pathlib import Path
 import shutil
 import os
@@ -7,7 +8,7 @@ import os
 def make_mini_arpdatatxt(dry_run, registry, dest):
     """Create a local arpdata.txt and arplibs"""
 
-    common.logger.info(f"setting up at destination dir={dest}")
+    core.logger.info(f"setting up at destination dir={dest}")
 
     # Concatenate the blocks from each name.
     mini_arpdata = ""
@@ -15,7 +16,7 @@ def make_mini_arpdatatxt(dry_run, registry, dest):
     for name in registry:
         arpinfo = registry[name]
         path = arpinfo.path
-        common.logger.info(f"linking {name} from {path}")
+        core.logger.info(f"linking {name} from {path}")
         mini_arpdata += f"!{name}\n" + arpinfo.block
         for i in range(arpinfo.num_libs()):
             files_to_copy.append(
@@ -25,12 +26,12 @@ def make_mini_arpdatatxt(dry_run, registry, dest):
     # Create an arpdata.txt file with the concatenated content.
     a = Path(dest) / "arpdata.txt"
     if a.exists():
-        common.logger.error(
+        core.logger.error(
             f"arpdata.txt already exists at path={path} and will not be overwritten"
         )
     else:
         if dry_run:
-            common.logger.info(f"not writing {a} because --dry-run")
+            core.logger.info(f"not writing {a} because --dry-run")
         else:
             with open(a, "w") as f:
                 f.write(mini_arpdata)
@@ -38,17 +39,17 @@ def make_mini_arpdatatxt(dry_run, registry, dest):
     # Create the arplibs directory by copying data files.
     d = Path(dest) / "arplibs"
     if d.exists():
-        common.logger.error(
+        core.logger.error(
             f"arplibs directory already exists at path={path} and will not be overwritten"
         )
     else:
         if dry_run:
-            common.logger.info(f"not writing {d} because --dry-run")
+            core.logger.info(f"not writing {d} because --dry-run")
         else:
             os.mkdir(d)
         for file in files_to_copy:
             if dry_run:
-                common.logger.info(f"not copying {file} to {d} because --dry-run")
+                core.logger.info(f"not copying {file} to {d} because --dry-run")
             else:
-                common.logger.info(f"copying {file} to {d}")
+                core.logger.info(f"copying {file} to {d}")
                 shutil.copy(file, d)

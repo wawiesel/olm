@@ -1,4 +1,5 @@
 import scale.olm.common as common
+import scale.olm.core as core
 import os
 import json
 from pathlib import Path
@@ -41,7 +42,7 @@ def archive(model):
         statevars = perm["state"]
         lib_path = os.path.join(perm_dir, perm_name + ".system.f33")
         lib_paths.append(lib_path)
-        common.logger.info(f"Now tagging {lib_path}")
+        core.logger.info(f"Now tagging {lib_path}")
 
         ts = ",".join(key + "=" + str(value) for key, value in statevars.items())
         try:
@@ -61,7 +62,7 @@ def archive(model):
             print("OBIWAN library tagging failed; cannot build archive")
 
     to_consolidate = " ".join(lib for lib in lib_paths)
-    common.logger.info(f"Building archive at {archive_file} ... ")
+    core.logger.info(f"Building archive at {archive_file} ... ")
     try:
         subprocess.run(
             [
@@ -293,7 +294,7 @@ def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
 
     # Generate burnup string for thin list.
     thin_bu_str = ",".join([str(bu) for bu in thinned_burnup_list])
-    common.logger.info("burnup thinning:", original_bu=bu_str, thinned_bu=thin_bu_str)
+    core.logger.info("burnup thinning:", original_bu=bu_str, thinned_bu=thin_bu_str)
     arpinfo.burnup_list = thinned_burnup_list
 
     # Create a temporary directory for libraries in process.
@@ -315,14 +316,14 @@ def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
         new_lib = Path(arpinfo.get_lib_by_index(i))
         old_lib = Path(arpinfo.origin_lib_list[i])
         tmp_lib = tmp / old_lib.name
-        common.logger.info(f"copying original library {old_lib} to {tmp_lib}")
+        core.logger.info(f"copying original library {old_lib} to {tmp_lib}")
         shutil.copyfile(old_lib, tmp_lib)
 
         # Set burnups on file using obiwan (should only be necessary in earlier SCALE versions).
         common.run_command(f"{obiwan} convert -i -setbu='[{bu_str}]' {tmp_lib}")
         bad_local = Path(tmp_lib.with_suffix(".f33").name)
         if bad_local.exists():
-            common.logger.warning(f"fixup: moving local={bad_local} to {tmp_lib}")
+            core.logger.warning(f"fixup: moving local={bad_local} to {tmp_lib}")
             shutil.move(bad_local, tmp_lib)
 
         # Perform burnup thinning.
@@ -332,7 +333,7 @@ def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
                 check_return_code=False,
             )
             if bad_local.exists():
-                common.logger.warning(f"fixup: moving local={bad_local} to {tmp_lib}")
+                core.logger.warning(f"fixup: moving local={bad_local} to {tmp_lib}")
                 shutil.move(bad_local, tmp_lib)
 
         # Set tags.
@@ -361,7 +362,7 @@ def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
 
         # Load into data structure and rename.
         ii_json = new_lib.with_suffix(".ii.json")
-        common.logger.info(f"Converting {f71} to {ii_json}")
+        core.logger.info(f"Converting {f71} to {ii_json}")
         ii = json.loads(text)
         ii["responses"]["system"] = ii["responses"].pop(f"case({caseid})")
         with open(ii_json, "w") as f:
@@ -398,7 +399,7 @@ def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
 
     # Write arpdata.txt.
     arpdata_txt = work_dir / "arpdata.txt"
-    common.logger.info(f"Writing arpdata.txt at {arpdata_txt} ... ")
+    core.logger.info(f"Writing arpdata.txt at {arpdata_txt} ... ")
     with open(arpdata_txt, "w") as f:
         f.write(arpinfo.get_arpdata())
     archive_file = "arpdata.txt:" + arpinfo.name
