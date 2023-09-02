@@ -11,7 +11,19 @@ import datetime
 
 
 def archive(model):
-    """Build an ORIGEN reactor archive in HDF5 format."""
+    """
+    Build an ORIGEN reactor library in HDF5 archive format.
+
+    Args:
+    model (dict): A dictionary containing the following keys:
+        - archive_file (str): The path and filename of the reactor archive to be created.
+        - work_dir (str): The path to the working directory.
+        - name (str): The name of the reactor.
+        - obiwan (str): The path to the OBIWAN executable.
+
+    Returns:
+    dict: relevant data on the result of creating an archive
+    """
     archive_file = model["archive_file"]
     config_file = model["work_dir"] + os.path.sep + "generate.json"
 

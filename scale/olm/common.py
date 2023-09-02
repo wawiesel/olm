@@ -1,3 +1,4 @@
+import pathlib
 import h5py
 from tqdm import tqdm, tqdm_notebook
 import numpy as np
@@ -108,32 +109,61 @@ def renormalize_wtpt(wtpt0, sum0, key_filter=""):
             wtpt[k] = v
 
     # Renormalize.
-    norm = sum / sum0
+    norm = sum / sum0 if sum0 > 0.0 else 0.0
     for k in wtpt:
         wtpt[k] /= norm
     return wtpt, norm
 
 
-def grams_per_mol(iso_wts):
+def _default_m_data():
+    """
+    An internal database for molar mass data.
+
+    Returns:
+    dict[str,float]: molar mass data for a default set of nuclides.
+    """
+    return {"am241": 241.0568}
+
+
+def grams_per_mol(iso_wts: dict[str, float], m_data=_default_m_data()):
     """
     Calculate the grams per mole of a weight percent mixture,
-            1/M = \sum_i (w_i/100) / M_i
+
+    ```math
+            1/m = \\sum_i w_i / m_i
+            \\sum_i w_i = 1.0
+    ```
     for each nuclide i.
+
+    Example without internal nuclide database:
+    >>> grams_per_mol({'u235': 50, 'pu239': 50},{})
+    236.9831223628692
+
+    The values for the individual molar masses are m_i are provided in
+    the m_data dict. This is not very important for the purposes of this code
+    that these values be precise. If not present in the dict, the simple
+    mass number is used, i.e. 242 for am242m.
+
+    Args:
+    iso_wts (dict[str,float]): nuclide name keys like ('am241') with weight percent values
+    m_data (dict[str,float]): optional molar masses (grams/mol)
+
+    Returns:
+    float: the total molar mass m from the above formula
+
     """
     import re
 
-    # Any grams/mole data we want to have better than just the mass number should
-    # be in this data set.
-    m_data = {"am241": 241.0568}
-
+    # Renormalize to 1.0.
+    iso_wts0, norm0 = renormalize_wtpt(iso_wts, 1.0)
     m = 0.0
-    for iso, wt in iso_wts.items():
+    for iso, wt in iso_wts0.items():
         m_default = re.sub("^[a-z]+", "", iso)
         m_default = re.sub("m[0-9]*$", "", m_default)
         m_iso = m_data.get(iso, float(m_default))
-        m += (wt / 100.0) / m_iso
+        m += wt / m_iso if m_iso > 0.0 else 0.0
 
-    return 1.0 / m
+    return 1.0 / m if m > 0.0 else 0.0
 
 
 def calculate_hm_oxide_breakdown(x):
