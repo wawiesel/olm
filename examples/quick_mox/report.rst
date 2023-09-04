@@ -33,15 +33,27 @@
         - {{v.grid-}}
     {% endfor %}
 
-..  image:: {{check.check-origami.nuclides.0092235.image}}
-    :alt: U235 hi/lo error
-    :class: with-shadow float-left
 
-    *   - ` max_diff0`
-        - {{check.check-origami.nuclides.0092235.max_diff0}}
+Consistency Check
+~~~~~~~~~~~~~~~~~
 
+These show the consistency between the high-order (:code:`hi=TRITON`) and low-order (:code:`lo=ORIGAMI`)
+solutions.
 
-..  rst-class::  clear-both
+.. list-table::
+
+    * - ..  figure:: {{check.sequence[0].nuclide_compare['0092235'].image}}
+            :alt: U235 hi/lo error
+
+            U-235 error as a function of time
+            (max: {{'%.2f' | format(100*check.sequence[0].nuclide_compare['0092235'].max_diff0)}}%)
+
+      - .. figure::  {{check.sequence[0].nuclide_compare['0094239'].image}}
+            :alt: Pu239 hi/lo error
+
+            Pu-239 error as a function of time
+            (max: {{'%.2f' | format(100*check.sequence[0].nuclide_compare['0094239'].max_diff0)}}%)
+
 
 Model info
 ~~~~~~~~~~

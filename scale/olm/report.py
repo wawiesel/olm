@@ -26,25 +26,28 @@ def stub1(model, template):
         j = work_dir / (x + ".json")
         with open(j, "r") as f:
             data[x] = json.load(f)
+    rst = work_dir / (model["name"] + ".rst")
+    pdf = rst.with_suffix(".pdf")
+    data.update(
+        {
+            "_work_dir": str(work_dir),
+            "_template": str(template),
+            "_pdf": str(pdf.relative_to(work_dir)),
+            "_rst": str(rst.relative_to(work_dir)),
+        }
+    )
+    with open(work_dir / "report.json", "w") as f:
+        core.logger.info(f"writing data for report.json")
+        json.dump(data, f, indent=4)
 
     # Expand template.
     filled_text = common.expand_template(template_text, data)
-
-    # Fill template.
-    rst = Path(model["work_dir"]) / (model["name"] + ".rst")
     with open(rst, "w") as f:
         core.logger.info(f"writing RST report {rst}")
         f.write(filled_text)
 
     # Generate PDF.
-    pdf = rst.with_suffix(".pdf")
     common.run_command(f"rst2pdf {rst}", check_return_code=False)
     core.logger.info(f"Generated PDF report {pdf}")
 
-    return {
-        "work_dir": str(work_dir),
-        "template": str(template),
-        "pdf": str(pdf.relative_to(work_dir)),
-        "rst": str(rst.relative_to(work_dir)),
-        "data": data,
-    }
+    return data

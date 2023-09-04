@@ -48,6 +48,7 @@ def run_command(command_line, check_return_code=True, echo=True, error_match="Er
         line = p.stdout.readline()
         text += line
         if error_match in line:
+            core.logger.debug("{error_match} in {line}")
             raise ValueError(line.strip())
         elif echo:
             core.logger.info(line.rstrip())
@@ -61,17 +62,24 @@ def run_command(command_line, check_return_code=True, echo=True, error_match="Er
     else:
         retcode = p.returncode
 
-    if retcode != 0 and text.strip() == "":
-        raise ValueError(
-            f"command line='{command_line}' failed to run in the shell. Check this is a valid path or recognized executable."
-        )
-    elif check_return_code and retcode < 0:
-        core.logger.info(
-            f"Negative return code {retcode} on last command:\n{command_line}\n"
-        )
-        msg = p.stderr.read().strip()
-        if not msg == "":
-            raise ValueError(str(msg))
+    if check_return_code:
+        if retcode != 0:
+            if text.strip() == "":
+                raise ValueError(
+                    f"command line='{command_line}' failed to run in the shell. Check this is a valid path or recognized executable."
+                )
+            else:
+                msg = p.stderr.read().strip()
+                if retcode < 0:
+                    core.logger.info(
+                        f"Negative return code {retcode} on last command:\n{command_line}\n"
+                    )
+                    raise ValueError(str(msg))
+                else:
+                    core.logger.warning(
+                        f"Return code {retcode} on last command:\n{command_line}\nmessage:\n{msg}"
+                    )
+
     return text
 
 

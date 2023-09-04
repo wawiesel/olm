@@ -270,6 +270,28 @@ class LowOrderConsistency:
         self.target_q1 = target_q1
         self.target_q2 = target_q2
 
+    @staticmethod
+    def make_diff_plot(identifier, image, time, min_diff, max_diff):
+        import matplotlib.pyplot as plt
+        import hashlib
+
+        plt.rcParams.update({"font.size": 18})
+        f_color = (
+            int.from_bytes(hashlib.md5(identifier.encode("utf-8")).digest(), "big")
+            % 256
+        ) / 256.0
+        color = plt.get_cmap("jet")(f_color)
+        plt.figure()
+        plt.fill_between(
+            np.asarray(time) / 86400.0,
+            100 * np.asarray(min_diff),
+            100 * np.asarray(max_diff),
+            color=color,
+        )
+        plt.xlabel("time (days)")
+        plt.ylabel("max[lo/hi-1] (%)")
+        plt.savefig(image, bbox_inches="tight")
+
     def info(self):
         info = CheckInfo()
         info.name = self.__class__.__name__
@@ -299,6 +321,7 @@ class LowOrderConsistency:
                 "max_diff": list(np.zeros(ntime)),
                 "min_diff": list(np.zeros(ntime)),
                 "perms": [],
+                "image": "",
             }
 
         self.ahist = np.array(self.lo_list)
@@ -361,8 +384,11 @@ class LowOrderConsistency:
             d["max_diff0"] = np.amax(
                 [np.absolute(d["max_diff"]), np.absolute(d["min_diff"])]
             )
-
-        #### Write the plots as a PNG to disk on for each nuclide.
+            image = self.check_dir / (n + "-diff.png")
+            info.nuclide_compare[n]["image"] = str(image)
+            LowOrderConsistency.make_diff_plot(
+                n, image, d["time"], d["min_diff"], d["max_diff"]
+            )
 
         self.ahist = np.ndarray.flatten(self.ahist)
         self.rhist = np.ndarray.flatten(self.rhist)
