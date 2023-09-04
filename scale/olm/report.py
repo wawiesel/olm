@@ -38,7 +38,7 @@ def stub1(model, template):
 
     # Generate PDF.
     pdf = rst.with_suffix(".pdf")
-    common.run_command(f"rst2pdf {rst}")
+    common.run_command(f"rst2pdf {rst}", check_return_code=False)
     core.logger.info(f"Generated PDF report {pdf}")
 
     return {

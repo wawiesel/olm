@@ -42,7 +42,7 @@ def archive(model):
         statevars = perm["state"]
         lib_path = os.path.join(perm_dir, perm_name + ".system.f33")
         lib_paths.append(lib_path)
-        core.logger.info(f"Now tagging {lib_path}")
+        core.logger.debug(f"Now tagging {lib_path}")
 
         ts = ",".join(key + "=" + str(value) for key, value in statevars.items())
         try:
@@ -316,11 +316,13 @@ def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
         new_lib = Path(arpinfo.get_lib_by_index(i))
         old_lib = Path(arpinfo.origin_lib_list[i])
         tmp_lib = tmp / old_lib.name
-        core.logger.info(f"copying original library {old_lib} to {tmp_lib}")
+        core.logger.debug(f"copying original library {old_lib} to {tmp_lib}")
         shutil.copyfile(old_lib, tmp_lib)
 
         # Set burnups on file using obiwan (should only be necessary in earlier SCALE versions).
-        common.run_command(f"{obiwan} convert -i -setbu='[{bu_str}]' {tmp_lib}")
+        common.run_command(
+            f"{obiwan} convert -i -setbu='[{bu_str}]' {tmp_lib}", echo=False
+        )
         bad_local = Path(tmp_lib.with_suffix(".f33").name)
         if bad_local.exists():
             core.logger.warning(f"fixup: moving local={bad_local} to {tmp_lib}")
@@ -331,6 +333,7 @@ def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
             common.run_command(
                 f"{obiwan} convert -i -thin=1 -tvals='[{thin_bu_str}]' {tmp_lib}",
                 check_return_code=False,
+                echo=False,
             )
             if bad_local.exists():
                 core.logger.warning(f"fixup: moving local={bad_local} to {tmp_lib}")
@@ -339,12 +342,13 @@ def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
         # Set tags.
         interptags = arpinfo.interptags_by_index(i)
         common.run_command(
-            f"{obiwan} tag -interptags='{interptags}' -idtags='{idtags}' {tmp_lib}"
+            f"{obiwan} tag -interptags='{interptags}' -idtags='{idtags}' {tmp_lib}",
+            echo=False,
         )
 
         # Convert to HDF5.
         common.run_command(
-            f"{obiwan} convert -format=hdf5 -type=f33 {tmp_lib} -dir={tmp}"
+            f"{obiwan} convert -format=hdf5 -type=f33 {tmp_lib} -dir={tmp}", echo=False
         )
 
         # Move the local library to the new proper place.
@@ -362,7 +366,7 @@ def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
 
         # Load into data structure and rename.
         ii_json = new_lib.with_suffix(".ii.json")
-        core.logger.info(f"Converting {f71} to {ii_json}")
+        core.logger.debug(f"Converting {f71} to {ii_json}")
         ii = json.loads(text)
         ii["responses"]["system"] = ii["responses"].pop(f"case({caseid})")
         with open(ii_json, "w") as f:

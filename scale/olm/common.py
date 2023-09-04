@@ -50,6 +50,8 @@ def run_command(command_line, check_return_code=True, echo=True, error_match="Er
         if error_match in line:
             raise ValueError(line.strip())
         elif echo:
+            core.logger.info(line.rstrip())
+        else:
             core.logger.debug(line.rstrip())
         if not line:
             break
@@ -239,7 +241,7 @@ def get_history_from_f71(obiwan, f71, caseid0):
       8  1.51200e+08  3.99026e+01  4.18116e+14  5.31986e+22  6.98569e+04  1.00000e+00  1.09091e+05      8     10      7 DC----
     """
     core.logger.info(f"extracting history from {f71}")
-    text0 = run_command(f"{obiwan} view -format=info {f71}")
+    text0 = run_command(f"{obiwan} view -format=info {f71}", echo=False)
 
     # Start the text with " pos " which should be the first thing on the header column
     # line always and the last thing the "D - state definition present" label.
@@ -696,7 +698,7 @@ def parse_burnups_from_triton_output(output):
                 elif n > 4:
                     bu = float(line.split()[-1])
                     burnup_list.append(bu)
-    core.logger.info(
+    core.logger.debug(
         "found burnup_list=[{}]".format(",".join([str(x) for x in burnup_list]))
     )
     return burnup_list

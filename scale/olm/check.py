@@ -428,7 +428,7 @@ class LowOrderConsistency:
             check_data_file = check_input.with_suffix(".olm.json")
             with open(check_data_file, "w") as f:
                 f.write(json.dumps(check_data, indent=4))
-            core.logger.info(
+            core.logger.debug(
                 f"Writing json data file={check_data_file} for LowOrderConsistency check"
             )
 
@@ -436,7 +436,7 @@ class LowOrderConsistency:
             filled_text = common.expand_template(template_text, check_data)
 
             # Write the check input file.
-            core.logger.info(
+            core.logger.debug(
                 f"Writing input file={check_input} for LowOrderConsistency check"
             )
             with open(check_input, "w") as f:
@@ -469,7 +469,7 @@ class LowOrderConsistency:
         self.hi_list = list()
         self.lo_list = list()
         for hi_ii_json, lo_ii_json in ii_json_list:
-            core.logger.info(f"loading HI {hi_ii_json}")
+            core.logger.debug(f"loading HI {hi_ii_json}")
             # Load the json data into HIGH fidelity and LOWER fidelity data structures.
             # Note there's a little duplicate code here, but probably not worth refactoring.
             with open(hi_ii_json, "r") as f:
@@ -481,7 +481,7 @@ class LowOrderConsistency:
                 self.names = jt["definitions"]["nuclideVectors"][hi_vector]
                 self.time_list = case["time"]
 
-            core.logger.info(f"loading LO {lo_ii_json}")
+            core.logger.debug(f"loading LO {lo_ii_json}")
             with open(lo_ii_json, "r") as f:
                 jo = json.load(f)
                 case = jo["responses"][f"case({self.lo_case})"]
