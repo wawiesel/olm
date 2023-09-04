@@ -289,7 +289,7 @@ class LowOrderConsistency:
             color=color,
         )
         plt.xlabel("time (days)")
-        plt.ylabel("max[lo/hi-1] (%)")
+        plt.ylabel("lo/hi-1 (%)")
         plt.savefig(image, bbox_inches="tight")
 
     def info(self):

@@ -38,7 +38,9 @@ Consistency Check
 ~~~~~~~~~~~~~~~~~
 
 These show the consistency between the high-order (:code:`hi=TRITON`) and low-order (:code:`lo=ORIGAMI`)
-solutions.
+solutions. Each plot shows the range of the error across all permutations in the interpolation
+space.
+
 
 .. list-table::
 
