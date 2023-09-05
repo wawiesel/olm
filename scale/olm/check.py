@@ -271,7 +271,7 @@ class LowOrderConsistency:
         self.target_q2 = target_q2
 
     @staticmethod
-    def make_diff_plot(identifier, image, time, min_diff, max_diff):
+    def make_diff_plot(identifier, image, time, min_diff, max_diff, max_diff0):
         import matplotlib.pyplot as plt
         import hashlib
 
@@ -290,6 +290,7 @@ class LowOrderConsistency:
         )
         plt.xlabel("time (days)")
         plt.ylabel("lo/hi-1 (%)")
+        plt.legend(["{} (max error: {:.2f} %)".format(identifier, 100 * max_diff0)])
         plt.savefig(image, bbox_inches="tight")
 
     def info(self):
@@ -385,13 +386,26 @@ class LowOrderConsistency:
                 [np.absolute(d["max_diff"]), np.absolute(d["min_diff"])]
             )
             image = self.check_dir / (n + "-diff.png")
+            core.logger.info(
+                "creating nuclide diff ", image=str(image.relative_to(self.work_dir))
+            )
             info.nuclide_compare[n]["image"] = str(image)
             LowOrderConsistency.make_diff_plot(
-                n, image, d["time"], d["min_diff"], d["max_diff"]
+                n, image, d["time"], d["min_diff"], d["max_diff"], d["max_diff0"]
             )
 
         self.ahist = np.ndarray.flatten(self.ahist)
         self.rhist = np.ndarray.flatten(self.rhist)
+        hist_image = self.check_dir / "hist.png"
+        core.logger.info(
+            "creating histogram ", image=str(hist_image.relative_to(self.work_dir))
+        )
+        common.plot_hist(
+            self,
+            hist_image,
+            xlabel=r"$\log_{10} |hi/lo-1|$",
+            ylabel=r"$\log_{10} |hi-lo|$",
+        )
 
         info.wa = int(
             np.logical_and((self.ahist > self.epsa), (self.rhist > self.epsr)).sum()

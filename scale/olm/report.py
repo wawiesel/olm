@@ -47,7 +47,7 @@ def stub1(model, template):
         f.write(filled_text)
 
     # Generate PDF.
-    common.run_command(f"rst2pdf {rst}", check_return_code=False)
+    common.run_command(f"rst2pdf -s twocolumn {rst}", check_return_code=False)
     core.logger.info(f"Generated PDF report {pdf}")
 
     return data

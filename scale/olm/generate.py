@@ -25,6 +25,7 @@ def comp_uo2_simple(state, density=0):
     return {
         "density": density,
         "uo2": {"iso": __iso_uo2(u234=1.0e-20, u235=enrichment, u236=1.0e-20)},
+        "_input": {"state": state, "density": density},
     }
 
 
@@ -47,6 +48,7 @@ def comp_uo2_vera(state, density=0):
                 u236=0.0046 * enrichment,
             )
         },
+        "_input": {"state": state, "density": density},
     }
 
 
@@ -68,6 +70,7 @@ def comp_uo2_nuregcr5625(state, density=0):
                 u236=0.0046 * enrichment,
             )
         },
+        "_input": {"state": state, "density": density},
     }
 
 
@@ -111,6 +114,8 @@ def comp_mox_ornltm2003_2(state, density, uo2, am241):
     # Pass through density.
     comp["density"] = density
 
+    # Copy the inputs.
+    comp["_input"] = {"state": state, "density": density, "uo2": uo2, "am241": am241}
     return comp
 
 

@@ -85,7 +85,12 @@ def run_command(command_line, check_return_code=True, echo=True, error_match="Er
 
 def get_scale_version(scalerte):
     """Get the SCALE version by running scalerte."""
-    version = run_command(f"{scalerte} -V", echo=False).split(" ")[2]
+    out_str = run_command(f"{scalerte} -V", echo=False, check_return_code=False)
+    if len(out_str.strip()) < 5:
+        raise ValueError(
+            f"SCALE version could not be found. Check that {scalerte} is a valid path!"
+        )
+    version = out_str.split(" ")[2]
     return version
 
 
@@ -186,36 +191,42 @@ def calculate_hm_oxide_breakdown(x):
 def approximate_hm_info(comp):
     """Approximate some heavy metal information."""
 
-    # Calculate masses.
-    pu_mass = grams_per_mol(comp["puo2"]["iso"])
-    am_mass = grams_per_mol(comp["amo2"]["iso"])
-    u_mass = grams_per_mol(comp["uo2"]["iso"])
-    hm_mass = grams_per_mol(comp["hmo2"]["iso"])
-    o2_mass = 2 * 15.9994
+    # Calculate molar masses.
+    m_pu = grams_per_mol(comp["puo2"]["iso"])
+    m_am = grams_per_mol(comp["amo2"]["iso"])
+    m_u = grams_per_mol(comp["uo2"]["iso"])
+    m_hm = grams_per_mol(comp["hmo2"]["iso"])
+    m_o2 = 2 * 15.9994
 
     # Calculate heavy metal fractions of oxide (approximate).
-    puo2_hm_frac = pu_mass / (pu_mass + o2_mass)
-    amo2_hm_frac = am_mass / (am_mass + o2_mass)
-    uo2_hm_frac = u_mass / (u_mass + o2_mass)
+    puo2_hm_frac = m_pu / (m_pu + m_o2)
+    amo2_hm_frac = m_am / (m_am + m_o2)
+    uo2_hm_frac = m_u / (m_u + m_o2)
 
-    # Calculate some useful quantities.
+    # Calculate heavy metal densities.
+    am_dens = amo2_hm_frac * comp["amo2"]["dens_frac"]
+    pu_dens = puo2_hm_frac * comp["puo2"]["dens_frac"]
+    u_dens = uo2_hm_frac * comp["uo2"]["dens_frac"]
+
+    # Back out some useful quantities. Despite being called
+    # fractions, these are in percent, as per convention.
     z = comp["amo2"]["iso"].get("am241", 0.0) / 100
-    am241_frac = 100 * z * am_mass / (am_mass + pu_mass)
+    am241_frac = 100 * z * am_dens / (am_dens + pu_dens)
 
     z = comp["puo2"]["iso"].get("pu239", 0.0) / 100
-    pu239_frac = 100 * z * pu_mass / (am_mass + pu_mass)
+    pu239_frac = 100 * z * pu_dens / (am_dens + pu_dens)
 
-    pu_frac = 100 * pu_mass / (am_mass + pu_mass)
+    pu_frac = 100 * pu_dens / (am_dens + pu_dens + u_dens)
 
     return {
         "am241_frac": am241_frac,
         "pu239_frac": pu239_frac,
         "pu_frac": pu_frac,
-        "o2_mass": o2_mass,
-        "u_mass": u_mass,
-        "am_mass": am_mass,
-        "pu_mass": pu_mass,
-        "hm_mass": hm_mass,
+        "m_o2": m_o2,
+        "m_u": m_u,
+        "m_am": m_am,
+        "m_pu": m_pu,
+        "m_hm": m_hm,
         "puo2_hm_frac": puo2_hm_frac,
         "amo2_hm_frac": amo2_hm_frac,
         "uo2_hm_frac": uo2_hm_frac,
@@ -831,37 +842,45 @@ def create_registry(paths, env):
     return registry
 
 
-def plot_hist(x):
+def plot_hist(x, image="", xlabel=r"$\log \tilde{h}_{ijk}$", ylabel=r"$\log h_{ijk}$"):
     """Plot histograms from relative and absolute histogram data (rhist,ahist)."""
+    plt.figure()
+    eps = 1e-20
+    nbins = 100
+
+    max_lim = 1 + int(np.amax([np.log10(eps + x.rhist), np.log10(eps + x.ahist)]))
 
     plt.hist2d(
-        np.log10(x.rhist),
-        np.log10(x.ahist),
-        bins=np.linspace(-40, 20, 100),
+        np.log10(eps + x.rhist),
+        np.log10(eps + x.ahist),
+        bins=np.linspace(np.log10(eps), max_lim, nbins),
         cmin=1,
         alpha=0.2,
     )
     ind1 = (x.rhist > x.epsr) & (x.ahist > x.epsa)
     h = plt.hist2d(
-        np.log10(x.rhist[ind1]),
-        np.log10(x.ahist[ind1]),
-        bins=np.linspace(-40, 20, 100),
+        np.log10(eps + x.rhist[ind1]),
+        np.log10(eps + x.ahist[ind1]),
+        bins=np.linspace(np.log10(eps), max_lim, nbins),
         cmin=1,
         alpha=1.0,
     )
     ind2 = x.rhist > x.epsr
     plt.hist2d(
-        np.log10(x.rhist[ind2]),
-        np.log10(x.ahist[ind2]),
-        bins=np.linspace(-40, 20, 100),
+        np.log10(eps + x.rhist[ind2]),
+        np.log10(eps + x.ahist[ind2]),
+        bins=np.linspace(np.log10(eps), max_lim, nbins),
         cmin=1,
         alpha=0.6,
     )
     plt.colorbar(h[3])
-    plt.xlabel(r"$\log \tilde{h}_{ijk}$")
-    plt.ylabel(r"$\log h_{ijk}$")
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.grid()
-    plt.show()
+    if image == "":
+        plt.show()
+    else:
+        plt.savefig(image, bbox_inches="tight")
 
 
 class Archive:

@@ -30,9 +30,9 @@ read composition
 '
 ' checks for mixture 10:
 '   sum of density fraction [-]: {{comp.inner.uo2.dens_frac+comp.inner.puo2.dens_frac+comp.inner.amo2.dens_frac}} (should be 1.0)
-'   pu239/(pu+am) [%]: {{comp.inner.puo2.iso.pu239*comp.inner.puo2.dens_frac/(comp.inner.puo2.dens_frac+comp.inner.amo2.dens_frac)}} (should be {{state.pu239_frac}})
-'   (pu+am)/(u+pu+am) [%]: {{100*(comp.inner.puo2.dens_frac+comp.inner.amo2.dens_frac)/(comp.inner.uo2.dens_frac+comp.inner.puo2.dens_frac+comp.inner.amo2.dens_frac)}} (should be {{state.pu_frac}})
-'   am/(pu+am) [%]: {{100*(comp.inner.amo2.dens_frac)/(comp.inner.puo2.dens_frac+comp.inner.amo2.dens_frac)}} (should be {{comp.inner.info.am241_frac}})
+'   pu239/(pu+am) [%]: {{comp.inner.puo2.iso.pu239*comp.inner.puo2.dens_frac/(comp.inner.puo2.dens_frac+comp.inner.amo2.dens_frac)}} (should be {{comp.inner._input.state.pu239_frac}})
+'   (pu+am)/(u+pu+am) [%]: {{100*(comp.inner.puo2.dens_frac+comp.inner.amo2.dens_frac)/(comp.inner.uo2.dens_frac+comp.inner.puo2.dens_frac+comp.inner.amo2.dens_frac)}} (should be {{comp.inner._input.state.pu_frac}})
+'   am/(pu+am) [%]: {{comp.inner.info.am241_frac}} (should be {{comp.inner._input.am241}})
 '
 '
 ' clad
