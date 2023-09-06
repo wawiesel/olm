@@ -3,11 +3,17 @@ import scale.olm.common as common
 import pytest
 
 
-def data_dir():
+def data_file(filename):
     from pathlib import Path
 
     p = Path(__file__)
-    p = p.parent / ".." / "data"
+    p = p.parent.parent / "data" / filename
+    size = p.stat().st_size
+    # 50KB can't be real data
+    if size < 5e4:
+        raise ValueError(
+            f"It appears the data file {p} may be a GIT LFS pointer. Make sure they are downloaded, e.g. with `git lfs pull``."
+        )
     return p
 
 
@@ -19,7 +25,7 @@ def test_gridgradient_basic():
     assert c.epsa == c.default_params()["epsa"]
 
     # Test that we can load an archive
-    a = common.Archive(data_dir() / "w17x17.h5")
+    a = common.Archive(data_file("w17x17.h5"))
     assert a != None
 
     # Test that we can change and get the default result.

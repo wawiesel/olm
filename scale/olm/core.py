@@ -280,12 +280,22 @@ class ScaleRte:
         data_size: The size of the SCALE data directory.
     """
 
-    def __init__(self, scalerte_path: pathlib.Path, do_not_run: bool = False):
+    @staticmethod
+    def _default_do_not_run():
+        """Provided as a way to override behavior for testing."""
+        return False
+
+    def __init__(self, scalerte_path: pathlib.Path, do_not_run: bool = None):
+        if do_not_run == None:
+            do_not_run = ScaleRte._default_do_not_run()
+        self.do_not_run = do_not_run
+
         self.scalerte_path = Path(scalerte_path)
-        if not self.scalerte_path.exists():
-            raise ValueError(
-                f"Path to SCALE Runtime Environment, {self.scalerte_path} does not exist!"
-            )
+        if not self.do_not_run:
+            if not self.scalerte_path.exists():
+                raise ValueError(
+                    f"Path to SCALE Runtime Environment, {self.scalerte_path} does not exist!"
+                )
         self.args = ""
         self.version = self._get_version(self.scalerte_path, do_not_run)
         self.data_dir = self._get_data_dir(self.scalerte_path)
@@ -454,6 +464,22 @@ class ScaleRte:
         """
         self.args = args
 
+    def _run_kernel(command_line: str, input_file: pathlib.Path) -> int:
+        """Kernel for running, mostly for enabling mocking/testing.
+
+        Keep it simple, just return the returncode.
+
+        Returns:
+
+        """
+        result = subprocess.run(
+            command_line + " " + str(input_file),
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
+        return result.returncode
+
     def run(self, input_file):
         """Run an input file through SCALE.
 
@@ -478,23 +504,22 @@ class ScaleRte:
         rerun, data = self._determine_if_rerun(
             output_file, input_file, self.data_size, self.version
         )
-        command_line = f"{self.scalerte_path} {self.args} {input_file}"
+        command_line = f"{self.scalerte_path} {self.args}"
         message_file = output_file.with_suffix(".msg")
 
         start = time.time()
         if rerun:
-            if not self.data_dir.exists():
-                raise ValueError(
-                    f"Path to SCALE Data was not found! Either 1) set the environment variable DATA or 2) symlink the data directory to {data_dir}."
-                )
-            result = subprocess.run(
-                command_line,
-                shell=True,
-                capture_output=True,
-                text=True,
-            )
+            if self.do_not_run:
+                returncode = 0
+            else:
+                if not self.data_dir.exists():
+                    raise ValueError(
+                        f"Path to SCALE Data was not found! Either 1) set the environment variable DATA or 2) symlink the data directory to {data_dir}."
+                    )
+                returncode = ScaleRte._run_kernel(command_line, input_file)
+
             # If run was not successful, move output to .FAILED
-            success = result.returncode == 0
+            success = returncode == 0
             errors = []
             if not success:
                 output_file0 = str(output_file)
@@ -502,7 +527,7 @@ class ScaleRte:
                 shutil.move(output_file0, output_file)
                 errors = self._scrape_errors_from_message_file(message_file)
             data = {
-                "returncode": result.returncode,
+                "returncode": returncode,
                 "success": success,
                 "errors": errors,
                 "command_line": command_line,
@@ -529,11 +554,19 @@ class ScaleRte:
         return str(input_file), data
 
 
+def _is_active_doctest():
+    """Check if running the current module as a doctest.
+
+    Note, this may not cover enough edge cases for widespread usage. It is
+    just intended to enable OLM doctests.
+    """
+    import sys
+
+    return __name__ == "__main__" or "_pytest.doctest" in sys.modules
+
+
 # This enables succinct doctests for methods by using the existing data in extraglobs.
-# However, you can only invoke doctest as `
-#           python ./core.py -v
-# not as python -m doctest -v ./core.py
-if __name__ == "__main__":
+if _is_active_doctest():
     import doctest
 
     testing_temp_dir = TempDir()

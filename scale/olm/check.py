@@ -135,6 +135,8 @@ class GridGradient:
         info.eps0 = self.eps0
         info.epsa = self.epsa
         info.epsr = self.epsr
+        info.target_q1 = self.target_q1
+        info.target_q2 = self.target_q2
         info.wa = int(
             np.logical_and((self.ahist > self.epsa), (self.rhist > self.epsr)).sum()
         )
