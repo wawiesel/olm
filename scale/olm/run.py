@@ -10,6 +10,13 @@ def __runtime_in_hours(runtime):
 
 
 def makefile(model, dry_run, nprocs):
+    """Generate a Makefile and run it.
+
+    Args:
+        model: dictionary with work_dir and scalerte.
+        dry_run: pass :math:`-n` to make
+        nprocs: pass :math:`-j nprocs` to make
+    """
     scalerte = model["scalerte"]
 
     contents = f"""

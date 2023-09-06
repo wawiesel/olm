@@ -16,6 +16,7 @@ library to solve nuclide inventory generation problems.
     Quickstart <quickstart.rst>
     Step-by-step <step-by-step.rst>
     For OLM Developers <developers.md>
+    Code Reference <code_reference.rst>
 
 
 Overview

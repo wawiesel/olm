@@ -121,42 +121,47 @@ def renormalize_wtpt(wtpt0, sum0, key_filter=""):
     return wtpt, norm
 
 
-def _default_m_data():
-    """
-    An internal database for molar mass data.
+def _default_m_data() -> dict[str, float]:
+    """The default nuclide mass data.
 
     Returns:
-    dict[str,float]: molar mass data for a default set of nuclides.
+        Molar mass data for a default set of nuclides.
     """
     return {"am241": 241.0568}
 
 
-def grams_per_mol(iso_wts: dict[str, float], m_data=_default_m_data()):
-    """
-    Calculate the grams per mole of a weight percent mixture,
+def grams_per_mol(
+    iso_wts: dict[str, float], m_data: dict[str, float] = _default_m_data()
+) -> float:
+    """Calculate the grams per mole of a mass fraction mixture.
 
-    ```math
+    Use the formula to calculate the total mixture molar mass :math:`m` according to
+
+    .. math::
             1/m = \\sum_i w_i / m_i
+
             \\sum_i w_i = 1.0
-    ```
-    for each nuclide i.
 
-    Example without internal nuclide database:
-    >>> grams_per_mol({'u235': 50, 'pu239': 50},{})
-    236.9831223628692
+    for each nuclide :math:`i`.
 
-    The values for the individual molar masses are m_i are provided in
+    The values for the individual molar masses are :math:`m_i` are provided in
     the m_data dict. This is not very important for the purposes of this code
     that these values be precise. If not present in the dict, the simple
     mass number is used, i.e. 242 for am242m.
 
     Args:
-    iso_wts (dict[str,float]): nuclide name keys like ('am241') with weight percent values
-    m_data (dict[str,float]): optional molar masses (grams/mol)
+        iso_wts: Dictionary with keys as nuclide names (e.g. 'am241') and values
+                 proportional to mass fraction.
+        m_data: Optional molar masses (grams/mol).
 
     Returns:
-    float: the total molar mass m from the above formula
+        The total molar mass m from the above formula.
 
+    Examples:
+        Force the use of mass numbers by providing empty mass data
+
+        >>> grams_per_mol({'u235': 50, 'pu239': 50}, m_data={})
+        236.9831223628692
     """
     import re
 
@@ -235,29 +240,33 @@ def approximate_hm_info(comp):
 
 def get_history_from_f71(obiwan, f71, caseid0):
     """
-      Parse the history of the form as follows for 6.3 series:
-     pos         time        power         flux      fluence       energy    initialhm libpos   case   step DCGNAB
-     (-)          (s)         (MW)    (n/cm2-s)      (n/cm2)        (MWd)      (MTIHM)    (-)    (-)    (-)    (-)
-       1  0.00000e+00  4.00000e+01  8.11143e+14  0.00000e+00  0.00000e+00  1.00000e+00      1      1      0 DC----
-       2  2.16000e+06  4.00000e+01  6.22529e+14  1.53582e+21  1.00000e+03  1.00000e+00      1      1     10 DC----
-       3  2.16000e+07  4.00000e+01  4.26681e+14  8.78948e+21  1.00000e+04  1.00000e+00      2      1     10 DC----
-       4  5.40000e+07  4.00000e+01  4.26566e+14  1.34274e+22  2.50000e+04  1.00000e+00      3      1     10 DC----
-       5  1.08000e+08  4.00000e+01  4.31263e+14  2.30677e+22  5.00000e+04  1.00000e+00      4      1     10 DC----
-       6  1.51200e+08  4.00000e+01  4.32303e+14  1.86058e+22  7.00000e+04  1.00000e+00      5      1     10 DC----
-       7  1.94400e+08  4.00000e+01  4.33742e+14  1.86669e+22  9.00000e+04  1.00000e+00      6      1     10 DC----
-       8  2.37600e+08  4.00000e+01  4.35733e+14  1.87415e+22  1.10000e+05  1.00000e+00      7      1     10 DC----
+    Parse the history of the form as follows for 6.3 series:
 
-      Parse the history of the form as follows for 7.0 series:
-    pos         time        power         flux      fluence       energy    initialhm       volume libpos   case   step DCGNAB
-    (-)          (s)         (MW)   (n/cm^2-s)     (n/cm^2)        (MWd)      (MTIHM)       (cm^3)    (-)    (-)    (-)    (-)
-      1  0.00000e+00  0.00000e+00  0.00000e+00  0.00000e+00  0.00000e+00  1.00000e+00  1.09091e+05      1     10      0 DC----
-      2  2.16000e+06  3.99302e+01  2.77611e+14  5.99639e+20  9.98255e+02  1.00000e+00  1.09091e+05      2     10      1 DC----
-      3  2.16000e+07  3.99294e+01  2.88762e+14  6.21316e+21  9.98238e+03  1.00000e+00  1.09091e+05      3     10      2 DC----
-      4  5.40000e+07  3.99271e+01  3.13691e+14  1.63767e+22  2.49551e+04  1.00000e+00  1.09091e+05      4     10      3 DC----
-      5  8.10000e+07  3.99215e+01  3.42857e+14  2.56339e+22  3.74305e+04  1.00000e+00  1.09091e+05      5     10      4 DC----
-      6  1.08000e+08  3.99155e+01  3.70174e+14  3.56286e+22  4.99041e+04  1.00000e+00  1.09091e+05      6     10      5 DC----
-      7  1.29600e+08  3.99087e+01  3.95311e+14  4.41673e+22  5.98813e+04  1.00000e+00  1.09091e+05      7     10      6 DC----
-      8  1.51200e+08  3.99026e+01  4.18116e+14  5.31986e+22  6.98569e+04  1.00000e+00  1.09091e+05      8     10      7 DC----
+    .. code:: text
+
+         pos         time        power         flux      fluence       energy    initialhm libpos   case   step DCGNAB
+         (-)          (s)         (MW)    (n/cm2-s)      (n/cm2)        (MWd)      (MTIHM)    (-)    (-)    (-)    (-)
+           1  0.00000e+00  4.00000e+01  8.11143e+14  0.00000e+00  0.00000e+00  1.00000e+00      1      1      0 DC----
+           2  2.16000e+06  4.00000e+01  6.22529e+14  1.53582e+21  1.00000e+03  1.00000e+00      1      1     10 DC----
+           3  2.16000e+07  4.00000e+01  4.26681e+14  8.78948e+21  1.00000e+04  1.00000e+00      2      1     10 DC----
+           4  5.40000e+07  4.00000e+01  4.26566e+14  1.34274e+22  2.50000e+04  1.00000e+00      3      1     10 DC----
+           5  1.08000e+08  4.00000e+01  4.31263e+14  2.30677e+22  5.00000e+04  1.00000e+00      4      1     10 DC----
+           6  1.51200e+08  4.00000e+01  4.32303e+14  1.86058e+22  7.00000e+04  1.00000e+00      5      1     10 DC----
+           7  1.94400e+08  4.00000e+01  4.33742e+14  1.86669e+22  9.00000e+04  1.00000e+00      6      1     10 DC----
+           8  2.37600e+08  4.00000e+01  4.35733e+14  1.87415e+22  1.10000e+05  1.00000e+00      7      1     10 DC----
+
+          Parse the history of the form as follows for 7.0 series:
+        pos         time        power         flux      fluence       energy    initialhm       volume libpos   case   step DCGNAB
+        (-)          (s)         (MW)   (n/cm^2-s)     (n/cm^2)        (MWd)      (MTIHM)       (cm^3)    (-)    (-)    (-)    (-)
+          1  0.00000e+00  0.00000e+00  0.00000e+00  0.00000e+00  0.00000e+00  1.00000e+00  1.09091e+05      1     10      0 DC----
+          2  2.16000e+06  3.99302e+01  2.77611e+14  5.99639e+20  9.98255e+02  1.00000e+00  1.09091e+05      2     10      1 DC----
+          3  2.16000e+07  3.99294e+01  2.88762e+14  6.21316e+21  9.98238e+03  1.00000e+00  1.09091e+05      3     10      2 DC----
+          4  5.40000e+07  3.99271e+01  3.13691e+14  1.63767e+22  2.49551e+04  1.00000e+00  1.09091e+05      4     10      3 DC----
+          5  8.10000e+07  3.99215e+01  3.42857e+14  2.56339e+22  3.74305e+04  1.00000e+00  1.09091e+05      5     10      4 DC----
+          6  1.08000e+08  3.99155e+01  3.70174e+14  3.56286e+22  4.99041e+04  1.00000e+00  1.09091e+05      6     10      5 DC----
+          7  1.29600e+08  3.99087e+01  3.95311e+14  4.41673e+22  5.98813e+04  1.00000e+00  1.09091e+05      7     10      6 DC----
+          8  1.51200e+08  3.99026e+01  4.18116e+14  5.31986e+22  6.98569e+04  1.00000e+00  1.09091e+05      8     10      7 DC----
+
     """
     core.logger.info(f"extracting history from {f71}")
     text0 = run_command(f"{obiwan} view -format=info {f71}", echo=False)
@@ -675,20 +684,22 @@ def expand_template(template_text, data):
 def parse_burnups_from_triton_output(output):
     """Parse the table that looks like this:
 
-    Sub-Interval   Depletion   Sub-interval    Specific      Burn Length  Decay Length   Library Burnup
-         No.       Interval     in interval  Power(MW/MTIHM)     (d)          (d)           (MWd/MTIHM)
-    ----------------------------------------------------------------------------------------------------
-    ----------------------------------------------------------------------------------------------------
-            0     ****Initial Bootstrap Calculation****                                      0.00000E+00
-            1          1                1          40.000      25.000         0.000          5.00000e+02
-            2          1                2          40.000     300.000         0.000          7.00000e+03
-            3          1                3          40.000     300.000         0.000          1.90000e+04
-            4          1                4          40.000     312.500         0.000          3.12500e+04
-            5          1                5          40.000     312.500         0.000          4.37500e+04
-            6          1                6          40.000     333.333         0.000          5.66667e+04
-            7          1                7          40.000     333.333         0.000          7.00000e+04
-            8          1                8          40.000     333.333         0.000          8.33333e+04
-    ----------------------------------------------------------------------------------------------------
+    .. code:: text
+
+        Sub-Interval   Depletion   Sub-interval    Specific      Burn Length  Decay Length   Library Burnup
+             No.       Interval     in interval  Power(MW/MTIHM)     (d)          (d)           (MWd/MTIHM)
+        ----------------------------------------------------------------------------------------------------
+        ----------------------------------------------------------------------------------------------------
+                0     ****Initial Bootstrap Calculation****                                      0.00000E+00
+                1          1                1          40.000      25.000         0.000          5.00000e+02
+                2          1                2          40.000     300.000         0.000          7.00000e+03
+                3          1                3          40.000     300.000         0.000          1.90000e+04
+                4          1                4          40.000     312.500         0.000          3.12500e+04
+                5          1                5          40.000     312.500         0.000          4.37500e+04
+                6          1                6          40.000     333.333         0.000          5.66667e+04
+                7          1                7          40.000     333.333         0.000          7.00000e+04
+                8          1                8          40.000     333.333         0.000          8.33333e+04
+        ----------------------------------------------------------------------------------------------------
 
     """
     burnup_list = []

@@ -4,15 +4,13 @@ import scale.olm.core as core
 import json
 
 
-def __stub1_summary_check():
-    return "Hello check!"
-
-
-def __stub1_summary_lib():
-    return "Hello lib!"
-
-
 def stub1(model, template):
+    """Template for reporting.
+
+    Uses jinja2 to substitue data.
+
+    """
+
     core.logger.info(f"reading RST template={template}")
 
     # Load the template file.
