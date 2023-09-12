@@ -8,7 +8,7 @@
 
 :Name: {{model.name}}
 :Description: {{model.description}}
-:Date: {{build.date}}
+:Date: {{assemble.date}}
 :SCALE: v{{run.version}}
 :Runtime: {{run.total_runtime_hrs}} cpu-hours
 :Sources:
@@ -19,10 +19,10 @@
 
     {% endfor %}
 :Revision Log:
-    Rev. 0
-        Some human
-    Rev. 1
-        Another human 2022
+    {% for rev in model.revision %}
+    Rev. {{loop.index}}
+         {{rev}}
+    {% endfor %}
 
 
 .. list-table:: Interpolation Space
@@ -31,7 +31,7 @@
 
     *   - name
         - grid
-    {% for k,v in build.space.items() %}
+    {% for k,v in assemble.space.items() %}
     *   - {{k}}
         - {{v.grid-}}
     {% endfor %}
@@ -49,13 +49,13 @@ Consistency Check
     {% for k,v in check.sequence[0].items() %}
     {% if not v is mapping %}
     *   - {{k}}
-        - {{v-}}
+        - {% if v is number %} {{'{:0.3g}'.format(v)-}} {% else %} {{v-}} {% endif %}
     {% endif %}
     {% endfor %}
 
 Histogram of relative versus absolute errors for all nuclides at all states and times.
 
-..  image:: check/check-origami/hist.png
+..  image:: {{check.sequence[0].hist_image}}
     :width: 90%
 
 
@@ -75,7 +75,14 @@ space.
 Model info
 ~~~~~~~~~~
 
-This model introduces the following static parameters: {{generate.params.keys()|list}},
+This model is based on the following information.
+
+{% for note in model.notes %}
+    * {{note}}
+{%- endfor %}
+
+
+This model introduces the following static parameters: {{generate.static.keys()|list}},
 with values shown in the table below.
 
 .. list-table:: Static model parameters
@@ -84,20 +91,20 @@ with values shown in the table below.
 
     *   - name
         - value
-    {% for k,v in generate.params.items() %}
+    {% for k,v in generate.static.items() %}
     *   - {{k}}
         - {{v-}}
     {% endfor %}
 
 .. list-table:: Run summary data
-    :widths: 50 25 25
+    :widths: 55 25 20
     :header-rows: 1
 
     *   - output
         - success
         - runtime (hrs)
-    {%- for row in run.perms %}
-    *   - {{row.output}}
+    {%- for row in run.runs %}
+    *   - :code:`{{row.output_file}}`
         - {{row.success}}
         - {{row.runtime_hrs}}
     {%- endfor %}
@@ -110,8 +117,8 @@ with values shown in the table below.
 Example Generated Input
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-This is the TRITON input (:code:`perm00.inp`) for the first permutation out of {{run.perms|length}}.
+This is the TRITON input (:code:`{{run.runs[0].input_file}}`) for the first permutation out of {{run.runs|length}}.
 
-.. include:: perm00/perm00.inp
+.. include:: {{run.runs[0].input_file}}
     :literal:
 

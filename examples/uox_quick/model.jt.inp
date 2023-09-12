@@ -1,6 +1,6 @@
-=t-depl parm=(bonami,addnux={{params.addnux}})
+=t-depl parm=(bonami,addnux={{static.addnux}})
 pincell model
-{{params.xslib}}
+{{static.xslib}}
 
 read composition
 '
@@ -23,9 +23,9 @@ end composition
 
 read celldata
   latticecell squarepitch
-    pitch={{params.pitch}} 30
-    fuelr={{params.fuelr}} 10
-    cladr={{params.cladr}} 20 end
+    pitch={{static.pitch}} 30
+    fuelr={{static.fuelr}} 10
+    cladr={{static.cladr}} 20 end
 end celldata
 
 read depletion
@@ -48,9 +48,9 @@ end materials
 
 read geom
   global unit 1
-    cylinder 10 {{params.fuelr}}
-    cylinder 20 {{params.cladr}}
-    cuboid   30 4p{{params.pitch/2.0}}
+    cylinder 10 {{static.fuelr}}
+    cylinder 20 {{static.cladr}}
+    cuboid   30 4p{{static.pitch/2.0}}
     media 10 1 10
     media 20 1 20 -10
     media 30 1 30 -20

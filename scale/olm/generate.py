@@ -1,4 +1,5 @@
-import scale.olm.common as common
+import scale.olm.complib as complib
+import scale.olm.internal as internal
 import scale.olm.core as core
 import numpy as np
 import math
@@ -7,119 +8,7 @@ import json
 import copy
 
 
-def __iso_uo2(u234, u235, u236):
-    """Tiny helper to pass u234,u235,u238 through to create map and recalc u238."""
-    return {
-        "u235": u235,
-        "u238": 100.0 - u234 - u235 - u236,
-        "u234": u234,
-        "u236": u236,
-    }
-
-
-def comp_uo2_simple(state, density=0):
-    """Example of a simple enrichment formula."""
-    enrichment = float(state["enrichment"])
-    if enrichment > 100:
-        raise ValueError(f"enrichment={enrichment} must be >=0 and <=100")
-    return {
-        "density": density,
-        "uo2": {"iso": __iso_uo2(u234=1.0e-20, u235=enrichment, u236=1.0e-20)},
-        "_input": {"state": state, "density": density},
-    }
-
-
-def comp_uo2_vera(state, density=0):
-    """Enrichment formula from:
-    Andrew T. Godfrey. VERA core physics benchmark progression problem specifications.
-    Consortium for Advanced Simulation of LWRs, 2014.
-    """
-
-    enrichment = float(state["enrichment"])
-    if enrichment > 10:
-        raise ValueError(f"enrichment={enrichment} must be <=10% to use comp_uo2_vera")
-
-    return {
-        "density": density,
-        "uo2": {
-            "iso": __iso_uo2(
-                u234=0.007731 * (enrichment**1.0837),
-                u235=enrichment,
-                u236=0.0046 * enrichment,
-            )
-        },
-        "_input": {"state": state, "density": density},
-    }
-
-
-def comp_uo2_nuregcr5625(state, density=0):
-    """Enrichment formula from NUREG/CR-5625."""
-
-    enrichment = float(state["enrichment"])
-    if enrichment > 20:
-        raise ValueError(
-            f"enrichment={enrichment} must be <=20% to use comp_uo2_nuregcr5625"
-        )
-
-    return {
-        "density": density,
-        "uo2": {
-            "iso": __iso_uo2(
-                u234=0.0089 * enrichment,
-                u235=enrichment,
-                u236=0.0046 * enrichment,
-            )
-        },
-        "_input": {"state": state, "density": density},
-    }
-
-
-def comp_mox_ornltm2003_2(state, density, uo2, am241):
-    """MOX isotopic vector calculation from ORNL/TM-2003/2, Sect. 3.2.2.1"""
-
-    # Calculate pu vector as per formula. Note that the pu239_frac is by definition:
-    # pu239/(pu+am) and the Am comes in from user input.
-    pu239 = float(state["pu239_frac"])
-    if not (pu239 > 0.0) and (pu239 < 100.0):
-        raise ValueError(f"pu239 percentage={pu239} must be between 0 and 100.")
-    pu238 = 0.0045678 * pu239**2 - 0.66370 * pu239 + 24.941
-    pu240 = -0.0113290 * pu239**2 + 1.02710 * pu239 + 4.7929
-    pu241 = 0.0018630 * pu239**2 - 0.42787 * pu239 + 26.355
-    pu242 = 0.0048985 * pu239**2 - 0.93553 * pu239 + 43.911
-    x0 = {"pu238": pu238, "pu240": pu240, "pu241": pu241, "pu242": pu242}
-    x, norm_x = common.renormalize_wtpt(x0, 100.0 - pu239 - am241)
-    x["pu239"] = pu239
-    x["am241"] = am241
-
-    # Scale by relative weight percent of Pu+Am and U.
-    pu_plus_am_pct = float(state["pu_frac"])
-    for k in x:
-        x[k] *= pu_plus_am_pct / 100.0
-
-    # Get U isotopes and scale to remaining weight percent.
-    y = copy.deepcopy(uo2["iso"])
-    u_pct = 100.0 - pu_plus_am_pct
-    for k in y:
-        y[k] *= u_pct / 100.0
-
-    # At this point we can combine the vectors into one heavy metal vector.
-    x.update(y)
-
-    # First part of calculation.
-    comp = common.calculate_hm_oxide_breakdown(x)
-
-    # Fill in additional information.
-    comp["info"] = common.approximate_hm_info(comp)
-
-    # Pass through density.
-    comp["density"] = density
-
-    # Copy the inputs.
-    comp["_input"] = {"state": state, "density": density, "uo2": uo2, "am241": am241}
-    return comp
-
-
-def triton_constpower_burndata(state, gwd_burnups):
+def constpower_burndata(state, gwd_burnups):
     """Return a list of powers and times assuming constant burnup."""
 
     specific_power = state["specific_power"]
@@ -146,13 +35,13 @@ def triton_constpower_burndata(state, gwd_burnups):
     return {"burndata": burndata}
 
 
-def all_permutations(**states):
+def full_hypercube(**states):
     """Generate all the permutations assuming a dense N-dimensional space."""
     dims = []
     axes = []
     for dim in states:
         axes.append(sorted(states[dim]))
-        core.logger.debug(f"Processing dimension '{dim}'")
+        internal.logger.debug(f"Processing dimension '{dim}'")
         dims.append(dim)
 
     permutations = []
@@ -161,73 +50,88 @@ def all_permutations(**states):
         y = dict()
         for i in range(len(dims)):
             y[dims[i]] = x[i]
-        core.logger.debug(f"Generated permutation '{y}'")
+        internal.logger.debug(f"Generated permutation '{y}'")
         permutations.append(y)
 
     return permutations
 
 
-def expander(model, template, params, states, comp, time):
+def jt_expander(template, static, states, comp, time, _model, _env):
     """First expand the state to all the individual state combinations, then calculate the
-    times and the compositions which may require state. The params just pass through."""
+    times and the compositions which may require state. The static just pass through."""
 
-    core.logger.info(f"Generating with scale.olm.expander ...")
+    internal.logger.info(f"Generating with scale.olm.jt_expander ...")
 
     # Handle parameters.
-    params2 = common.fn_redirect(**params)
+    static2 = internal._fn_redirect(**static)
 
     # Generate a list of states from the state specification.
-    states2 = common.fn_redirect(**states)
+    states2 = internal._fn_redirect(**states)
 
-    # Create a formatting statement for the files.
-    nstates = len(states2)
-    core.logger.info(
-        f"Initiating expansion of template file={template} into {nstates} permutations ..."
-    )
-    n = int(1 + math.log10(nstates))
-    work_dir = model["work_dir"]
-    fmt = f"{work_dir}/perm{{0:0{n}d}}/perm{{0:0{n}d}}.inp"
+    # Useful paths.
+    work_path = Path(_env["work_dir"])
+    generate_path = work_path / "perms"
 
     # Load the template file.
-    template_file = Path(model["dir"]) / template
-    with open(template_file, "r") as f:
+    template_path = Path(_env["config_file"]).parent / template
+    with open(template_path, "r") as f:
         template_text = f.read()
+
+    internal.logger.info(
+        "Expanding into permutations", template=str(template_path), nperms=len(states2)
+    )
 
     # Create all the permutation information.
     perms2 = []
     i = 0
+    td = core.TempDir()
     for state2 in states2:
         # For each state, generate the compositions.
         comp2 = {}
         for k, v in comp.items():
-            comp2[k] = common.fn_redirect(**comp[k], state=state2)
+            comp2[k] = internal._fn_redirect(**comp[k], state=state2)
 
         # For each state, generate a time list.
-        time2 = common.fn_redirect(**time, state=state2)
-
-        # Generate this file name.
-        file = Path(fmt.format(i))
-        i += 1
+        time2 = internal._fn_redirect(**time, state=state2)
 
         # Generate all data.
         data = {
-            "file": str(file.relative_to(work_dir)),
-            "params": params2,
+            "static": static2,
             "comp": comp2,
             "time": time2,
             "state": state2,
         }
 
-        filled_text = common.expand_template(template_text, data)
+        # Write data to a temporary file to get a hash of the contents.
+        tf = td.write_file(json.dumps(data, indent=4), "temp.json")
+        data_hash = core.FileHasher(tf).id
 
-        # Write the file.
-        file.parent.mkdir(parents=True, exist_ok=True)
-        with open(file, "w") as f:
+        # Save some info.
+        input_path = generate_path / data_hash / ("model_" + data_hash[-6:] + ".inp")
+        input_file = str(input_path.relative_to(work_path))
+        data["input_file"] = input_file
+        data["file"] = data["input_file"]  # deprecated alias
+        data_path = input_path.parent / "data.olm.json"
+        i += 1
+        data_file = str(data_path.relative_to(work_path))
+        data["_"] = {"model": _model, "data_hash": data_hash, "data_file": data_file}
+
+        # Write the data file in the actual directory with input and hash added. This
+        # is mainly so a user can see the data that is available for template expansion
+        # beside a copy of the template.
+        input_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(data_path, "w") as f:
+            json.dump(data, f, indent=4)
+
+        # Expand the template and write the input to disk.
+        internal.logger.info("Writing permutation", index=i, input_file=input_file)
+        filled_text = core.TemplateManager.expand_text(template_text, data)
+        with open(input_path, "w") as f:
             f.write(filled_text)
 
-        # Save the data.
+        # Return the final thing in a permutations list.
         perms2.append(data)
 
-    core.logger.info(f"Finished scale.olm.expander!")
+    internal.logger.info(f"Finished generating with scale.olm.jt_expander!")
 
-    return {"work_dir": str(work_dir), "perms": perms2, "params": params2}
+    return {"work_dir": _env["work_dir"], "perms": perms2, "static": static2}

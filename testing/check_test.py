@@ -1,5 +1,5 @@
 import scale.olm.check as check
-import scale.olm.common as common
+import scale.olm.core as core
 import pytest
 
 
@@ -25,7 +25,7 @@ def test_gridgradient_basic():
     assert c.epsa == c.default_params()["epsa"]
 
     # Test that we can load an archive
-    a = common.Archive(data_file("w17x17.h5"))
+    a = core.ReactorLibrary(data_file("w17x17.arc.h5"))
     assert a != None
 
     # Test that we can change and get the default result.
