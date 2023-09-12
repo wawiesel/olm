@@ -6,6 +6,7 @@ import math
 from pathlib import Path
 import json
 import copy
+import shutil
 
 
 def constpower_burndata(state, gwd_burnups):
@@ -88,8 +89,11 @@ def jt_expander(template, static, states, comp, time, _model, _env):
     for state2 in states2:
         # For each state, generate the compositions.
         comp2 = {}
-        for k, v in comp.items():
-            comp2[k] = internal._fn_redirect(**comp[k], state=state2)
+        if "_type" in comp:
+            comp2 = internal._fn_redirect(**comp, state=state2)
+        else:
+            for k, v in comp.items():
+                comp2[k] = internal._fn_redirect(**comp[k], state=state2)
 
         # For each state, generate a time list.
         time2 = internal._fn_redirect(**time, state=state2)

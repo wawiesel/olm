@@ -3,3 +3,4 @@ scale_olm.egg-info
 venv
 **/__pycache__
 .DS_Store
+**/_work

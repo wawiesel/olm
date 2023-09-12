@@ -2,6 +2,7 @@ from pathlib import Path
 import scale.olm.internal as internal
 import scale.olm.core as core
 import glob
+import json
 
 
 def _runtime_in_hours(runtime):
@@ -22,8 +23,16 @@ def makefile(dry_run, _model, _env, base_dir="perms"):
 
     scalerte = _env["scalerte"]
 
+    work_path = Path(_env["work_dir"])
+    input_listing = ""
+    with open(work_path / "generate.olm.json", "r") as f:
+        g = json.load(f)
+        for perms in g["perms"]:
+            input = Path(perms["input_file"]).relative_to("perms")
+            input_listing += " " + str(input)
+
     contents = f"""
-outputs = $(patsubst %.inp, %.out, $(wildcard */*.inp))
+outputs = $(patsubst %.inp, %.out, {input_listing})
 
 .PHONY: all
 
@@ -38,7 +47,6 @@ clean:
 \trm -f $(outputs)
 """
 
-    work_path = Path(_env["work_dir"])
     base_path = work_path / base_dir
     make_file = base_path / "Makefile"
     with open(make_file, "w") as f:
