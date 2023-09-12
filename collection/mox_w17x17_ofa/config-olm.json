@@ -24,7 +24,7 @@
 		"states": {
 			".type": "scale.olm.generate:all_permutations",
 			"coolant_density": [
-				0.723
+				0.71
 			],
 			"wtpt_pu": [
                                 4.0,
@@ -39,7 +39,7 @@
                                 70.0
                         ],
                         "ppm_boron": [
-                                630
+                                650
                         ],
 			"specific_power": [
 				40

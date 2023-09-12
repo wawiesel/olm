@@ -1,6 +1,6 @@
 {
 	"model": {
-		"name": "mox_w17x17",
+		"name": "ce14x14",
 		"work_dir": "_build",
 		"scale_env_var": "SCALE"
 	},
@@ -8,38 +8,34 @@
 		".type": "scale.olm.generate:expander",
 	    "template": "model.inp",
 		"fuelcomp": {
-		    ".type": "scale.olm.generate:fuelcomp_mox_ornltm2003_2",
-                    "pins_gd" : 0,
-                    "pins_zone" : [144, 56, 52, 12],
-                    "pct_gd" : 0.0,
-                    "nuclide_prefix" : "wtpt_",
-                    "fuel_density" : 10.4
-                 },
+		    ".type": "scale.olm.generate:fuelcomp_uox_simple",
+		    "nuclide_prefix": "wt_",
+                    "fuel_density" : [ 10.412 ]
+		},
 		"params": {
 			".type": "scale.olm.common:pass_through",
 			"addnux": 4,
-			"xslib": "xn252",
-                        "density_Am" : 0.0
+			"xslib": "xn252"
 		},
 		"states": {
 			".type": "scale.olm.generate:all_permutations",
 			"coolant_density": [
-				0.723
+				0.7332
 			],
-			"wtpt_pu": [
-                                4.0,
-                                7.0,
-                                10.0
+			"enrichment": [
+				0.5,
+				1.5,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				8.5
 			],
-                        "wtpt_pu239": [ 
-                                50.0,
-                                55.0,
-                                60.0,
-                                65.0,
-                                70.0
-                        ],
                         "ppm_boron": [
-                                630
+                                331
                         ],
 			"specific_power": [
 				40
@@ -88,12 +84,12 @@
 	},
 	"build": {
 		".type": "scale.olm.build:arpdata_txt",
-		"fuel_type": "MOX",
+		"fuel_type": "UOX",
 		"suffix": ".system.f33"
 	},
 	"check": {
 	    ".type": "scale.olm.check:sequencer",
-	    "sequence": 
+	    "sequence":
 	    [{
 			"eps0": 0.0001,
 			".type": "scale.olm.check:GridGradient"
