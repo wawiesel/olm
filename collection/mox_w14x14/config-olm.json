@@ -5,33 +5,31 @@
 		"scale_env_var": "SCALE"
 	},
 	"generate": {
-		".type": "scale.olm.generate:expander",
+		"_type": "scale.olm.generate:expander",
 	    "template": "model.inp",
-		"fuelcomp": {
-		    ".type": "scale.olm.generate:fuelcomp_mox_ornltm2003_2",
-                    "pins_gd" : 0,
-                    "pins_zone" : [83, 44, 40, 12],
-                    "pct_gd" : 0.0,
-                    "nuclide_prefix" : "wtpt_",
-                    "fuel_density" : 10.4
+		"comp": {
+		    "_type": "scale.olm.generate:comp_mox_zones_2023",
+                    "zone_pins" : [83, 44, 40, 12],
+                    "zone_names": "PWR2016",
+                    "density" : 10.4
                  },
 		"params": {
-			".type": "scale.olm.common:pass_through",
+			"_type": "scale.olm.common:pass_through",
 			"addnux": 4,
 			"xslib": "xn252",
                         "density_Am" : 0.0
 		},
 		"states": {
-			".type": "scale.olm.generate:all_permutations",
+			"_type": "scale.olm.generate:all_permutations",
 			"coolant_density": [
 				0.7264
 			],
-			"wtpt_pu": [
+			"pu_frac": [
                                 4.0,
                                 7.0,
                                 10.0
 			],
-                        "wtpt_pu239": [ 
+                        "pu239_frac": [ 
                                 50.0,
                                 55.0,
                                 60.0,
@@ -46,7 +44,7 @@
 			]
 		},
 		"time": {
-			".type": "scale.olm.generate:triton_constpower_burndata",
+			"_type": "scale.olm.generate:triton_constpower_burndata",
 			"gwd_burnups": [
 				0.0,
                                 0.04,
@@ -83,24 +81,24 @@
 		}
 	},
 	"run": {
-		".type": "scale.olm.run:makefile",
+		"_type": "scale.olm.run:makefile",
 		"nprocs": 3
 	},
 	"build": {
-		".type": "scale.olm.build:arpdata_txt",
+		"_type": "scale.olm.build:arpdata_txt",
 		"fuel_type": "MOX",
 		"suffix": ".system.f33"
 	},
 	"check": {
-	    ".type": "scale.olm.check:sequencer",
+	    "_type": "scale.olm.check:sequencer",
 	    "sequence": 
 	    [{
 			"eps0": 0.0001,
-			".type": "scale.olm.check:GridGradient"
+			"_type": "scale.olm.check:GridGradient"
 		}]
 	},
 	"report": {
-		".type": "scale.olm.report:generate_rst",
+		"_type": "scale.olm.report:generate_rst",
 		"template": "report.rst"
 	}
 }
