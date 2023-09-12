@@ -1,4 +1,4 @@
-import scale.olm.common as common
+import scale.olm.internal as internal
 import scale.olm.core as core
 import os
 import json
@@ -9,6 +9,32 @@ import shutil
 import numpy as np
 import subprocess
 import datetime
+
+
+def arpdata_txt(fuel_type, dim_map, keep_every, _model, _env):
+    """Build an ORIGEN reactor library in arpdata.txt format."""
+
+    # Get working directory.
+    work_path = Path(_env["work_dir"])
+
+    # Get library info data structure.
+    arpinfo = _get_arpinfo(work_path, _model["name"], fuel_type, dim_map)
+
+    # Generate thinned burnup list.
+    thinned_burnup_list = _generate_thinned_burnup_list(keep_every, arpinfo.burnup_list)
+
+    # Process libraries into their final places.
+    archive_file, points = _process_libraries(
+        _env["obiwan"], work_path, arpinfo, thinned_burnup_list
+    )
+
+    return {
+        "archive_file": archive_file,
+        "points": points,
+        "work_dir": str(work_path),
+        "date": datetime.datetime.utcnow().isoformat(" ", "minutes"),
+        "space": arpinfo.get_space(),
+    }
 
 
 def archive(model):
@@ -25,7 +51,7 @@ def archive(model):
         dict: relevant data on the result of creating an archive
     """
     archive_file = model["archive_file"]
-    config_file = model["work_dir"] + os.path.sep + "generate.json"
+    config_file = model["work_dir"] + os.path.sep + "generate.olm.json"
 
     # Load the permuation data
     with open(config_file, "r") as f:
@@ -41,7 +67,7 @@ def archive(model):
         statevars = perm["state"]
         lib_path = os.path.join(perm_dir, perm_name + ".system.f33")
         lib_paths.append(lib_path)
-        core.logger.debug(f"Now tagging {lib_path}")
+        internal.logger.debug(f"Now tagging {lib_path}")
 
         ts = ",".join(key + "=" + str(value) for key, value in statevars.items())
         try:
@@ -58,10 +84,10 @@ def archive(model):
             )
         except subprocess.SubprocessError as error:
             print(error)
-            print("OBIWAN library tagging failed; cannot build archive")
+            print("OBIWAN library tagging failed; cannot assemble archive")
 
     to_consolidate = " ".join(lib for lib in lib_paths)
-    core.logger.info(f"Building archive at {archive_file} ... ")
+    internal.logger.info(f"Building archive at {archive_file} ... ")
     try:
         subprocess.run(
             [
@@ -80,7 +106,7 @@ def archive(model):
     return {"archive_file": archive_file}
 
 
-def __generate_thinned_burnup_list(keep_every, y_list, always_keep_ends=True):
+def _generate_thinned_burnup_list(keep_every, y_list, always_keep_ends=True):
     """Generate a thinned list using every point (1), every other point (2),
     every third point (3), etc."""
 
@@ -107,8 +133,8 @@ def __generate_thinned_burnup_list(keep_every, y_list, always_keep_ends=True):
     return thinned_burnup_list
 
 
-def __get_files(work_dir, suffix, perms):
-    """Get list of files by using the generate.json output and changing the suffix to the
+def _get_files(work_dir, suffix, perms):
+    """Get list of files by using the generate.olm.json output and changing the suffix to the
     expected library file. Note this is in permutation order, not state space order."""
 
     file_list = list()
@@ -132,11 +158,11 @@ def __get_files(work_dir, suffix, perms):
     return file_list
 
 
-def __get_burnup_list(file_list):
+def _get_burnup_list(file_list):
     """Extract a burnup list from the output file and make sure they are all the same."""
     burnup_list = list()
     for i in range(len(file_list)):
-        bu = common.parse_burnups_from_triton_output(file_list[i]["output"])
+        bu = core.ScaleOutfile.parse_burnups_from_triton_output(file_list[i]["output"])
 
         if len(burnup_list) > 0 and not np.array_equal(burnup_list, bu):
             raise ValueError(f"library file={lib} burnups deviated from previous list!")
@@ -145,7 +171,7 @@ def __get_burnup_list(file_list):
     return burnup_list
 
 
-def __get_arpinfo_uox(name, perms, file_list, dim_map):
+def _get_arpinfo_uox(name, perms, file_list, dim_map):
     """For UOX, get the relative ARP interpolation information."""
 
     # Get the names of the keys in the state.
@@ -168,12 +194,12 @@ def __get_arpinfo_uox(name, perms, file_list, dim_map):
         lib_list.append(file_list[i]["lib"])
 
     # Create and return arpinfo.
-    arpinfo = common.ArpInfo()
+    arpinfo = core.ArpInfo()
     arpinfo.init_uox(name, lib_list, enrichment_list, mod_dens_list)
     return arpinfo
 
 
-def __get_arpinfo_mox(name, perms, file_list, dim_map):
+def _get_arpinfo_mox(name, perms, file_list, dim_map):
     """For MOX, get the relative ARP interpolation information."""
 
     # Get the names of the keys in the state.
@@ -200,36 +226,36 @@ def __get_arpinfo_mox(name, perms, file_list, dim_map):
         lib_list.append(file_list[i]["lib"])
 
     # Create and return arpinfo.
-    arpinfo = common.ArpInfo()
+    arpinfo = core.ArpInfo()
     arpinfo.init_mox(name, lib_list, pu239_frac_list, pu_frac_list, mod_dens_list)
     return arpinfo
 
 
-def __get_arpinfo(work_dir, name, fuel_type, dim_map):
+def _get_arpinfo(work_dir, name, fuel_type, dim_map):
     """Populate the ArpInfo data."""
 
     # Get generate data which has permutations list with file names.
-    generate_json = work_dir / "generate.json"
+    generate_json = work_dir / "generate.olm.json"
     with open(generate_json, "r") as f:
         generate = json.load(f)
     perms = generate["perms"]
 
     # Get library,input,output in one place.
     suffix = ".system.f33"
-    file_list = __get_files(work_dir, suffix, perms)
+    file_list = _get_files(work_dir, suffix, perms)
 
     # Initialize info based on fuel type.
     if fuel_type == "UOX":
-        arpinfo = __get_arpinfo_uox(name, perms, file_list, dim_map)
+        arpinfo = _get_arpinfo_uox(name, perms, file_list, dim_map)
     elif fuel_type == "MOX":
-        arpinfo = __get_arpinfo_mox(name, perms, file_list, dim_map)
+        arpinfo = _get_arpinfo_mox(name, perms, file_list, dim_map)
     else:
         raise ValueError(
             "Unknown fuel_type={fuel_type} (only MOX/UOX is supported right now)"
         )
 
     # Get the burnups.
-    arpinfo.burnup_list = __get_burnup_list(file_list)
+    arpinfo.burnup_list = _get_burnup_list(file_list)
 
     # Set new canonical file names.
     arpinfo.set_canonical_filenames(".h5")
@@ -237,7 +263,7 @@ def __get_arpinfo(work_dir, name, fuel_type, dim_map):
     return arpinfo
 
 
-def __get_comp_system(ii_data):
+def _get_comp_system(ii_data):
     """Extract the following information from the inventory interface (ii) data."""
 
     x = ii_data["responses"]["system"]
@@ -269,14 +295,14 @@ def __get_comp_system(ii_data):
         if z >= 92:
             x[eam] = amount * molar_mass
 
-    comp = common.calculate_hm_oxide_breakdown(x)
-    comp["info"] = common.approximate_hm_info(comp)
+    comp = core.CompositionManager.calculate_hm_oxide_breakdown(x)
+    comp["info"] = core.CompositionManager.approximate_hm_info(comp)
     comp["density"] = total_mass / volume
 
     return comp
 
 
-def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
+def _process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
     """Process libraries with OBIWAN, including copying, thinning, setting tags, etc."""
 
     # Create the arplibs directory and clear data files inside.
@@ -293,7 +319,7 @@ def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
 
     # Generate burnup string for thin list.
     thin_bu_str = ",".join([str(bu) for bu in thinned_burnup_list])
-    core.logger.info("burnup thinning:", original_bu=bu_str, thinned_bu=thin_bu_str)
+    internal.logger.info("burnup thinning:", original_bu=bu_str, thinned_bu=thin_bu_str)
     arpinfo.burnup_list = thinned_burnup_list
 
     # Create a temporary directory for libraries in process.
@@ -301,7 +327,7 @@ def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
     tmp.mkdir(parents=True, exist_ok=True)
 
     # Get generate data which has permutations list with file names.
-    generate_json = work_dir / "generate.json"
+    generate_json = work_dir / "generate.olm.json"
     with open(generate_json, "r") as f:
         generate = json.load(f)
     perms = generate["perms"]
@@ -315,38 +341,38 @@ def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
         new_lib = Path(arpinfo.get_lib_by_index(i))
         old_lib = Path(arpinfo.origin_lib_list[i])
         tmp_lib = tmp / old_lib.name
-        core.logger.debug(f"copying original library {old_lib} to {tmp_lib}")
+        internal.logger.debug(f"Copying original library {old_lib} to {tmp_lib}")
         shutil.copyfile(old_lib, tmp_lib)
 
         # Set burnups on file using obiwan (should only be necessary in earlier SCALE versions).
-        common.run_command(
+        internal.run_command(
             f"{obiwan} convert -i -setbu='[{bu_str}]' {tmp_lib}", echo=False
         )
         bad_local = Path(tmp_lib.with_suffix(".f33").name)
         if bad_local.exists():
-            core.logger.warning(f"fixup: moving local={bad_local} to {tmp_lib}")
+            internal.logger.warning("Fixup: relocating local", file=str(bad_local))
             shutil.move(bad_local, tmp_lib)
 
         # Perform burnup thinning.
         if bu_str != thin_bu_str:
-            common.run_command(
+            internal.run_command(
                 f"{obiwan} convert -i -thin=1 -tvals='[{thin_bu_str}]' {tmp_lib}",
                 check_return_code=False,
                 echo=False,
             )
             if bad_local.exists():
-                core.logger.warning(f"fixup: moving local={bad_local} to {tmp_lib}")
+                internal.logger.warning("Fixup: relocating local", file=str(bad_local))
                 shutil.move(bad_local, tmp_lib)
 
         # Set tags.
         interptags = arpinfo.interptags_by_index(i)
-        common.run_command(
+        internal.run_command(
             f"{obiwan} tag -interptags='{interptags}' -idtags='{idtags}' {tmp_lib}",
             echo=False,
         )
 
         # Convert to HDF5.
-        common.run_command(
+        internal.run_command(
             f"{obiwan} convert -format=hdf5 -type=f33 {tmp_lib} -dir={tmp}", echo=False
         )
 
@@ -358,21 +384,21 @@ def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
         k = arpinfo.get_perm_by_index(i)
         perm = perms[k]
         f71 = (work_dir / perm["file"]).with_suffix(".f71")
-        text = common.run_command(
+        text = internal.run_command(
             f"{obiwan} view -format=ii.json {f71} -cases='[{caseid}]'",
             echo=False,
         )
 
         # Load into data structure and rename.
         ii_json = new_lib.with_suffix(".ii.json")
-        core.logger.debug(f"Converting {f71} to {ii_json}")
+        internal.logger.debug(f"Converting {f71} to {ii_json}")
         ii = json.loads(text)
         ii["responses"]["system"] = ii["responses"].pop(f"case({caseid})")
         with open(ii_json, "w") as f:
             f.write(json.dumps(ii, indent=4))
 
         # Get the special composition data structure.
-        comp_system = __get_comp_system(ii)
+        comp_system = _get_comp_system(ii)
 
         # Save relevant permutation data in a list.
         points.append(
@@ -388,7 +414,7 @@ def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
                 "comp": {
                     "system": comp_system,
                 },
-                "history": common.get_history_from_f71(obiwan, f71, caseid),
+                "history": core.Obiwan.get_history_from_f71(obiwan, f71, caseid),
                 "_": {"perm": perm},
                 "_arpinfo": {
                     "interpvars": {**arpinfo.interpvars_by_index(i)},
@@ -402,37 +428,9 @@ def __process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
 
     # Write arpdata.txt.
     arpdata_txt = work_dir / "arpdata.txt"
-    core.logger.info(f"Writing arpdata.txt at {arpdata_txt} ... ")
+    internal.logger.info(f"Writing arpdata.txt at {arpdata_txt} ... ")
     with open(arpdata_txt, "w") as f:
         f.write(arpinfo.get_arpdata())
     archive_file = "arpdata.txt:" + arpinfo.name
 
     return archive_file, points
-
-
-def arpdata_txt(model, fuel_type, dim_map, keep_every):
-    """Build an ORIGEN reactor library in arpdata.txt format."""
-
-    # Get working directory.
-    work_dir = Path(model["work_dir"])
-
-    # Get library info data structure.
-    arpinfo = __get_arpinfo(work_dir, model["name"], fuel_type, dim_map)
-
-    # Generate thinned burnup list.
-    thinned_burnup_list = __generate_thinned_burnup_list(
-        keep_every, arpinfo.burnup_list
-    )
-
-    # Process libraries into their final places.
-    archive_file, points = __process_libraries(
-        model["obiwan"], work_dir, arpinfo, thinned_burnup_list
-    )
-
-    return {
-        "archive_file": archive_file,
-        "points": points,
-        "work_dir": str(work_dir),
-        "date": datetime.datetime.utcnow().isoformat(" ", "minutes"),
-        "space": arpinfo.get_space(),
-    }

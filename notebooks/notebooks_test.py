@@ -1,5 +1,5 @@
 from testbook import testbook
-from scale.olm.core import TempDir, ScaleRte
+from scale.olm.core import TempDir, ScaleRunner
 from pathlib import Path
 import os
 
@@ -10,27 +10,22 @@ def notebook_file(filename):
     return p
 
 
-@testbook(notebook_file("core_ScaleRte.ipynb"), execute=False)
-def test_notebooks_execute(tb):
+@testbook(notebook_file("core_ScaleRunner.ipynb"), execute=False)
+def test_core_ScaleRunner(tb):
     """Test that we can execute the notebook.
 
-    Patch the class to not actually run anything so we don't need a SCALE
-    install to check notebook validity.
-    """
+    Only run these notebook if the environment variable SCALE is set.
 
-    with tb.patch("scale.olm.core.ScaleRte") as S:
-        S._default_do_not_run = lambda: True
-        # TODO: enable this execute. Right now it does not seem like the patch
-        # is working to change the default do not run. If you change to True,
-        #
-        # E           Cell In[7], line 2
-        # E                 1 # Run the first input.
-        # E           ----> 2 input, output = scale_rte.run(input_list[0])
-        # E                 3 srs = output['scale_runtime_seconds']
-        # E
-        # E           ValueError: not enough values to unpack (expected 2, got 0)
-        # E           ValueError: not enough values to unpack (expected 2, got 0)
-        #
-        # which is like the .run function is not found. Curious.
-        if False:
-            tb.execute()
+    """
+    if "SCALE" in os.environ:
+        tb.execute()
+
+
+@testbook(notebook_file("core_BurnupHistory.ipynb"), execute=True)
+def test_core_BurnupHistory(tb):
+    """Test that we can execute the notebook."""
+
+
+@testbook(notebook_file("core_TemplateManager.ipynb"), execute=True)
+def test_core_TemplateManager(tb):
+    """Test that we can execute the notebook."""

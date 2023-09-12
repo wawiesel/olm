@@ -1,27 +1,37 @@
 {
     "model": {
-        "name": "w17x17_pin2",
-        "work_dir": "_build",
-        "scale_env_var": "SCALE",
-        "description": "A 2D t-depl quarter assembly model for a Pressurized Water Reactor of the Westinghouse 17x17 type.",
+        "name": "uox_quick",
+        "description": "A 2D t-depl pin cell of W17x17 type.",
         "sources":
         {
             "1":"Characteristics of Spent Fuel, High-Level Waste, and other Radioactive Wastes which May Require Long-Term Isolation, Appendix 2A. Physical Descriptions of LWR Fuel Assemblies, DOE/RW-0184, Volume 3 of 6, U.S. DOE Office of Civilian Radioactive Waste Management, 1987.",
             "2": "SCALE: A Comprehensive Modeling and Simulation Suite for Nuclear Safety Analysis and Design, ORNL/TM-2005/39, Version 6.1, Oak Ridge National Laboratory, Oak Ridge, Tennessee, June 2011.",
             "3": "H. Smith, J. Peterson, and J. Hu, Fuel Assembly Modeling for the Modeling and Simulation Toolset, ORNL/LTR-2012-555 Rev. 1, Oak Ridge National Laboratory, 2013."
-        }
+        },
+        "revision":
+        [
+            "Unknown authorship",
+            "2014 - Ported into SLIG by B. R. Betzler",
+            "2023 - Ported into OLM by W. A. Wieselquist"
+        ],
+        "notes":
+        [
+            "Fuel density, gap gas pressure from Appendix 2A of Reference [1_].",
+            "Temperatures, moderator density, boron concentration from Table D1.A.2 of Reference [2_].",
+            "All other dimensions, materials, etc. from Reference [3_]."
+        ]
     },
     "generate": {
-        "_type": "scale.olm.generate:expander",
-        "template": "model.inp",
+        "_type": "scale.olm.generate:jt_expander",
+        "template": "model.jt.inp",
         "comp": {
             "fuel":{
-                "_type": "scale.olm.generate:comp_uo2_nuregcr5625",
+                "_type": "scale.olm.complib:uo2_nuregcr5625",
                 "density": 10.4
             }
         },
-        "params": {
-            "_type": "scale.olm.common:pass_through",
+        "static": {
+            "_type": "scale.olm.internal:pass_through",
             "addnux": 2,
             "xslib": "v7-56",
             "pitch": 1.26,
@@ -29,7 +39,7 @@
             "cladr": 0.4750
         },
         "states": {
-            "_type": "scale.olm.generate:all_permutations",
+            "_type": "scale.olm.generate:full_hypercube",
             "coolant_density": [
                 0.70,
                 0.72,
@@ -47,7 +57,7 @@
             "boron_ppm": [ 600 ]
         },
         "time": {
-            "_type": "scale.olm.generate:triton_constpower_burndata",
+            "_type": "scale.olm.generate:constpower_burndata",
             "gwd_burnups": [
                 0.0,
                 1.0,
@@ -61,11 +71,10 @@
     },
     "run": {
         "_type": "scale.olm.run:makefile",
-        "nprocs": 3,
         "dry_run": false
     },
-    "build": {
-        "_type": "scale.olm.build:arpdata_txt",
+    "assemble": {
+        "_type": "scale.olm.assemble:arpdata_txt",
         "fuel_type": "UOX",
         "dim_map":
         {
@@ -76,22 +85,22 @@
     },
     "check": {
         "_type": "scale.olm.check:sequencer",
-        "nprocs": 3,
         "sequence":
         [
         {
-            "template": "check-origami.inp",
             "_type": "scale.olm.check:LowOrderConsistency",
-            "target_q1": 0.75,
-            "target_q2": 0.96,
+            "name": "loc",
+            "template": "model/origami/system-uox.jt.inp",
+            "target_q1": 0.70,
+            "target_q2": 0.95,
             "eps0": 1e-12,
             "epsa": 1e-6,
-            "epsr": 1e-3
-        }
-        ]
+            "epsr": 1e-3,
+            "nuclide_compare": ["0092235","0094239","0094240","0094241","0094242","0095241","0094238","0092234","0092238","0055134","0055137","0060148","0063154","1095242","0095243","0096242","0096244"]
+        }]
     },
     "report": {
-        "_type": "scale.olm.report:stub1",
-        "template": "report.rst"
+        "_type": "scale.olm.report:rst2pdf",
+        "template": "report.jt.rst"
     }
 }

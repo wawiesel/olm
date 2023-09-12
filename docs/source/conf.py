@@ -19,7 +19,20 @@ release = "0.2.0"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["myst_parser", "sphinx.ext.autodoc", "sphinx.ext.napoleon"]
+extensions = [
+    "myst_parser",
+    "sphinx.ext.autodoc",
+    "matplotlib.sphinxext.plot_directive",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.doctest",
+]
+# # Suppress sphinx doctest when some deps are not installed.
+# doctest_global_setup = '''
+# try:
+#     import pandas as pd
+# except ImportError:
+#     pd = None
+# '''
 
 # Concatenate the class and __init__ docstring.
 autoclass_content = "both"

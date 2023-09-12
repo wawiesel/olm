@@ -1,10 +1,10 @@
 =shell
-olm link -p {{model.work_dir}} {{model.name}}
+olm link -p {{_.env.work_dir}} {{_.model.name}}
 end
 
 =origami
 
-libs=[ {{model.name}} ]
+libs=[ {{_.model.name}} ]
 
 options{ ft71=all mtu={{history.initialhm}} }
 

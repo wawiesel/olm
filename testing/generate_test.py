@@ -2,11 +2,11 @@ import scale.olm.generate as generate
 import pytest
 
 
-def test_triton_constpower_burndata():
+def test_constpower_burndata():
     # Test that the burnup sequence is correct.
     power = 40.0
     gwd_burnups = [0.0, 10.0, 20.0]
-    time = generate.triton_constpower_burndata({"specific_power": power}, gwd_burnups)
+    time = generate.constpower_burndata({"specific_power": power}, gwd_burnups)
 
     # Generate output midpoint burnups.
     bu = 0.0

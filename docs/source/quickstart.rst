@@ -1,6 +1,8 @@
 Quickstart
 ----------
 
+.. image:: quickstart.gif
+
 This quickstart should take 5-10 minutes to complete, starting with a clean slate and
 ending with a simple UOX ORIGEN reactor library that can be used in ORIGAMI from
 SCALE 6.2.4 and later, as shown below.
@@ -69,7 +71,7 @@ Creating the Library
 .. note:: This example is set up so that the entire process runs in less than a minute on 3 cores.
 
 The :code:`olm create --run` requires access to the SCALE runtime, :code:`scalerte`. Operations in
-the :code:`--compile` stage require access to :code:`OBIWAN` which ships with SCALE. Setting the
+the :code:`--assemble` stage require access to :code:`OBIWAN` which ships with SCALE. Setting the
 environment variable :code:`SCALE_DIR` will find them both.
 
 .. code::

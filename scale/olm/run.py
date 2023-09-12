@@ -1,23 +1,26 @@
 from pathlib import Path
-import scale.olm.common as common
+import scale.olm.internal as internal
 import scale.olm.core as core
 import glob
 
 
-def __runtime_in_hours(runtime):
+def _runtime_in_hours(runtime):
     """Convert runtime in seconds to well-formatted runtime in hours."""
     return "{:.2g}".format(runtime / 3600.0)
 
 
-def makefile(model, dry_run, nprocs):
+def makefile(dry_run, _model, _env, base_dir="perms"):
     """Generate a Makefile and run it.
 
     Args:
-        model: dictionary with work_dir and scalerte.
-        dry_run: pass :math:`-n` to make
-        nprocs: pass :math:`-j nprocs` to make
+        _model: Dictionary with model info.
+        _env: Dictionary with environment like work_dir and scalerte.
+
     """
-    scalerte = model["scalerte"]
+    if not "scalerte" in _env:
+        internal._raise_scalerte_error()
+
+    scalerte = _env["scalerte"]
 
     contents = f"""
 outputs = $(patsubst %.inp, %.out, $(wildcard */*.inp))
@@ -35,43 +38,46 @@ clean:
 \trm -f $(outputs)
 """
 
-    work_dir = model["work_dir"]
-    file = Path(work_dir) / "Makefile"
-    with open(file, "w") as f:
+    work_path = Path(_env["work_dir"])
+    base_path = work_path / base_dir
+    make_file = base_path / "Makefile"
+    with open(make_file, "w") as f:
         f.write(contents)
 
-    version = common.get_scale_version(scalerte)
-    core.logger.info(f"Running SCALE version {version}")
+    version = core.ScaleRunner(scalerte).version
+    internal.logger.info("Running SCALE", version=version)
 
-    command_line = f"cd {work_dir} && make -j {nprocs}"
+    nprocs = _env["nprocs"]
+    command_line = f"cd {base_path} && make -j {nprocs}"
     if dry_run:
-        core.logger.warning("No SCALE runs will be performed because dry_run=True!")
+        internal.logger.warning("No SCALE runs will be performed because dry_run=True!")
     else:
-        common.run_command(command_line)
+        internal.run_command(command_line)
 
     # Get file listing.
-    perms = list()
+    runs = list()
     total_runtime = 0
-    for input in [Path(x) for x in sorted(glob.glob(str(work_dir) + "/*/*.inp"))]:
+    for input in [Path(x) for x in sorted(glob.glob(str(base_path) + "/*/*.inp"))]:
         output = input.with_suffix(".out")
         success = output.exists()
-        runtime = common.get_runtime(output) if success else 3.6e6
+        runtime = core.ScaleOutfile.get_runtime(output) if success else 3.6e6
         total_runtime += runtime
-        perms.append(
+        runs.append(
             {
-                "input": str(input.relative_to(work_dir)),
-                "output": str(output.relative_to(work_dir)),
+                "input_file": str(input.relative_to(work_path)),
+                "output_file": str(output.relative_to(work_path)),
                 "success": success,
-                "runtime_hrs": __runtime_in_hours(runtime),
+                "runtime_hrs": _runtime_in_hours(runtime),
             }
         )
 
     return {
-        "scalerte": scalerte,
-        "work_dir": work_dir,
+        "scalerte": str(scalerte),
+        "base_dir": base_dir,
         "dry_run": dry_run,
+        "nprocs": nprocs,
         "command_line": command_line,
         "version": version,
-        "perms": perms,
-        "total_runtime_hrs": __runtime_in_hours(total_runtime),
+        "runs": runs,
+        "total_runtime_hrs": _runtime_in_hours(total_runtime),
     }

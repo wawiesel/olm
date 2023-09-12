@@ -1,11 +1,13 @@
 import click
 import sys
-import scale.olm.common as common
+import scale.olm.internal as internal
+import scale.olm.internal as internal
 import scale.olm.core as core
 import json
 import structlog
 import os
 from pathlib import Path
+import re
 
 
 # ---------------------------------------------------------------------------------------
@@ -20,98 +22,59 @@ def cli():
 
 
 # ---------------------------------------------------------------------------------------
-# OLM DO
+# OLM CREATE
 # ---------------------------------------------------------------------------------------
 #
-# This is the entry point to run OLM DO command.
+# This is the entry point to run OLM CREATE command.
 #
-@click.command(name="do")
-@click.argument("config_file", metavar="config-olm.json", type=click.Path(exists=True))
+@click.command(name="create")
+@click.argument("config_file", metavar="config.olm.json", type=click.Path(exists=True))
 @click.option(
     "--generate/--nogenerate",
-    default=False,
+    default=None,
     is_flag=True,
     help="whether to perform input generation",
 )
 @click.option(
     "--run/--norun",
-    default=False,
+    default=None,
     is_flag=True,
     help="whether to perform runs",
 )
 @click.option(
-    "--build/--nobuild",
-    default=False,
+    "--assemble/--noassemble",
+    default=None,
     is_flag=True,
-    help="whether to build the reactor library",
+    help="whether to assemble the ORIGEN library",
 )
 @click.option(
     "--check/--nocheck",
-    default=False,
+    default=None,
     is_flag=True,
     help="whether to check the generated library",
 )
 @click.option(
     "--report/--noreport",
-    default=False,
+    default=None,
     is_flag=True,
     help="whether to create the report documentation",
 )
 @click.option(
-    "--all",
-    "do_all",
-    default=False,
-    is_flag=True,
-    help="do all modes",
-)
-@click.option(
     "--nprocs",
     type=int,
-    required=False,
+    default=3,
     help="how many processes to use",
 )
-def command_do(config_file, generate, run, build, check, report, do_all, nprocs):
-    # Set whether we do the modes.
-    do = dict()
-    do["generate"] = generate
-    do["run"] = run
-    do["build"] = build
-    do["check"] = check
-    do["report"] = report
-    all_modes = ["generate", "run", "build", "check", "report"]
-    if do_all:
-        for mode in all_modes:
-            do[mode] = True
-
+@internal.copy_doc(internal.create)
+def command_create(**kwargs):
     try:
-        # Load the input data.
-        with open(config_file, "r") as f:
-            data = json.load(f)
-        data["model"]["config_file"] = config_file
-
-        # If nprocs is present, override.
-        if nprocs:
-            data["run"]["nprocs"] = nprocs
-            data["check"]["nprocs"] = nprocs
-
-        # Update paths in the model block.
-        model = common.update_model(data["model"])
-
-        # Run each enabled mode in sequence.
-        for mode in all_modes:
-            if do[mode]:
-                output = common.fn_redirect(**data[mode], model=model)
-                output_file = str(Path(model["work_dir"]) / mode) + ".json"
-                core.logger.info(f"Writing {output_file}")
-                with open(output_file, "w") as f:
-                    f.write(json.dumps(output, indent=4))
-
+        internal.create(**kwargs)
     except ValueError as ve:
-        core.logger.error(str(ve))
+        internal.logger.error(str(ve))
         return str(ve)
 
 
-cli.add_command(command_do)
+cli.add_command(command_create)
 
 
 # ---------------------------------------------------------------------------------------
@@ -156,35 +119,16 @@ import scale.olm.link as link
     is_flag=True,
     help="just emit commands without running them",
 )
-def command_link(names, paths, env, dest, show, dry_run):
+@internal.copy_doc(link.link)
+def command_link(**kwargs):
     try:
-        # Read all available libraries.
-        registry0 = common.create_registry(paths, env)
-        if show:
-            print("{:40s} {}".format("name", "path"))
-            for name in registry0:
-                print("{:40s} {}".format(name, registry0[name].path))
-
-        # Copy into reduced registry of only things we want.
-        registry = dict()
-        for name in names:
-            if not name in registry0:
-                raise ValueError("name={} not found in provided paths!".format(name))
-
-            registry[name] = registry0[name]
-
-        if not show:
-            link.make_mini_arpdatatxt(dry_run, registry, dest)
-
-        return 0
-
+        link.link(**kwargs)
     except ValueError as ve:
-        core.logger.error(str(ve))
+        internal.logger.error(str(ve))
         return str(ve)
 
 
 cli.add_command(command_link)
-
 
 # ---------------------------------------------------------------------------------------
 # OLM CHECK
@@ -208,7 +152,7 @@ def methods_help(*methods):
 
 
 @click.command(name="check")
-@click.argument("archive_file", metavar="archive.h5", type=click.Path(exists=True))
+@click.argument("archive_file", type=str)
 @click.option(
     "--output",
     "-o",
@@ -225,19 +169,66 @@ def methods_help(*methods):
     type=str,
     metavar="'{\"_type\": NAME, <OPTIONS>}'",
     multiple=True,
-    help=methods_help(check.GridGradient, check.Continuity),
+    help=methods_help(check.GridGradient),
 )
-def command_check(archive_file, output_file, text_sequence):
+@click.option(
+    "--nprocs",
+    type=int,
+    default=3,
+    help="how many processes to use",
+)
+def command_check(archive_file, output_file, text_sequence, nprocs):
     sequence = []
     for s in text_sequence:
         sequence.append(json.loads(s))
 
-    model = {"archive_file": archive_file}
-    output = check.sequencer(model, sequence)
+    # Back out what the sequencer expects.
+    x = archive_file.rsplit(":")
+    if len(x) > 1 and x[0].endswith("arpdata.txt"):
+        name = x[1]
+        work_dir = Path(x[0]).parent
+    else:
+        if not archive_file.endswith(".arc.h5"):
+            internal.logger.error(
+                "Libraries in HDF5 archive format must end in .arc.h5 but found",
+                archive_file=archive_file,
+            )
+            return
+        name = re.sub("\.arc\.h5$", "", archive_file)
+        work_dir = Path(archive_file).parent
 
-    core.logger.info(f"Writing {output_file} ...")
+    output = check.sequencer(
+        sequence, _model={"name": name}, _env={"work_dir": work_dir, "nprocs": nprocs}
+    )
+
+    internal.logger.info(f"Writing {output_file} ...")
     with open(output_file, "w") as f:
         f.write(json.dumps(output, indent=4))
 
 
 cli.add_command(command_check)
+
+
+@click.command(name="init")
+@click.argument("config_dir", type=str, required=False)
+@click.option(
+    "--variant", "-v", "variant", type=str, default=None, help="Name of model variant."
+)
+@click.option(
+    "--list",
+    "-l",
+    "list_variants",
+    is_flag=True,
+    default=False,
+    help="List all known variants and exit.",
+)
+@internal.copy_doc(internal.init)
+def command_init(**kwargs):
+    try:
+        internal.init(**kwargs)
+    except ValueError as ve:
+        logger.error(str(ve))
+        return str(ve)
+
+
+cli.add_command(command_init)

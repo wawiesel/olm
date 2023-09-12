@@ -1,12 +1,12 @@
 import numpy as np
 from tqdm import tqdm, tqdm_notebook
-import scale.olm.common as common
 import scale.olm.core as core
 import scale.olm.run as run
 import json
 from pathlib import Path
 import copy
 import os
+import scale.olm.internal as internal
 
 
 class CheckInfo:
@@ -14,45 +14,41 @@ class CheckInfo:
         self.test_pass = False
 
 
-def sequencer(model, sequence, nprocs):
+def sequencer(sequence, _model, _env):
     output = []
 
+    test_pass = True
     try:
         # Process all the input.
         run_list = []
         i = 0
         for s in sequence:
             # Set the full name.
-            name = s["_type"]
-            if name.find(":") == -1:
-                name = "scale.olm.check:" + name
-            s["_type"] = name
-            s["model"] = model
-            s["nprocs"] = nprocs
+            t = s["_type"]
+            if t.find(":") == -1:
+                t = "scale.olm.check:" + t
+            s["_type"] = t
 
-            core.logger.info(
-                "Checking options for check={}, sequence={}".format(name, i)
-            )
+            internal.logger.info("Checking options for", type=t, index=i)
             i += 1
 
             # Initialize the class.
-            this_class = common.fn_redirect(**s)
+            this_class = internal._fn_redirect(**s, _env=_env, _model=_model)
             run_list.append(this_class)
 
         # Read the archive.
-        work_dir = Path(model["work_dir"])
-        core.logger.info(f"Running checking in work dir={work_dir}")
+        work_dir = Path(_env["work_dir"])
         arpdata_txt = work_dir / "arpdata.txt"
+        name = _model["name"]
         if arpdata_txt.exists():
-            archive = common.Archive(arpdata_txt, model["name"])
+            archive = core.ReactorLibrary(arpdata_txt, name)
         else:
-            archive = common.Archive(f"{name}.arc.h5")
+            archive = core.ReactorLibrary(Path(f"{name}.arc.h5"))
 
         # Execute in sequence.
-        test_pass = True
         i = 0
         for r in run_list:
-            core.logger.info("Running checking sequence={}".format(i))
+            internal.logger.info("Running checking sequence={}".format(i))
 
             info = r.run(archive)
             output.append(info.__dict__)
@@ -61,10 +57,12 @@ def sequencer(model, sequence, nprocs):
             if not info.test_pass:
                 test_pass = False
 
-        core.logger.info("Finished without exception test_pass={}".format(test_pass))
+        internal.logger.info(
+            "Finished without exception test_pass={}".format(test_pass)
+        )
 
     except ValueError as ve:
-        core.logger.error(str(ve))
+        internal.logger.error(str(ve))
 
     return {"test_pass": test_pass, "sequence": output}
 
@@ -93,25 +91,25 @@ class GridGradient:
 
     def __init__(
         self,
-        model=None,
+        _model=None,
+        _env={},
         eps0=1e-20,
         epsa=1e-1,
         epsr=1e-1,
         target_q1=0.5,
         target_q2=0.7,
-        nprocs=3,
     ):
         self.eps0 = eps0
         self.epsa = epsa
         self.epsr = epsr
         self.target_q1 = target_q1
         self.target_q2 = target_q2
-        self.nprocs = nprocs
+        self.nprocs = _env.get("nprocs", 3)
 
     def run(self, archive):
         """Run the calculation and return post-processed results"""
 
-        core.logger.info(
+        internal.logger.info(
             "Running "
             + self.__class__.__name__
             + " check with params={}".format(json.dumps(self.__dict__))
@@ -121,7 +119,7 @@ class GridGradient:
         # After calc the self.ahist, rhist, khist, and rel_axes variables are ready to
         # compute metrics.
         info = self.info()
-        core.logger.info(
+        internal.logger.info(
             "Completed "
             + self.__class__.__name__
             + " with q1={:.2f} and q2={:.2f}".format(info.q1, info.q2)
@@ -164,16 +162,16 @@ class GridGradient:
             for x in x_list:
                 z.append((x - x0) / dx)
             self.rel_axes.append(z)
-        core.logger.info("Finished computing relative values on axes")
+        internal.logger.info("Finished computing relative values on axes")
 
         self.yreshape = np.moveaxis(archive.coeff, [-1], [0])
-        core.logger.info("Finished reshaping coefficients")
+        internal.logger.info("Finished reshaping coefficients")
 
-        core.logger.info("Computing grid gradients ...")
+        internal.logger.info("Computing grid gradients ...")
         self.ahist, self.rhist, self.khist = GridGradient.__kernel(
             self.rel_axes, self.yreshape, self.eps0
         )
-        core.logger.info("Finished computing grid gradients")
+        internal.logger.info("Finished computing grid gradients")
 
     @staticmethod
     def __kernel(rel_axes, yreshape, eps0):
@@ -242,30 +240,36 @@ class LowOrderConsistency:
             "epsr": c.epsr,
             "target_q2": c.target_q2,
             "target_q1": c.target_q1,
-            "nprocs": c.nprocs,
         }
 
     def __init__(
         self,
-        model=None,
-        template=None,
+        name="",
+        template="",
         eps0=1e-12,
         epsa=1e-6,
         epsr=1e-3,
         target_q1=0.9,
         target_q2=0.95,
-        nprocs=3,
         nuclide_compare=["0092235", "0094239"],
+        _model=None,
+        _env=None,
     ):
-        self.template = template
-        self.nprocs = nprocs
+        self._env = _env
+        self._model = _model
+        self.name = name
         self.nuclide_compare = nuclide_compare
-        self.scalerte = model["scalerte"]
-        self.config_dir = Path(model["dir"])
-        self.work_dir = Path(model["work_dir"])
-        self.check_dir = self.work_dir / "check" / Path(self.template).stem
-        self.name = model["name"]
-        self.obiwan = model["obiwan"]
+
+        tm = core.TemplateManager([Path(_env["config_file"]).parent])
+
+        self.template_path = tm.path(template)
+        internal.logger.info(
+            "check " + __class__.__name__, template_file=self.template_path
+        )
+
+        self.work_path = Path(_env["work_dir"])
+        self.check_path = self.work_path / "check" / name
+        self.check_dir = self.check_path.relative_to(self.work_path)
         self.eps0 = eps0
         self.epsa = epsa
         self.epsr = epsr
@@ -275,19 +279,15 @@ class LowOrderConsistency:
     @staticmethod
     def make_diff_plot(identifier, image, time, min_diff, max_diff, max_diff0):
         import matplotlib.pyplot as plt
-        import hashlib
 
         plt.rcParams.update({"font.size": 18})
-        f_color = (
-            int.from_bytes(hashlib.md5(identifier.encode("utf-8")).digest(), "big")
-            % 256
-        ) / 256.0
-        color = plt.get_cmap("jet")(f_color)
         plt.figure()
+        color = core.NuclideInventory._nuclide_color(identifier)
         plt.fill_between(
             np.asarray(time) / 86400.0,
             100 * np.asarray(min_diff),
             100 * np.asarray(max_diff),
+            alpha=0.7,
             color=color,
         )
         plt.xlabel("time (days)")
@@ -309,12 +309,12 @@ class LowOrderConsistency:
             return info
 
         # Create a base comparison data structure to repeat for every permutation.
-        core.logger.info("Setting up detailed comparison structures...")
+        internal.logger.info("Setting up detailed comparison structures...")
         info.nuclide_compare = dict()
         ntime = len(self.time_list)
         for nuclide in self.nuclide_compare:
             i = self.names.index(nuclide)
-            core.logger.info(
+            internal.logger.info(
                 f"Found nuclide={nuclide} at index {i} for detailed comparison"
             )
             info.nuclide_compare[nuclide] = {
@@ -333,7 +333,7 @@ class LowOrderConsistency:
         self.lo = np.array(self.lo_list)
 
         # For each permutation.
-        core.logger.info("Calculating all comparison histogram data...")
+        internal.logger.info("Calculating all comparison histogram data...")
         for k in range(len(self.lo_list)):
             # For each time.
             for j in range(len(self.lo_list[k])):
@@ -349,7 +349,7 @@ class LowOrderConsistency:
                 )
 
         # Extract each nuclide time series.
-        core.logger.info("Calculating nuclide-wise comparisons...")
+        internal.logger.info("Calculating nuclide-wise comparisons...")
         for n in info.nuclide_compare:
             i_nuclide = info.nuclide_compare[n]["nuclide_index"]
             for k in range(len(self.lo_list)):
@@ -359,10 +359,10 @@ class LowOrderConsistency:
                 info.nuclide_compare[n]["perms"].append(
                     {
                         "hi_ii_json": str(
-                            self.ii_json_list[k][0].relative_to(self.work_dir)
+                            self.ii_json_list[k][0].relative_to(self.work_path)
                         ),
                         "lo_ii_json": str(
-                            self.ii_json_list[k][1].relative_to(self.work_dir)
+                            self.ii_json_list[k][1].relative_to(self.work_path)
                         ),
                         "point_index": k,
                         "lo": list(lo),
@@ -375,7 +375,7 @@ class LowOrderConsistency:
                 #### annotate each line the permutation index k but draw them very light
 
         # Get maximum and min error across all permutations.
-        core.logger.info("Calculating max/min across permutations...")
+        internal.logger.info("Calculating max/min across permutations...")
         for n, d in info.nuclide_compare.items():
             i_nuclide = d["nuclide_index"]
             for k in range(len(self.lo_list)):
@@ -387,9 +387,9 @@ class LowOrderConsistency:
             d["max_diff0"] = np.amax(
                 [np.absolute(d["max_diff"]), np.absolute(d["min_diff"])]
             )
-            image = self.check_dir / (n + "-diff.png")
-            core.logger.info(
-                "creating nuclide diff ", image=str(image.relative_to(self.work_dir))
+            image = self.check_path / (n + "-diff.png")
+            internal.logger.info(
+                "creating nuclide diff ", image=str(image.relative_to(self.work_path))
             )
             info.nuclide_compare[n]["image"] = str(image)
             LowOrderConsistency.make_diff_plot(
@@ -398,16 +398,17 @@ class LowOrderConsistency:
 
         self.ahist = np.ndarray.flatten(self.ahist)
         self.rhist = np.ndarray.flatten(self.rhist)
-        hist_image = self.check_dir / "hist.png"
-        core.logger.info(
-            "creating histogram ", image=str(hist_image.relative_to(self.work_dir))
+        hist_image = self.check_path / "hist.png"
+        internal.logger.info(
+            "creating histogram ", image=str(hist_image.relative_to(self.work_path))
         )
-        common.plot_hist(
+        core.RelAbsHistogram.plot_hist(
             self,
             hist_image,
             xlabel=r"$\log_{10} |hi/lo-1|$",
             ylabel=r"$\log_{10} |hi-lo|$",
         )
+        info.hist_image = str(hist_image)
 
         info.wa = int(
             np.logical_and((self.ahist > self.epsa), (self.rhist > self.epsr)).sum()
@@ -434,25 +435,25 @@ class LowOrderConsistency:
         the already-complete higher order calculation."""
 
         # Load the template file.
-        with open(self.config_dir / self.template, "r") as f:
+        with open(self.template_path, "r") as f:
             template_text = f.read()
 
-        # Load the build data.
-        build_json = self.work_dir / "build.json"
-        with open(build_json, "r") as f:
-            build_d = json.load(f)
+        # Load the assemble data.
+        assemble_json = self.work_path / "assemble.olm.json"
+        with open(assemble_json, "r") as f:
+            assemble_d = json.load(f)
 
         # For each point in space.
         ii_json_list = list()
         f71_list = list()
-        for point in build_d["points"]:
+        for point in assemble_d["points"]:
             # Create the check input path.
             lib = Path(point["files"]["lib"])
             base = lib.stem
-            check_input = self.check_dir / base / (base + ".inp")
+            check_input = self.check_path / base / (base + ".inp")
 
             # Save the list.
-            hi_ii_json = self.work_dir / point["files"]["ii_json"]
+            hi_ii_json = self.work_path / point["files"]["ii_json"]
             lo_ii_json = check_input.with_suffix(".ii.json")
             f71_list.append(check_input.with_suffix(".f71"))
             ii_json_list.append((hi_ii_json, lo_ii_json))
@@ -462,40 +463,42 @@ class LowOrderConsistency:
 
             # Populate data.
             check_data = {
-                "model": {"work_dir": str(self.work_dir), "name": self.name},
                 **point,
+                "name": self.name,
+                "_": {"env": self._env, "model": self._model},
             }
 
             # Write out data file.
-            check_data_file = check_input.with_suffix(".olm.json")
+            check_data_file = check_input.parent / "data.olm.json"
             with open(check_data_file, "w") as f:
                 f.write(json.dumps(check_data, indent=4))
-            core.logger.debug(
-                f"Writing json data file={check_data_file} for LowOrderConsistency check"
+            internal.logger.debug(
+                "Writing LowOrderConsistency check", data_file=check_data_file
             )
 
             # Fill the template.
-            filled_text = common.expand_template(template_text, check_data)
+            filled_text = core.TemplateManager.expand_text(template_text, check_data)
 
             # Write the check input file.
-            core.logger.debug(
-                f"Writing input file={check_input} for LowOrderConsistency check"
+            internal.logger.debug(
+                "Writing LowOrderConsistency check", input_file=check_input
             )
             with open(check_input, "w") as f:
                 f.write(filled_text)
 
         # Run all the check inputs.
         run.makefile(
-            model={"scalerte": self.scalerte, "work_dir": self.check_dir},
             dry_run=not do_run,
-            nprocs=self.nprocs,
+            base_dir=self.check_dir,
+            _env=self._env,
+            _model=self._model,
         )
 
         # Actually generate the ii.json for the low fidelity calcs we just ran.
         if do_run:
             for f71 in f71_list:
-                lo = common.run_command(
-                    f"{self.obiwan} view -format=ii.json {f71} -cases='[{self.lo_case}]'",
+                lo = internal.run_command(
+                    f"{self._env['obiwan']} view -format=ii.json {f71} -cases='[{self.lo_case}]'",
                     echo=False,
                 )
                 lo_ii_json = f71.with_suffix(".ii.json")
@@ -511,7 +514,7 @@ class LowOrderConsistency:
         self.hi_list = list()
         self.lo_list = list()
         for hi_ii_json, lo_ii_json in ii_json_list:
-            core.logger.debug(f"loading HI {hi_ii_json}")
+            internal.logger.debug(f"loading HI {hi_ii_json}")
             # Load the json data into HIGH fidelity and LOWER fidelity data structures.
             # Note there's a little duplicate code here, but probably not worth refactoring.
             with open(hi_ii_json, "r") as f:
@@ -523,7 +526,7 @@ class LowOrderConsistency:
                 self.names = jt["definitions"]["nuclideVectors"][hi_vector]
                 self.time_list = case["time"]
 
-            core.logger.debug(f"loading LO {lo_ii_json}")
+            internal.logger.debug(f"loading LO {lo_ii_json}")
             with open(lo_ii_json, "r") as f:
                 jo = json.load(f)
                 case = jo["responses"][f"case({self.lo_case})"]
@@ -551,7 +554,7 @@ class LowOrderConsistency:
         # to disable long SCALE runs while trying to debug checking.
         do_run = os.environ.get("SCALE_OLM_DO_RUN", "True") in ["True"]
         if not do_run:
-            core.logger.warning(
+            internal.logger.warning(
                 "Runs suppressed by environment variable SCALE_OLM_DO_RUN!"
             )
 
@@ -566,7 +569,7 @@ class LowOrderConsistency:
 
         except ValueError as ve:
             self.run_success = False
-            core.logger.error(str(ve))
+            internal.logger.error(str(ve))
 
         return self.info()
 

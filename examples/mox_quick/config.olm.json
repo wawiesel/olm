@@ -1,18 +1,18 @@
 {
     "model": {
-        "name": "mox_w17x17_pin2",
-        "work_dir": "_build",
-        "scale_env_var": "SCALE",
+        "name": "mox_quick",
         "description": "A really simple MOX pin.",
-        "sources": { "1": "personal communication" }
+        "sources": { "1": "personal communication" },
+        "revision": ["Unknown Author created today"],
+        "notes": ["Nothing special"]
     },
     "generate": {
-        "_type": "scale.olm.generate:expander",
-        "template": "model.inp",
+        "_type": "scale.olm.generate:jt_expander",
+        "template": "model.jt.inp",
         "comp": {
             "inner":
             {
-                "_type": "scale.olm.generate:comp_mox_ornltm2003_2",
+                "_type": "scale.olm.complib:mox_ornltm2003_2",
                 "density": 10.4,
                 "uo2": {
                     "iso": {
@@ -25,8 +25,8 @@
                 "am241": 1.6
             }
          },
-        "params": {
-            "_type": "scale.olm.common:pass_through",
+        "static": {
+            "_type": "scale.olm.internal:pass_through",
             "addnux": 2,
             "xslib": "v7-56",
             "pitch": 1.26,
@@ -34,7 +34,7 @@
             "cladr": 0.4750
         },
         "states": {
-            "_type": "scale.olm.generate:all_permutations",
+            "_type": "scale.olm.generate:full_hypercube",
             "coolant_density": [
                 0.65,
                 0.75
@@ -54,7 +54,7 @@
             "boron_ppm": [ 600 ]
         },
         "time": {
-            "_type": "scale.olm.generate:triton_constpower_burndata",
+            "_type": "scale.olm.generate:constpower_burndata",
             "gwd_burnups": [
                 0.0,
                 1.0,
@@ -66,11 +66,10 @@
     },
     "run": {
         "_type": "scale.olm.run:makefile",
-        "nprocs": 3,
         "dry_run": false
     },
-    "build": {
-        "_type": "scale.olm.build:arpdata_txt",
+    "assemble": {
+        "_type": "scale.olm.assemble:arpdata_txt",
         "fuel_type": "MOX",
         "dim_map":
         {
@@ -82,11 +81,11 @@
     },
     "check": {
         "_type": "scale.olm.check:sequencer",
-        "nprocs": 3,
         "sequence":
         [{
-            "template": "check-origami.inp",
             "_type": "scale.olm.check:LowOrderConsistency",
+            "name": "loc",
+            "template": "model/origami/system-mox.jt.inp",
             "target_q1": 0.70,
             "target_q2": 0.95,
             "eps0": 1e-12,
@@ -96,7 +95,7 @@
         }]
     },
     "report": {
-        "_type": "scale.olm.report:stub1",
-        "template": "report.rst"
+        "_type": "scale.olm.report:rst2pdf",
+        "template": "report.jt.rst"
     }
 }

@@ -1,0 +1,65 @@
+=t-depl parm=(bonami,addnux={{static.addnux}})
+pincell model
+{{static.xslib}}
+
+read composition
+'
+' fuel
+  uo2   10 den={{comp.fuel.density}} 1
+           900
+           92234 {{comp.fuel.uo2.iso.u234}}
+           92235 {{comp.fuel.uo2.iso.u235}}
+           92236 {{comp.fuel.uo2.iso.u236}}
+           92238 {{comp.fuel.uo2.iso.u238}} end
+'
+' clad
+  zirc4 20 1 622 end
+'
+' coolant
+  h2o   30 den={{state.coolant_density}} 1.000000 575 end
+  boron 30 den={{state.coolant_density}} {{state.boron_ppm*1e-6}} 575 end
+'
+end composition
+
+read celldata
+  latticecell squarepitch
+    pitch={{static.pitch}} 30
+    fuelr={{static.fuelr}} 10
+    cladr={{static.cladr}} 20 end
+end celldata
+
+read depletion
+  10
+end depletion
+
+read burndata
+  {%- for pb in time.burndata %}
+  power={{pb.power}} burn={{pb.burn}} down=0 end
+  {%- endfor %}
+end burndata
+
+read model
+
+read materials
+  mix=10 pn=1 com="fuel" end
+  mix=20 pn=1 com="clad" end
+  mix=30 pn=2 com="coolant" end
+end materials
+
+read geom
+  global unit 1
+    cylinder 10 {{static.fuelr}}
+    cylinder 20 {{static.cladr}}
+    cuboid   30 4p{{static.pitch/2.0}}
+    media 10 1 10
+    media 20 1 20 -10
+    media 30 1 30 -20
+  boundary 30 3 3
+end geom
+
+read bounds
+  all=refl
+end bounds
+
+end model
+end
