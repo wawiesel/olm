@@ -3,15 +3,15 @@ PWR-MOX Westinghouse 14x14, 2D full assembly model
 {{params.xslib}}
 ' ----------------------------------------------------------------
 '  template to generate libraries for ORIGEN 
-'  parameters are: iso.inner      - wt% plutonium: inner
-'                  iso.inedge     - wt% plutonium: inside edge
-'                  iso.edge       - wt% plutonium: edge
-'                  iso.corner     - wt% plutonium: corner
-'                  iso.pu238      - wt% Pu238
-'                  iso.pu239      - wt% Pu239
-'                  iso.pu240      - wt% Pu240
-'                  iso.pu241      - wt% Pu241
-'                  iso.pu242      - wt% Pu242
+'  parameters are: wtpt_inner      - wt% plutonium: inner
+'                  wtpt_inedge     - wt% plutonium: inside edge
+'                  wtpt_edge       - wt% plutonium: edge
+'                  wtpt_corner     - wt% plutonium: corner
+'                  wtpt_pu238      - wt% Pu238
+'                  wtpt_pu239      - wt% Pu239
+'                  wtpt_pu240      - wt% Pu240
+'                  wtpt_pu241      - wt% Pu241
+'                  wtpt_pu242      - wt% Pu242
 '                  density_Am      - americium density (g/cc)
 '                  coolant_density - coolant density (g/cc)
 '                  ppm_boron       - coolant boron concentration (ppm)           
@@ -56,47 +56,47 @@ end alias
 read comp
 '
 ' fuel inner
-  uo2  1 den={{comp.fuel.density}} {{100.0-comp.fuel.iso.inner}} 923 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 1 den={{comp.fuel.density}} {{comp.fuel.iso.inner}} 923 94238 {{comp.fuel.iso.pu238}}
-                                 94239 {{comp.fuel.iso.pu239}}
-                                 94240 {{comp.fuel.iso.pu240}}
-                                 94241 {{comp.fuel.iso.pu241}}
-                                 94242 {{comp.fuel.iso.pu242}} end
+  uo2  1 den={{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_inner}} 923 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 1 den={{fuelcomp.fuel_density}} {{fuelcomp.wtpt_inner}} 923 94238 {{fuelcomp.wtpt_pu238}}
+                                 94239 {{fuelcomp.wtpt_pu239}}
+                                 94240 {{fuelcomp.wtpt_pu240}}
+                                 94241 {{fuelcomp.wtpt_pu241}}
+                                 94242 {{fuelcomp.wtpt_pu242}} end
 {% if params.density_Am > 0 -%}
-  am-241 1 den={{params.density_Am}} {{comp.fuel.iso.inner}} 923 end
+  am-241 1 den={{params.density_Am}} {{fuelcomp.wtpt_inner}} 923 end
 {% endif -%}
 '
 ' fuel inside edge
-  uo2  11 den={{comp.fuel.density}} {{100.0-comp.fuel.iso.inedge}} 923 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 11 den={{comp.fuel.density}} {{comp.fuel.iso.inedge}} 923 94238 {{comp.fuel.iso.pu238}}
-                                   94239 {{comp.fuel.iso.pu239}}
-                                   94240 {{comp.fuel.iso.pu240}}
-                                   94241 {{comp.fuel.iso.pu241}}
-                                   94242 {{comp.fuel.iso.pu242}} end
+  uo2  11 den={{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_inedge}} 923 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 11 den={{fuelcomp.fuel_density}} {{fuelcomp.wtpt_inedge}} 923 94238 {{fuelcomp.wtpt_pu238}}
+                                   94239 {{fuelcomp.wtpt_pu239}}
+                                   94240 {{fuelcomp.wtpt_pu240}}
+                                   94241 {{fuelcomp.wtpt_pu241}}
+                                   94242 {{fuelcomp.wtpt_pu242}} end
 {% if params.density_Am > 0 -%}
-  am-241 11 den={{params.density_Am}} {{comp.fuel.iso.inedge}} 923 end
+  am-241 11 den={{params.density_Am}} {{fuelcomp.wtpt_inedge}} 923 end
 {% endif -%}
 '
 ' fuel edge
-  uo2  21 den={{comp.fuel.density}} {{100.0-comp.fuel.iso.edge}} 923 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 21 den={{comp.fuel.density}} {{comp.fuel.iso.edge}} 923 94238 {{comp.fuel.iso.pu238}}
-                                  94239 {{comp.fuel.iso.pu239}}
-                                  94240 {{comp.fuel.iso.pu240}}
-                                  94241 {{comp.fuel.iso.pu241}}
-                                  94242 {{comp.fuel.iso.pu242}} end
+  uo2  21 den={{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_edge}} 923 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 21 den={{fuelcomp.fuel_density}} {{fuelcomp.wtpt_edge}} 923 94238 {{fuelcomp.wtpt_pu238}}
+                                  94239 {{fuelcomp.wtpt_pu239}}
+                                  94240 {{fuelcomp.wtpt_pu240}}
+                                  94241 {{fuelcomp.wtpt_pu241}}
+                                  94242 {{fuelcomp.wtpt_pu242}} end
 {% if params.density_Am > 0 -%}
-  am-241 21 den={{params.density_Am}} {{comp.fuel.iso.edge}} 923 end
+  am-241 21 den={{params.density_Am}} {{fuelcomp.wtpt_edge}} 923 end
 {% endif -%}
 '
 ' fuel corner
-  uo2  31 den={{comp.fuel.density}} {{100.0-comp.fuel.iso.corner}} 923 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 31 den={{comp.fuel.density}} {{comp.fuel.iso.corner}} 923 94238 {{comp.fuel.iso.pu238}}
-                                  94239 {{comp.fuel.iso.pu239}}
-                                  94240 {{comp.fuel.iso.pu240}}
-                                  94241 {{comp.fuel.iso.pu241}}
-                                  94242 {{comp.fuel.iso.pu242}} end
+  uo2  31 den={{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_corner}} 923 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 31 den={{fuelcomp.fuel_density}} {{fuelcomp.wtpt_corner}} 923 94238 {{fuelcomp.wtpt_pu238}}
+                                  94239 {{fuelcomp.wtpt_pu239}}
+                                  94240 {{fuelcomp.wtpt_pu240}}
+                                  94241 {{fuelcomp.wtpt_pu241}}
+                                  94242 {{fuelcomp.wtpt_pu242}} end
 {% if params.density_Am > 0 -%}
-  am-241 31 den={{params.density_Am}} {{comp.fuel.iso.corner}} 923 end
+  am-241 31 den={{params.density_Am}} {{fuelcomp.wtpt_corner}} 923 end
 {% endif -%}
 '
 ' clad

@@ -101,16 +101,8 @@ def grams_per_mol(iso_wts):
     return 1.0 / m
 
 
-def element_mass(element):
-    return {"o": 15.9994, "gd": 157.25}[element]
-
-
-def comp_mox_ornltm2003_2(state, density, uo2=None, am241=0):
+def comp_mox_ornltm2003_2(state, density, uo2, am241):
     """MOX isotopic vector calculation from ORNL/TM-2003/2, Sect. 3.2.2.1"""
-
-    # Set to something small to avoid unnecessary extra logic below.
-    if am241 < 1e-20:
-        am241 = 1e-20
 
     # Calculate pu vector as per formula. Note that the pu239_frac is by definition:
     # pu239/(pu+am) and the Am comes in from user input.
@@ -132,10 +124,7 @@ def comp_mox_ornltm2003_2(state, density, uo2=None, am241=0):
         x[k] *= pu_plus_am_pct / 100.0
 
     # Get U isotopes and scale to remaining weight percent.
-    if uo2:
-        y = copy.deepcopy(uo2["iso"])
-    else:
-        y = fuelcomp_uox_nuregcr5625(state={"enrichment": 0.24})
+    y = copy.deepcopy(uo2["iso"])
     u_pct = 100.0 - pu_plus_am_pct
     for k in y:
         y[k] *= u_pct / 100.0
@@ -156,11 +145,10 @@ def comp_mox_ornltm2003_2(state, density, uo2=None, am241=0):
     u_mass = grams_per_mol(u_iso)
 
     # Calculate heavy metal fractions of oxide (approximate).
-    o2_mass = 2 * element_mass("o")
+    o2_mass = 2 * 15.9994
     puo2_hm_frac = pu_mass / (pu_mass + o2_mass)
     amo2_hm_frac = am_mass / (am_mass + o2_mass)
     uo2_hm_frac = u_mass / (u_mass + o2_mass)
-    hmo2_hm_frac = hm_mass / (hm_mass + o2_mass)
 
     # Assume the density fraction is proportional to the heavy metal fraction
     # which was returned in the "norm".
@@ -184,85 +172,41 @@ def comp_mox_ornltm2003_2(state, density, uo2=None, am241=0):
             "puo2_hm_frac": puo2_hm_frac,
             "amo2_hm_frac": amo2_hm_frac,
             "uo2_hm_frac": uo2_hm_frac,
-            "hmo2_hm_frac": hmo2_hm_frac,
         },
         "density": density,
     }
 
 
-def comp_mox_zones_2023(
-    state,
-    zone_names,
-    zone_pins,
-    density,
-    uo2=None,
-    zone_pu_fracs=None,
-    am241=0.0,
-    gd2o3_pins=0,
-    gd2o3_wtpct=0.0,
-    nuclide_prefix="",
+def fuelcomp_mox_ornltm2003_2(
+    state, pins_zone, density_fuel=10.4, pins_gd=0, pct_gd=0.0, nuclide_prefix=""
 ):
-    """Create a zoned MOX assembly which preserves a desired average pu_frac including
-        allowance for UO2+Gd2O3 pins.
+    """MOX isotopic vector calculation from ORNL/TM-2003/2, Sect. 3.2.2.1"""
 
-    Default MOX zones from Mertyurek and Gauld NED 2016
+    data = {"pu239": float(state[nuclide_prefix + "pu239"])}
+    assert (data["pu239"] > 0.0) and (data["pu239"] < 100.0)
 
-        Ugur Mertyurek, Ian C. Gauld,
-        Development of ORIGEN libraries for mixed oxide (MOX) fuel assembly designs,
-        Nuclear Engineering and Design,
-        Volume 297,
-        2016,
-        Pages 220-230,
-        ISSN 0029-5493,
-        https://doi.org/10.1016/j.nucengdes.2015.11.027.
-        (https://www.sciencedirect.com/science/article/pii/S0029549315005592)
+    data["pu238"] = 0.0045678 * data["pu239"] ** 2 - 0.66370 * data["pu239"] + 24.941
+    data["pu240"] = -0.0113290 * data["pu239"] ** 2 + 1.02710 * data["pu239"] + 4.7929
+    data["pu241"] = 0.0018630 * data["pu239"] ** 2 - 0.42787 * data["pu239"] + 26.355
+    data["pu242"] = 0.0048985 * data["pu239"] ** 2 - 0.93553 * data["pu239"] + 43.911
 
-    """
-    if isinstance(zone_names, str):
-        if zone_names == "BWR2016":
-            zone_pu_fracs = [1.0, 0.75, 0.50, 0.30]
-        elif zone_names == "PWR2016":
-            zone_pu_fracs = [1.0, 0.90, 0.68, 0.50]
-        else:
-            raise ValueError(f"zone_names={zone_names} must be BWR2016/PWR2016")
-        zone_names = ["inner", "iedge", "edge", "corner"]
+    avgApu = (
+        data["pu238"] * 238.0
+        + data["pu239"] * 239.0
+        + data["pu240"] * 240.0
+        + data["pu241"] * 241.0
+        + data["pu242"] * 242.0
+    )
 
-    assert len(zone_pu_fracs) == len(zone_names)
-    assert len(zone_pu_fracs) == len(zone_pins)
+    data["pu"] = state[nuclide_prefix + "pu"]
+    data["gd"] = pct_gd
+    data = __apply_prefix(data, nuclide_prefix)
 
-    # Get a base MOX composition to calculate Pu/HM ratios.
-    x = comp_mox_ornltm2003_2(state, density, uo2=uo2, am241=am241)
-    putotal = 0
-    hmtotal = 0
-    for i in range(len(zone_pins)):
-        wt_hm = x["info"]["hmo2_hm_frac"] / 100.0
-        hm = wt_hm * zone_pins[i]
-        putotal += hm * zone_pu_fracs[i]
-        hmtotal += hm
-
-    # If we have non-Pu bearing pins, UO2+Gd2O3.
-    if gd2o3_pins > 0:
-        # This is approximate based on the uo2 that is combined with puo2,
-        # to make MOX, not the UO2 combined with the Gd2O3 that we do not
-        # pass in here.
-        uo2_mass = x["info"]["u_mass"] + x["info"]["o2_mass"]
-        gd2o3_mass = 2 * element_mass("gd") + 3 * element_mass("o")
-        wt_hm = (uo2_mass) / (uo2_mass + gd2o3_mass)
-        # Note does not increase Pu total
-        hmtotal += wt_hm * gd2o3_pins
-
-    data = {}
-
-    # We want to match the Pu/HM total over the assembly which should be
-    # state['pu_frac'] but it will not be.
-    multiplier = state["pu_frac"] / (putotal / hmtotal)
-    for i in range(len(zone_pins)):
-        zone_pu_fracs[i] *= multiplier
-        state0 = copy.deepcopy(state)
-        state0["pu_frac"] = zone_pu_fracs[i]
-        print(state0)
-        data[zone_names[i]] = comp_mox_ornltm2003_2(state0, density, uo2, am241)
-
+    data["avgA_pu"] = avgApu
+    data["pins_zone"] = pins_zone
+    data["pins_gd"] = pins_gd
+    data["density_fuel"] = density_fuel
+    data.update(getMoxContents(data, nuclide_prefix))
     return data
 
 
@@ -402,7 +346,7 @@ def getMoxContents(fuelcomp, nuclide_prefix=""):
         denom += ratios[i] * fuelcomp["pins_zone"][i]
 
     Ahm = ((100 - wtpt_pu) * Au + wtpt_pu * fuelcomp["avgA_pu"]) / 100.0
-    hmInOnePin = Ahm / (Ahm + 2 * Ao) * fuelcomp["fuel_density"]
+    hmInOnePin = Ahm / (Ahm + 2 * Ao) * fuelcomp["density_fuel"]
     hmInPins = hmInOnePin * (
         sum(fuelcomp["pins_zone"]) + fuelcomp["wtpt_gd"] * fuelcomp["pins_gd"]
     )
