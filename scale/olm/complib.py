@@ -171,6 +171,7 @@ def mox_multizone_2023(
 
     assert len(zone_pu_fracs) == len(zone_names)
     assert len(zone_pu_fracs) == len(zone_pins)
+    data = {}
 
     # Get a base MOX composition to calculate Pu/HM ratios.
     x = mox_ornltm2003_2(state, density, uo2=uo2, am241=am241)
@@ -183,21 +184,40 @@ def mox_multizone_2023(
         hmtotal += hm
 
     # If we have non-Pu bearing pins, UO2+Gd2O3.
+    guox = {}
     if gd2o3_pins > 0:
         # This is approximate based on the uo2 that is combined with puo2,
         # to make MOX, not the UO2 combined with the Gd2O3 that we do not
         # pass in here.
-        uo2_mass = x["info"]["u_mass"] + x["info"]["o2_mass"]
-        gd2o3_mass = 2 * element_mass("gd") + 3 * element_mass("o")
-        wt_hm = (uo2_mass) / (uo2_mass + gd2o3_mass)
+        m_u = x["info"]["m_u"]
+        m_o2 = x["info"]["m_o2"]
+        m_uo2 = m_u + m_o2
+        m_gd2o3 = 2 * 157.25 + 1.5 * m_o2
+        wt_hm = (m_u) / (m_uo2 * (1.0 - gd2o3_wtpct) + gd2o3_wtpct * m_gd2o3)
         # Note does not increase Pu total
         hmtotal += wt_hm * gd2o3_pins
-
-    data = {}
+        guox["info"] = {"gd2o3_plus_uo2_hm_frac": wt_hm, "m_gd2o3": m_gd2o3}
+        guox["uo2"] = x["uo2"]
+        guox["gd2o3"] = {"dens_frac": gd2o3_wtpct / 100.0}
+        guox["uo2"]["dens_frac"] = 1.0 - gd2o3_wtpct / 100.0
 
     # We want to match the Pu/HM total over the assembly which should be
     # state['pu_frac'] but it will not be.
     multiplier = state["pu_frac"] / (putotal / hmtotal)
+
+    data = {
+        "_zone": {
+            "zone_pu_fracs": zone_pu_fracs,
+            "zone_names": zone_names,
+            "zone_pins": zone_pins,
+            "hmtotal": hmtotal,
+            "putotal": putotal,
+            "multiplier": multiplier,
+        },
+        "guox": guox,
+    }
+
+    # Accumulate the data.
     for i in range(len(zone_pins)):
         zone_pu_fracs[i] *= multiplier
         state0 = copy.deepcopy(state)

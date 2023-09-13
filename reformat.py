@@ -9,6 +9,9 @@ def find_replace_input(xstr):
     zone = ""
     comp = ""
 
+    # Global replacements to normalize input to expected below.
+    xstr = xstr.replace("fuelcomps.", "fuelcomp.")
+
     # Define a regular expression pattern to match the multiline string
     pattern = r"{% if params\.density_Am > 0\.0 -%}(.*?){% endif -%}"
 
@@ -17,12 +20,13 @@ def find_replace_input(xstr):
 
     # Define a regular expression pattern to match the temperature value
     # Use re.search to find the match in the text
-    pattern = r"(\d+(\.\d*)?)\s+92234\s"
+    pattern = r"(\d+(\.\d*)?)\s+92235\s"
     match = re.search(pattern, xstr)
     if match:
         am_temp = match.group(1)
 
     lines = ""
+    mix = None
     for line in xstr.split("\n"):
         if line.find("' fuel inner") != -1:
             zone = "inner"
@@ -32,19 +36,23 @@ def find_replace_input(xstr):
             zone = "iedge"
         elif line.find("' fuel corner") != -1:
             zone = "corner"
-        if line.find("uo2") != -1:
+        m = re.search("^uo2\s+(\d+)", line)
+        if m:
             comp = "uo2"
-        if line.find("puo2") != -1:
+            mix = m.group(1)
+        m = re.search("^puo2\s+(\d+)", line)
+        if m:
             comp = "puo2"
+            mix = m.group(1)
 
         if line.find("AM241") != -1:
             line = line.replace(
                 "AM241",
                 f"""
-  am   1 den={{{{comp.{zone}.density}}}}
+  am   {{mix}} den={{{{comp.{zone}.density}}}}
         {{{{comp.{zone}.amo2.dens_frac*comp.{zone}.info.amo2_hm_frac}}}} {am_temp}
         95241 {{{{comp.{zone}.amo2.iso.am241}}}} end
-  o    1 den={{{{comp.{zone}.density}}}}
+  o    {{mix}} den={{{{comp.{zone}.density}}}}
         {{{{comp.{zone}.amo2.dens_frac*(1.0-comp.{zone}.info.amo2_hm_frac)}}}} {am_temp} end""",
             )
 

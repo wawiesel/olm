@@ -57,7 +57,32 @@ def full_hypercube(**states):
     return permutations
 
 
-def jt_expander(template, static, states, comp, time, _model, _env):
+def scipy_interp(method: str, state_var: str, data_pairs, state):
+    import scipy as sp
+
+    x0 = state[state_var]
+    x_list = []
+    y_list = []
+    for xy in data_pairs:
+        x_list.append(xy[0])
+        y_list.append(xy[1])
+
+    y0 = None
+    if method.lower() == "pchip":
+        y0 = sp.interpolate.pchip_interpolate(x_list, y_list, x0)
+    elif method.lower() == "linear":
+        y0 = sp.interpolate.interp1d(x_list, y_list)(x0)
+    else:
+        raise ValueError(f"scipy_interp method={method} must be one of: PCHIP, LINEAR")
+
+    internal.logger.debug(
+        "scipy_interp for method={method}", x0=x0, y0=y0, x=x_list, y=y_list
+    )
+
+    return float(y0)
+
+
+def jt_expander(template, static, dynamic, states, comp, time, _model, _env):
     """First expand the state to all the individual state combinations, then calculate the
     times and the compositions which may require state. The static just pass through."""
 
@@ -93,7 +118,12 @@ def jt_expander(template, static, states, comp, time, _model, _env):
             comp2 = internal._fn_redirect(**comp, state=state2)
         else:
             for k, v in comp.items():
-                comp2[k] = internal._fn_redirect(**comp[k], state=state2)
+                comp2[k] = internal._fn_redirect(**v, state=state2)
+
+        # Handle dynamic (state-dependent) parameters.
+        dynamic2 = {}
+        for k, v in dynamic.items():
+            dynamic2[k] = internal._fn_redirect(**v, state=state2)
 
         # For each state, generate a time list.
         time2 = internal._fn_redirect(**time, state=state2)
@@ -104,6 +134,7 @@ def jt_expander(template, static, states, comp, time, _model, _env):
             "comp": comp2,
             "time": time2,
             "state": state2,
+            "dynamic": dynamic2,
         }
 
         # Write data to a temporary file to get a hash of the contents.
