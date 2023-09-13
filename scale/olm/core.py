@@ -133,10 +133,71 @@ class TemplateManager:
         Returns:
             str: text from the expanded template and data
         """
-        return TemplateManager.expand_file(self.templates[name], data)
+        return TemplateManager.expand_file(self.templates[name], data, src_path=name)
 
     @staticmethod
-    def expand_text(text: str, data: dict):
+    def _jinja2_render_traceback(src_path):
+        from sys import exc_info
+
+        tb_frame_re = re.compile(
+            r"<frame at 0x[a-z0-9]*, file '(.*)', line (\d+), (?:code top-level template code|code template)>"
+        )
+        traceback_print = ""
+
+        # Get traceback objects
+        typ, value, tb = exc_info()
+        # Iterate over nested traceback frames
+        while tb:
+            # Parse traceback frame string
+            tb_frame_str = str(tb.tb_frame)
+            tb_frame_match = tb_frame_re.match(tb_frame_str)
+            tb_frame_istemplate = False
+            # Identify frames corresponding to Jinja2 templates
+            if tb.tb_frame.f_code.co_filename == "<template>":
+                # Top-most template
+                tb_src_path = src_path
+                tb_lineno = tb.tb_lineno
+                tb_frame_istemplate = True
+            elif tb_frame_match:
+                # nested child templates
+                tb_src_path = tb_frame_match.group(1)
+                tb_lineno = tb_frame_match.group(2)
+                tb_frame_istemplate = True
+            # Factorized string formatting
+            if tb_frame_istemplate:
+                traceback_print += f"    Template '{tb_src_path}', line {tb_lineno}\n"
+                # Fetch the line raising the exception
+                with open(tb_src_path, "r") as tb_src_file:
+                    for lineno, line in enumerate(tb_src_file):
+                        if lineno == int(tb_lineno) - 1:
+                            traceback_print += "        " + line.strip() + "\n"
+                            break
+            tb = tb.tb_next
+
+        # Strip the final line jump
+        return traceback_print[:-1]
+
+    @staticmethod
+    def _tree_print(data, path=""):
+        if isinstance(data, dict):
+            new = ""
+            if path == "":
+                root = ""
+            else:
+                root = path + "."
+            for k, v in data.items():
+                new += TemplateManager._tree_print(v, path=root + k)
+            return new
+        elif isinstance(data, list):
+            new = ""
+            for i in range(len(data)):
+                new += TemplateManager._tree_print(data[i], path=path + f"[{i}]")
+            return new
+        else:
+            return f"{path}={data}\n"
+
+    @staticmethod
+    def expand_text(text: str, data: dict, src_path: str = ""):
         """Returns the expanded text with data.
 
         Use jinja to expand the text with data.
@@ -151,17 +212,24 @@ class TemplateManager:
         Returns:
             str: expanded text
         """
-        from jinja2 import Template, StrictUndefined, exceptions
+        from jinja2 import Template, StrictUndefined, exceptions, TemplateError
 
         j2t = Template(text, undefined=StrictUndefined)
 
         # Catch specific types of error.
         try:
             return j2t.render(data)
-        except exceptions.UndefinedError as ve:
+        except exceptions.TemplateError as ve:
+            trace = TemplateManager._jinja2_render_traceback(src_path=src_path)
             raise ValueError(
-                "Undefined variable reported (most likely template has a variable that is undefined in the data file). Error from template expansion: "
+                "Available data: \n"
+                + TemplateManager._tree_print(data)
+                + "\n"
+                + "Template error: "
                 + str(ve)
+                + "\n"
+                + trace
+                + "\n"
             )
 
     @staticmethod
@@ -177,7 +245,7 @@ class TemplateManager:
         """
         with open(path, "r") as f:
             text = f.read()
-            return TemplateManager.expand_text(text, data)
+            return TemplateManager.expand_text(text, data, src_path=str(path))
 
 
 class CompositionManager:

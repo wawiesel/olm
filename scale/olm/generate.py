@@ -129,7 +129,9 @@ def jt_expander(template, static, states, comp, time, _model, _env):
 
         # Expand the template and write the input to disk.
         internal.logger.info("Writing permutation", index=i, input_file=input_file)
-        filled_text = core.TemplateManager.expand_text(template_text, data)
+        filled_text = core.TemplateManager.expand_text(
+            template_text, data, src_path=str(template_path)
+        )
         with open(input_path, "w") as f:
             f.write(filled_text)
 
