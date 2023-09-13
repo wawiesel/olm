@@ -18,15 +18,9 @@ def find_replace_input(xstr):
     # Use re.sub() with re.DOTALL to match across multiple lines and replace
     xstr = re.sub(pattern, "AM241", xstr, flags=re.DOTALL)
 
-    # Define a regular expression pattern to match the temperature value
-    # Use re.search to find the match in the text
-    pattern = r"(\d+(\.\d*)?)\s+92235\s"
-    match = re.search(pattern, xstr)
-    if match:
-        am_temp = match.group(1)
-
     lines = ""
     mix = None
+    am_temp = None
     for line in xstr.split("\n"):
         if line.find("' fuel inner") != -1:
             zone = "inner"
@@ -36,25 +30,14 @@ def find_replace_input(xstr):
             zone = "iedge"
         elif line.find("' fuel corner") != -1:
             zone = "corner"
-        m = re.search("^uo2\s+(\d+)", line)
+        m = re.search("^ *uo2\s+(\d+)", line)
         if m:
             comp = "uo2"
             mix = m.group(1)
-        m = re.search("^puo2\s+(\d+)", line)
+        m = re.search("^ *puo2\s+(\d+)", line)
         if m:
             comp = "puo2"
             mix = m.group(1)
-
-        if line.find("AM241") != -1:
-            line = line.replace(
-                "AM241",
-                f"""
-  am   {{mix}} den={{{{comp.{zone}.density}}}}
-        {{{{comp.{zone}.amo2.dens_frac*comp.{zone}.info.amo2_hm_frac}}}} {am_temp}
-        95241 {{{{comp.{zone}.amo2.iso.am241}}}} end
-  o    {{mix}} den={{{{comp.{zone}.density}}}}
-        {{{{comp.{zone}.amo2.dens_frac*(1.0-comp.{zone}.info.amo2_hm_frac)}}}} {am_temp} end""",
-            )
 
         line = line.replace("fuelcomp.fuel_density", f"comp.{zone}.density")
         m = re.search(r"({{100.0-fuelcomp.wtpt_[^ 0-9]*?}})", line)
@@ -64,6 +47,24 @@ def find_replace_input(xstr):
         if m:
             line = line.replace(m.group(1), f"{{{{comp.{zone}.puo2.dens_frac}}}}")
 
+        # Define a regular expression pattern to match the temperature value
+        # Use re.search to find the match in the text
+        pattern = r"\.dens_frac}}\s+(\d+(\.\d*)?)\s"
+        match = re.search(pattern, line)
+        if match:
+            am_temp = match.group(1)
+
+        if line.find("AM241") != -1:
+            line = line.replace(
+                "AM241",
+                f"""
+  am   {mix} den={{{{comp.{zone}.density}}}}
+        {{{{comp.{zone}.amo2.dens_frac*comp.{zone}.info.amo2_hm_frac}}}} {am_temp}
+        95241 {{{{comp.{zone}.amo2.iso.am241}}}} end
+  o    {mix} den={{{{comp.{zone}.density}}}}
+        {{{{comp.{zone}.amo2.dens_frac*(1.0-comp.{zone}.info.amo2_hm_frac)}}}} {am_temp} end""",
+            )
+
         # handle all isotopic entry
         m = re.search(r"fuelcomp.wtpt_([^ ]*)", line)
         if m:
@@ -71,8 +72,9 @@ def find_replace_input(xstr):
 
         lines += line + "\n"
 
-        # Final global replaces.
-        lines = lines.replace("params.", "static.")
+    # Final global replaces.
+    lines = lines.replace("params.", "static.")
+    lines = lines.rstrip() + "\n"
     return lines
 
 

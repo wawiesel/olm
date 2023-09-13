@@ -75,10 +75,10 @@ read comp
                                      94241 {{comp.iedge.puo2.iso.pu241}}
                                      94242 {{comp.iedge.puo2.iso.pu242}} end
 
-  am   1 den={{comp.iedge.density}}
+  am   11 den={{comp.iedge.density}}
         {{comp.iedge.amo2.dens_frac*comp.iedge.info.amo2_hm_frac}} 972.5
         95241 {{comp.iedge.amo2.iso.am241}} end
-  o    1 den={{comp.iedge.density}}
+  o    11 den={{comp.iedge.density}}
         {{comp.iedge.amo2.dens_frac*(1.0-comp.iedge.info.amo2_hm_frac)}} 972.5 end
 '
 ' fuel edge
@@ -89,10 +89,10 @@ read comp
                                     94241 {{comp.iedge.puo2.iso.pu241}}
                                     94242 {{comp.iedge.puo2.iso.pu242}} end
 
-  am   1 den={{comp.iedge.density}}
+  am   21 den={{comp.iedge.density}}
         {{comp.iedge.amo2.dens_frac*comp.iedge.info.amo2_hm_frac}} 972.5
         95241 {{comp.iedge.amo2.iso.am241}} end
-  o    1 den={{comp.iedge.density}}
+  o    21 den={{comp.iedge.density}}
         {{comp.iedge.amo2.dens_frac*(1.0-comp.iedge.info.amo2_hm_frac)}} 972.5 end
 '
 ' fuel corner
@@ -103,10 +103,10 @@ read comp
                                     94241 {{comp.corner.puo2.iso.pu241}}
                                     94242 {{comp.corner.puo2.iso.pu242}} end
 
-  am   1 den={{comp.corner.density}}
+  am   31 den={{comp.corner.density}}
         {{comp.corner.amo2.dens_frac*comp.corner.info.amo2_hm_frac}} 972.5
         95241 {{comp.corner.amo2.iso.am241}} end
-  o    1 den={{comp.corner.density}}
+  o    31 den={{comp.corner.density}}
         {{comp.corner.amo2.dens_frac*(1.0-comp.corner.info.amo2_hm_frac)}} 972.5 end
 '
 ' clad
@@ -328,5 +328,3 @@ end bnds
 '
 end model
 end
-
-

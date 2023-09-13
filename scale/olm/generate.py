@@ -82,7 +82,7 @@ def scipy_interp(method: str, state_var: str, data_pairs, state):
     return float(y0)
 
 
-def jt_expander(template, static, dynamic, states, comp, time, _model, _env):
+def jt_expander(template, static, states, comp, time, _model, _env, dynamic=None):
     """First expand the state to all the individual state combinations, then calculate the
     times and the compositions which may require state. The static just pass through."""
 
@@ -122,8 +122,9 @@ def jt_expander(template, static, dynamic, states, comp, time, _model, _env):
 
         # Handle dynamic (state-dependent) parameters.
         dynamic2 = {}
-        for k, v in dynamic.items():
-            dynamic2[k] = internal._fn_redirect(**v, state=state2)
+        if dynamic:
+            for k, v in dynamic.items():
+                dynamic2[k] = internal._fn_redirect(**v, state=state2)
 
         # For each state, generate a time list.
         time2 = internal._fn_redirect(**time, state=state2)
