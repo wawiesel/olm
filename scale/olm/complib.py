@@ -80,8 +80,12 @@ def uo2_nuregcr5625(state, density=0):
     }
 
 
-def mox_ornltm2003_2(state, density, uo2, am241):
+def mox_ornltm2003_2(state, density, uo2=None, am241=0):
     """MOX isotopic vector calculation from ORNL/TM-2003/2, Sect. 3.2.2.1"""
+
+    # Set to something small to avoid unnecessary extra logic below.
+    if am241 < 1e-20:
+        am241 = 1e-20
 
     # Calculate pu vector as per formula. Note that the pu239_frac is by definition:
     # pu239/(pu+am) and the Am comes in from user input.
@@ -103,7 +107,10 @@ def mox_ornltm2003_2(state, density, uo2, am241):
         x[k] *= pu_plus_am_pct / 100.0
 
     # Get U isotopes and scale to remaining weight percent.
-    y = copy.deepcopy(uo2["iso"])
+    if uo2:
+        y = copy.deepcopy(uo2["iso"])
+    else:
+        y = uo2_nuregcr5625(state={"enrichment": 0.24})["uo2"]["iso"]
     u_pct = 100.0 - pu_plus_am_pct
     for k in y:
         y[k] *= u_pct / 100.0
@@ -124,3 +131,77 @@ def mox_ornltm2003_2(state, density, uo2, am241):
     comp["_input"] = {"state": state, "density": density, "uo2": uo2, "am241": am241}
 
     return comp
+
+
+def mox_multizone_2023(
+    state,
+    zone_names,
+    zone_pins,
+    density,
+    uo2=None,
+    zone_pu_fracs=None,
+    am241=0.0,
+    gd2o3_pins=0,
+    gd2o3_wtpct=0.0,
+):
+    """Create a zoned MOX assembly which preserves a desired average pu_frac including
+        allowance for UO2+Gd2O3 pins.
+
+    Default MOX zones from Mertyurek and Gauld NED 2016
+
+        Ugur Mertyurek, Ian C. Gauld,
+        Development of ORIGEN libraries for mixed oxide (MOX) fuel assembly designs,
+        Nuclear Engineering and Design,
+        Volume 297,
+        2016,
+        Pages 220-230,
+        ISSN 0029-5493,
+        https://doi.org/10.1016/j.nucengdes.2015.11.027.
+        (https://www.sciencedirect.com/science/article/pii/S0029549315005592)
+
+    """
+    if isinstance(zone_names, str):
+        if zone_names == "BWR2016":
+            zone_pu_fracs = [1.0, 0.75, 0.50, 0.30]
+        elif zone_names == "PWR2016":
+            zone_pu_fracs = [1.0, 0.90, 0.68, 0.50]
+        else:
+            raise ValueError(f"zone_names={zone_names} must be BWR2016/PWR2016")
+        zone_names = ["inner", "iedge", "edge", "corner"]
+
+    assert len(zone_pu_fracs) == len(zone_names)
+    assert len(zone_pu_fracs) == len(zone_pins)
+
+    # Get a base MOX composition to calculate Pu/HM ratios.
+    x = mox_ornltm2003_2(state, density, uo2=uo2, am241=am241)
+    putotal = 0
+    hmtotal = 0
+    for i in range(len(zone_pins)):
+        wt_hm = x["info"]["hmo2_hm_frac"] / 100.0
+        hm = wt_hm * zone_pins[i]
+        putotal += hm * zone_pu_fracs[i]
+        hmtotal += hm
+
+    # If we have non-Pu bearing pins, UO2+Gd2O3.
+    if gd2o3_pins > 0:
+        # This is approximate based on the uo2 that is combined with puo2,
+        # to make MOX, not the UO2 combined with the Gd2O3 that we do not
+        # pass in here.
+        uo2_mass = x["info"]["u_mass"] + x["info"]["o2_mass"]
+        gd2o3_mass = 2 * element_mass("gd") + 3 * element_mass("o")
+        wt_hm = (uo2_mass) / (uo2_mass + gd2o3_mass)
+        # Note does not increase Pu total
+        hmtotal += wt_hm * gd2o3_pins
+
+    data = {}
+
+    # We want to match the Pu/HM total over the assembly which should be
+    # state['pu_frac'] but it will not be.
+    multiplier = state["pu_frac"] / (putotal / hmtotal)
+    for i in range(len(zone_pins)):
+        zone_pu_fracs[i] *= multiplier
+        state0 = copy.deepcopy(state)
+        state0["pu_frac"] = zone_pu_fracs[i]
+        data[zone_names[i]] = mox_ornltm2003_2(state0, density, uo2, am241)
+
+    return data

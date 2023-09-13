@@ -428,6 +428,7 @@ class CompositionManager:
         puo2_hm_frac = m_pu / (m_pu + m_o2)
         amo2_hm_frac = m_am / (m_am + m_o2)
         uo2_hm_frac = m_u / (m_u + m_o2)
+        hmo2_hm_frac = m_hm / (m_hm + m_o2)
 
         # Calculate heavy metal densities.
         am_dens = amo2_hm_frac * comp["amo2"]["dens_frac"]
@@ -463,6 +464,7 @@ class CompositionManager:
             "puo2_hm_frac": puo2_hm_frac,
             "amo2_hm_frac": amo2_hm_frac,
             "uo2_hm_frac": uo2_hm_frac,
+            "hmo2_hm_frac": hmo2_hm_frac,
         }
 
 
