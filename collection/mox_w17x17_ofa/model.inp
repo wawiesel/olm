@@ -1,6 +1,6 @@
-=t-depl parm=(addnux={{params.addnux}})
+=t-depl parm=(addnux={{static.addnux}})
 PWR Westinghouse OFA 17x17, 2D quarter assembly model 
-{{params.xslib}}
+{{static.xslib}}
 ' ----------------------------------------------------------------
 '  template to generate libraries for ORIGEN 
 '  parameters are: wtpt_inner      - wt% plutonium: inner
@@ -56,48 +56,60 @@ end alias
 read comp
 '
 ' fuel inner
-  uo2  1 den={{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_inner}} 1000 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 1 den={{fuelcomp.fuel_density}} {{fuelcomp.wtpt_inner}} 1000 94238 {{fuelcomps.wtpt_pu238}}
-                                  94239 {{fuelcomps.wtpt_pu239}}
-                                  94240 {{fuelcomps.wtpt_pu240}}
-                                  94241 {{fuelcomps.wtpt_pu241}}
-                                  94242 {{fuelcomps.wtpt_pu242}} end
-{% if params.density_Am > 0.0 -%}
-  am-241 1 den={{param.densityAm}} {{fuelcomp.wtpt_inner}} 1000 end
-{% endif -%}
+  uo2  1 den={{comp.inner.density}} {{comp.inner.uo2.dens_frac}} 1000 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 1 den={{comp.inner.density}} {{comp.inner.puo2.dens_frac}} 1000 94238 {{comp.inner.puo2.iso.pu238}}
+                                  94239 {{comp.inner.puo2.iso.pu239}}
+                                  94240 {{comp.inner.puo2.iso.pu240}}
+                                  94241 {{comp.inner.puo2.iso.pu241}}
+                                  94242 {{comp.inner.puo2.iso.pu242}} end
+
+  am   1 den={{comp.inner.density}}
+        {{comp.inner.amo2.dens_frac*comp.inner.info.amo2_hm_frac}} 1000
+        95241 {{comp.inner.amo2.iso.am241}} end
+  o    1 den={{comp.inner.density}}
+        {{comp.inner.amo2.dens_frac*(1.0-comp.inner.info.amo2_hm_frac)}} 1000 end
 '
 ' fuel inside edge
-  uo2  11 den={{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_inedge}} 1000 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 11 den={{fuelcomp.fuel_density}} {{fuelcomp.wtpt_inedge}} 1000 94238 {{fuelcomps.wtpt_pu238}}
-                                    94239 {{fuelcomps.wtpt_pu239}}
-                                    94240 {{fuelcomps.wtpt_pu240}}
-                                    94241 {{fuelcomps.wtpt_pu241}}
-                                    94242 {{fuelcomps.wtpt_pu242}} end
-{% if params.density_Am > 0.0 -%}
-  am-241 11 den={{param.densityAm}} {{fuelcomps.wtpt_inedge}} 1000 end
-{% endif -%}
+  uo2  11 den={{comp.iedge.density}} {{comp.iedge.uo2.dens_frac}} 1000 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 11 den={{comp.iedge.density}} {{comp.iedge.puo2.dens_frac}} 1000 94238 {{comp.iedge.puo2.iso.pu238}}
+                                    94239 {{comp.iedge.puo2.iso.pu239}}
+                                    94240 {{comp.iedge.puo2.iso.pu240}}
+                                    94241 {{comp.iedge.puo2.iso.pu241}}
+                                    94242 {{comp.iedge.puo2.iso.pu242}} end
+
+  am   11 den={{comp.iedge.density}}
+        {{comp.iedge.amo2.dens_frac*comp.iedge.info.amo2_hm_frac}} 1000
+        95241 {{comp.iedge.amo2.iso.am241}} end
+  o    11 den={{comp.iedge.density}}
+        {{comp.iedge.amo2.dens_frac*(1.0-comp.iedge.info.amo2_hm_frac)}} 1000 end
 '
 ' fuel edge
-  uo2  21 den={{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_edge}}  1000 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 21 den={{fuelcomp.fuel_density}} {{fuelcomp.wtpt_edge}} 1000 94238 {{fuelcomps.wtpt_pu238}}
-                                   94239 {{fuelcomps.wtpt_pu239}}
-                                   94240 {{fuelcomps.wtpt_pu240}}
-                                   94241 {{fuelcomps.wtpt_pu241}}
-                                   94242 {{fuelcomps.wtpt_pu242}} end
-{% if params.density_Am > 0.0 -%}
-  am-241 21 den={{params.densityAm}} {{fuelcomps.wtpt_edge}} 1000 end
-{% endif -%}
+  uo2  21 den={{comp.iedge.density}} {{comp.iedge.uo2.dens_frac}}  1000 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 21 den={{comp.iedge.density}} {{comp.iedge.puo2.dens_frac}} 1000 94238 {{comp.iedge.puo2.iso.pu238}}
+                                   94239 {{comp.iedge.puo2.iso.pu239}}
+                                   94240 {{comp.iedge.puo2.iso.pu240}}
+                                   94241 {{comp.iedge.puo2.iso.pu241}}
+                                   94242 {{comp.iedge.puo2.iso.pu242}} end
+
+  am   21 den={{comp.iedge.density}}
+        {{comp.iedge.amo2.dens_frac*comp.iedge.info.amo2_hm_frac}} 1000
+        95241 {{comp.iedge.amo2.iso.am241}} end
+  o    21 den={{comp.iedge.density}}
+        {{comp.iedge.amo2.dens_frac*(1.0-comp.iedge.info.amo2_hm_frac)}} 1000 end
 '
 ' fuel corner
-  uo2  31 den={{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_corner}}  1000 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 31 den={{fuelcomp.fuel_density}} {{fuelcomp.wtpt_corner}} 1000 94238 {{fuelcomps.wtpt_pu238}}
-                                   94239 {{fuelcomps.wtpt_pu239}}
-                                   94240 {{fuelcomps.wtpt_pu240}}
-                                   94241 {{fuelcomps.wtpt_pu241}}
-                                   94242 {{fuelcomps.wtpt_pu242}} end
-{% if params.density_Am > 0.0 -%}
-  am-241 31 den={{params.densityAm}} {{fuelcomp.wtpt_corner}} 1000 end
-{% endif -%}
+  uo2  31 den={{comp.corner.density}} {{comp.corner.uo2.dens_frac}}  1000 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 31 den={{comp.corner.density}} {{comp.corner.puo2.dens_frac}} 1000 94238 {{comp.corner.puo2.iso.pu238}}
+                                   94239 {{comp.corner.puo2.iso.pu239}}
+                                   94240 {{comp.corner.puo2.iso.pu240}}
+                                   94241 {{comp.corner.puo2.iso.pu241}}
+                                   94242 {{comp.corner.puo2.iso.pu242}} end
+
+  am   31 den={{comp.corner.density}}
+        {{comp.corner.amo2.dens_frac*comp.corner.info.amo2_hm_frac}} 1000
+        95241 {{comp.corner.amo2.iso.am241}} end
+  o    31 den={{comp.corner.density}}
+        {{comp.corner.amo2.dens_frac*(1.0-comp.corner.info.amo2_hm_frac)}} 1000 end
 '
 ' clad
   zirc4 $clad 1 620 end 
