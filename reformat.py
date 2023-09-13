@@ -15,16 +15,15 @@ def find_replace_input(xstr):
     # Use re.sub() with re.DOTALL to match across multiple lines and replace
     xstr = re.sub(pattern, "AM241", xstr, flags=re.DOTALL)
 
+    # Define a regular expression pattern to match the temperature value
+    # Use re.search to find the match in the text
+    pattern = r"(\d+(\.\d*)?)\s+92234\s"
+    match = re.search(pattern, xstr)
+    if match:
+        am_temp = match.group(1)
+
     lines = ""
     for line in xstr.split("\n"):
-        # Define a regular expression pattern to match the temperature value
-        # Use re.search to find the match in the text
-        pattern = r"(\d+\.\d+) 92234 "
-        match = re.search(pattern, xstr)
-        am_temp = None
-        if match:
-            am_temp = match.group(1)
-
         if line.find("' fuel inner") != -1:
             zone = "inner"
         elif line.find("' fuel inside edge") != -1:
