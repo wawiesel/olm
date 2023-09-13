@@ -21,31 +21,35 @@ def find_replace_input(xstr):
     lines = ""
     mix = None
     am_temp = None
+    zone = ""
     for line in xstr.split("\n"):
         if line.find("' fuel inner") != -1:
-            zone = "inner"
+            zone = "inner."
         elif line.find("' fuel inside edge") != -1:
-            zone = "iedge"
+            zone = "iedge."
         elif line.find("' fuel edge") != -1:
-            zone = "iedge"
+            zone = "iedge."
         elif line.find("' fuel corner") != -1:
-            zone = "corner"
-        m = re.search("^ *uo2\s+(\d+)", line)
+            zone = "corner."
+
+        m = re.search("^\s*uo2\s+([^\s]+)", line)
         if m:
             comp = "uo2"
             mix = m.group(1)
-        m = re.search("^ *puo2\s+(\d+)", line)
+        m = re.search("^\s*puo2\s+([^\s]+)", line)
         if m:
             comp = "puo2"
             mix = m.group(1)
 
-        line = line.replace("fuelcomp.fuel_density", f"comp.{zone}.density")
-        m = re.search(r"({{100.0-fuelcomp.wtpt_[^ 0-9]*?}})", line)
-        if m:
-            line = line.replace(m.group(1), f"{{{{comp.{zone}.uo2.dens_frac}}}}")
-        m = re.search(r"({{fuelcomp.wtpt_[^ 0-9]*?}})", line)
-        if m:
-            line = line.replace(m.group(1), f"{{{{comp.{zone}.puo2.dens_frac}}}}")
+        line = line.replace("fuelcomp.fuel_density", f"comp.{zone}density")
+        if comp == "uo2":
+            m = re.search(r"({{100.0-fuelcomp.wtpt_[^ 0-9]*?}})", line)
+            if m:
+                line = line.replace(m.group(1), f"{{{{comp.{zone}uo2.dens_frac}}}}")
+        if comp == "puo2":
+            m = re.search(r"({{fuelcomp.wtpt_[^ 0-9]*?}})", line)
+            if m:
+                line = line.replace(m.group(1), f"{{{{comp.{zone}puo2.dens_frac}}}}")
 
         # Define a regular expression pattern to match the temperature value
         # Use re.search to find the match in the text
@@ -58,22 +62,23 @@ def find_replace_input(xstr):
             line = line.replace(
                 "AM241",
                 f"""
-  am   {mix} den={{{{comp.{zone}.density}}}}
-        {{{{comp.{zone}.amo2.dens_frac*comp.{zone}.info.amo2_hm_frac}}}} {am_temp}
-        95241 {{{{comp.{zone}.amo2.iso.am241}}}} end
-  o    {mix} den={{{{comp.{zone}.density}}}}
-        {{{{comp.{zone}.amo2.dens_frac*(1.0-comp.{zone}.info.amo2_hm_frac)}}}} {am_temp} end""",
+  am   {mix} den={{{{comp.{zone}density}}}}
+        {{{{comp.{zone}amo2.dens_frac*comp.{zone}info.amo2_hm_frac}}}} {am_temp}
+        95241 {{{{comp.{zone}amo2.iso.am241}}}} end
+  o    {mix} den={{{{comp.{zone}density}}}}
+        {{{{comp.{zone}amo2.dens_frac*(1.0-comp.{zone}info.amo2_hm_frac)}}}} {am_temp} end""",
             )
 
         # handle all isotopic entry
         m = re.search(r"fuelcomp.wtpt_([^ ]*)", line)
         if m:
-            line = line.replace("fuelcomp.wtpt_", f"comp.{zone}.{comp}.iso.")
+            line = line.replace("fuelcomp.wtpt_", f"comp.{zone}{comp}.iso.")
 
         lines += line + "\n"
 
     # Final global replaces.
     lines = lines.replace("params.", "static.")
+    lines = lines.replace("param.", "static.")
     lines = lines.rstrip() + "\n"
     return lines
 
@@ -86,12 +91,15 @@ def find_replace(xstr):
     xstr = xstr.replace("common", "internal")
     xstr = xstr.replace("build", "assemble")
     xstr = xstr.replace("fuelcomp", "comp")
+    xstr = xstr.replace("param", "static")
     xstr = xstr.replace("params", "static")
     xstr = xstr.replace("fuel_density", "density")
     xstr = xstr.replace("scale.olm.generate:expander", "scale.olm.generate:jt_expander")
     xstr = xstr.replace("generate:comp_mox_ornltm2003_2", "complib:mox_multizone_2023")
     xstr = xstr.replace("triton_constpower_burndata", "constpower_burndata")
     xstr = xstr.replace("generate_rst", "rst2pdf")
+    xstr = xstr.replace("generate:comp_uox", "complib:uo2")
+
     return xstr
 
 
@@ -117,16 +125,29 @@ x["run"]["dry_run"] = False
 x["generate"]["static"].pop("density_Am", None)
 x["assemble"].pop("suffix", None)
 
+generate = x["generate"]
+if "dynamic" in generate:
+    for k, v in generate["dynamic"].items():
+        if "state_vector" in v:
+            v["state_var"] = v.pop("state_vector")[0]
+        if "data_list" in v:
+            v["data_pairs"] = v.pop("data_list")
+        v["_type"] = "scale.olm.generate:scipy_interp"
+        v["method"] = "linear"
+    x["generate"] = generate
+
+
 is_bwr = len(x["generate"]["states"]["coolant_density"]) > 1
 
-if x["generate"]["comp"]["_type"] == "scale.olm.complib:mox_multizone_2023":
-    comp = x["generate"]["comp"]
+comp = x["generate"]["comp"]
+if comp["_type"] == "scale.olm.complib:mox_multizone_2023":
     comp["_type"] = "scale.olm.complib:mox_multizone_2023"
     comp["zone_pins"] = comp.pop("pins_zone", comp.get("zone_pins", None))
     comp["zone_names"] = "BWR2016" if is_bwr else "PWR2016"
     comp["gd2o3_pins"] = comp.pop("pins_gd", comp.get("gd2o3_pins", None))
     comp["gd2o3_wtpct"] = comp.pop("pct_gd", comp.get("gd2o3_wtpct", None))
-    x["generate"]["comp"] = comp
+
+x["generate"]["comp"] = comp
 
 
 from collections import OrderedDict

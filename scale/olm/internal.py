@@ -148,6 +148,7 @@ def create(config_file, generate, run, assemble, check, report, nprocs):
     # Run each enabled stage in sequence.
     for stage in all_stages:
         if do[stage]:
+            logger.debug("Configuring", stage=stage, **config[stage])
             output = _fn_redirect(**config[stage], _model=config["model"], _env=_env)
             output_file = str(Path(_env["work_dir"]) / stage) + ".olm.json"
             logger.info(f"Writing {output_file}")

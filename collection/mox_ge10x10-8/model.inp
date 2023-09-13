@@ -1,6 +1,6 @@
-=t-depl parm=(addnux={{params.addnux}})
+=t-depl parm=(addnux={{static.addnux}})
 BWR-MOX GE 10x10-8, 2D full assembly model
-{{params.xslib}}
+{{static.xslib}}
 ' ----------------------------------------------------------------
 '  template to generate libraries for ORIGEN
 '  parameters are: wtpt_inner      - wt% plutonium: inner
@@ -28,7 +28,7 @@ BWR-MOX GE 10x10-8, 2D full assembly model
 '  [Author(s)] B. R. Betzler
 '  [SCALE Version] SCALE 6.3
 '  [Reactor Type] Mixed Oxide Boiling Water Reactor General Electric 10x10-8
-'  [Model Info] 2D t-depl full assembly model (see Figure \ref{fi:mox_ge10x10-8}), {{params.xslib}} cross-section library
+'  [Model Info] 2D t-depl full assembly model (see Figure \ref{fi:mox_ge10x10-8}), {{static.xslib}} cross-section library
 '  [Sources]
 '    1. B. J. Ade, ``Generation of Collapsed Cross Sections for Hatch 1 Cycles 1-3 and Generation of Generic BWR Reflector Cross Sections'', ORNL/LTR-2012/559, Oak Ridge National Laboratory, 2012. |
 '    2. H. Smith, J. Peterson, and J. Hu, ``Fuel Assembly Modeling for the Modeling and Simulation Toolset'', ORNL/LTR-2012-555 Rev. 1, Oak Ridge National Laboratory, 2013. |
@@ -59,44 +59,64 @@ end alias
 read comp
 '
 ' fuel inner
-  uo2   1 {{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_inner}}  948.45 92235 0.7417 92238 99.2583 end
-  puo2  1 {{fuelcomp.fuel_density}} {{fuelcomp.wtpt_inner}} 948.45 94238 {{fuelcomp.wtpt_pu238}}
-                                     94239 {{fuelcomp.wtpt_pu239}}
-                                     94240 {{fuelcomp.wtpt_pu240}}
-                                     94241 {{fuelcomp.wtpt_pu241}}
-                                     94242 {{fuelcomp.wtpt_pu242}} end
-  am-241  1 den={{params.densityAm}} {{fuelcomp.wtpt_inner}} 948.45 end
+  uo2   1 den={{comp.inner.density}} {{comp.inner.uo2.dens_frac}}  948.45 92235 0.7417 92238 99.2583 end
+  puo2  1 den={{comp.inner.density}} {{comp.inner.puo2.dens_frac}} 948.45 94238 {{comp.inner.puo2.iso.pu238}}
+                                     94239 {{comp.inner.puo2.iso.pu239}}
+                                     94240 {{comp.inner.puo2.iso.pu240}}
+                                     94241 {{comp.inner.puo2.iso.pu241}}
+                                     94242 {{comp.inner.puo2.iso.pu242}} end
+
+  am   1 den={{comp.inner.density}}
+        {{comp.inner.amo2.dens_frac*comp.inner.info.amo2_hm_frac}} 948.45
+        95241 {{comp.inner.amo2.iso.am241}} end
+  o    1 den={{comp.inner.density}}
+        {{comp.inner.amo2.dens_frac*(1.0-comp.inner.info.amo2_hm_frac)}} 948.45 end
 '
 ' fuel inside edge
-  uo2  11 {{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_inedge}}  948.45 92235 0.7417 92238 99.2583 end
-  puo2 11 {{fuelcomp.fuel_density}} {{fuelcomp.wtpt_inedge}} 948.45 94238 {{fuelcomp.wtpt_pu238}}
-                                      94239 {{fuelcomp.wtpt_pu239}}
-                                      94240 {{fuelcomp.wtpt_pu240}}
-                                      94241 {{fuelcomp.wtpt_pu241}}
-                                      94242 {{fuelcomp.wtpt_pu242}} end
-  am-241 11 den={{params.densityAm}} {{fuelcomp.wtpt_inedge}} 948.45 end
+  uo2  11 den={{comp.iedge.density}} {{comp.iedge.uo2.dens_frac}}  948.45 92235 0.7417 92238 99.2583 end
+  puo2 11 den={{comp.iedge.density}} {{comp.iedge.puo2.dens_frac}} 948.45 94238 {{comp.iedge.puo2.iso.pu238}}
+                                      94239 {{comp.iedge.puo2.iso.pu239}}
+                                      94240 {{comp.iedge.puo2.iso.pu240}}
+                                      94241 {{comp.iedge.puo2.iso.pu241}}
+                                      94242 {{comp.iedge.puo2.iso.pu242}} end
+
+  am   11 den={{comp.iedge.density}}
+        {{comp.iedge.amo2.dens_frac*comp.iedge.info.amo2_hm_frac}} 948.45
+        95241 {{comp.iedge.amo2.iso.am241}} end
+  o    11 den={{comp.iedge.density}}
+        {{comp.iedge.amo2.dens_frac*(1.0-comp.iedge.info.amo2_hm_frac)}} 948.45 end
 '
 ' fuel edge
-  uo2  21 {{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_edge}} 948.45 92235 0.7417 92238 99.2583 end
-  puo2 21 {{fuelcomp.fuel_density}} {{fuelcomp.wtpt_edge}} 948.45 94238 {{fuelcomp.wtpt_pu238}}
-                                     94239 {{fuelcomp.wtpt_pu239}}
-                                     94240 {{fuelcomp.wtpt_pu240}}
-                                     94241 {{fuelcomp.wtpt_pu241}}
-                                     94242 {{fuelcomp.wtpt_pu242}} end
-  am-241 21 den={{params.densityAm}} {{fuelcomp.wtpt_edge}} 948.45 end
+  uo2  21 den={{comp.iedge.density}} {{comp.iedge.uo2.dens_frac}} 948.45 92235 0.7417 92238 99.2583 end
+  puo2 21 den={{comp.iedge.density}} {{comp.iedge.puo2.dens_frac}} 948.45 94238 {{comp.iedge.puo2.iso.pu238}}
+                                     94239 {{comp.iedge.puo2.iso.pu239}}
+                                     94240 {{comp.iedge.puo2.iso.pu240}}
+                                     94241 {{comp.iedge.puo2.iso.pu241}}
+                                     94242 {{comp.iedge.puo2.iso.pu242}} end
+
+  am   21 den={{comp.iedge.density}}
+        {{comp.iedge.amo2.dens_frac*comp.iedge.info.amo2_hm_frac}} 948.45
+        95241 {{comp.iedge.amo2.iso.am241}} end
+  o    21 den={{comp.iedge.density}}
+        {{comp.iedge.amo2.dens_frac*(1.0-comp.iedge.info.amo2_hm_frac)}} 948.45 end
 '
 ' fuel corner
-  uo2  $fuelCorner {{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_corner}}  948.45 92235 0.7417 92238 99.2583 end
-  puo2 $fuelCorner {{fuelcomp.fuel_density}} {{fuelcomp.wtpt_corner}} 948.45 94238 {{fuelcomp.wtpt_pu238}}
-                                              94239 {{fuelcomp.wtpt_pu239}}
-                                              94240 {{fuelcomp.wtpt_pu240}}
-                                              94241 {{fuelcomp.wtpt_pu241}}
-                                              94242 {{fuelcomp.wtpt_pu242}} end
-  am-241 $fuelCorner den={{params.densityAm}} {{fuelcomp.wtpt_corner}} 948.45 end
+  uo2  $fuelCorner den={{comp.corner.density}} {{comp.corner.uo2.dens_frac}}  948.45 92235 0.7417 92238 99.2583 end
+  puo2 $fuelCorner den={{comp.corner.density}} {{comp.corner.puo2.dens_frac}} 948.45 94238 {{comp.corner.puo2.iso.pu238}}
+                                              94239 {{comp.corner.puo2.iso.pu239}}
+                                              94240 {{comp.corner.puo2.iso.pu240}}
+                                              94241 {{comp.corner.puo2.iso.pu241}}
+                                              94242 {{comp.corner.puo2.iso.pu242}} end
+
+  am   $fuelCorner den={{comp.corner.density}}
+        {{comp.corner.amo2.dens_frac*comp.corner.info.amo2_hm_frac}} 948.45
+        95241 {{comp.corner.amo2.iso.am241}} end
+  o    $fuelCorner den={{comp.corner.density}}
+        {{comp.corner.amo2.dens_frac*(1.0-comp.corner.info.amo2_hm_frac)}} 948.45 end
 '
-' fuel - with {{{{fuelcomp.wtpt_gd}}% Gd2O3
-  gd2o3 $fgad {{fuelcomp.fuel_density}} {{fuelcomp.wtpt_gd/100.0}} 948.45 end
-  uo2   $fgad {{fuelcomp.fuel_density}} {{1.0-fuelcomp.wtpt_gd/100.0}} 948.45 92235 0.7417 92238 99.2583 end
+' fuel - with wt% Gd2O3
+  gd2o3 $fgad den=10.4 {{comp.guox.gd2o3.dens_frac}} 948.45 end
+  uo2   $fgad den=10.4 {{comp.guox.uo2.dens_frac}} 948.45 92235 0.7417 92238 99.2583 end
 '
 ' clad
   zirc2 $clad 1 636.06 end
@@ -131,17 +151,17 @@ read celldata
                           gapd= 0.894 24
                           cladd=1.026 22
                           pitch=1.295 23 end
-  centrmdata alump=0 pmc_dilute=1e30 dan2pitch={{fuelcomp.dancoff1}} end centrmdata
+  centrmdata alump=0 pmc_dilute=1e30 dan2pitch={{dynamic.dancoff1}} end centrmdata
   latticecell squarepitch fueld=0.876 31
                           gapd= 0.894 34
                           cladd=1.026 32
                           pitch=1.295 33 end
-  centrmdata alump=0 pmc_dilute=1e30 dan2pitch={{fuelcomp.dancoff1}} end centrmdata
+  centrmdata alump=0 pmc_dilute=1e30 dan2pitch={{dynamic.dancoff1}} end centrmdata
   latticecell squarepitch fueld=0.876 41
                           gapd= 0.894 44
                           cladd=1.026 42
                           pitch=1.295 43 end
-  centrmdata alump=0 pmc_dilute=1e30 dan2pitch={{fuelcomp.dancoff2}} end centrmdata
+  centrmdata alump=0 pmc_dilute=1e30 dan2pitch={{dynamic.dancoff2}} end centrmdata
   multiregion cylindrical left_bdy=reflected right_bdy=white end
       311   0.16555
       312   0.23412
@@ -195,7 +215,7 @@ read materials
   mix=5           pn=2 com='moderator'               end
   mix=6           pn=1 com='channel tube'            end
   mix=$fuelCorner pn=1 com='fuel - corner zone'      end
-  mix=$fgad       pn=1 com='fuel with gd2o3'         end
+  mix=$fgad       pn=1 com='fuel with uo2+gd2o3 '    end
 end materials
 '
 read geom
@@ -245,7 +265,7 @@ com='fuel rod - corner zone - corner dancoff'
   media  2 1 30 -20
   boundary 30
 unit 6
-com='fuel rod - with {{fuelcomp.wtpt_gd}}% Gd2O'
+com='fuel rod - with gd2o3'
   cylinder  10 0.16555
   cylinder  20 0.23412
   cylinder  30 0.28674
@@ -408,6 +428,10 @@ read bnds
   all=mirror
 end bnds
 '
-end data
+end model
 end
 '
+
+
+
+

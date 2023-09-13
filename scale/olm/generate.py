@@ -57,7 +57,7 @@ def full_hypercube(**states):
     return permutations
 
 
-def scipy_interp(method: str, state_var: str, data_pairs, state):
+def scipy_interp(state_var: str, data_pairs, state, method: str = "linear"):
     import scipy as sp
 
     x0 = state[state_var]
