@@ -48,10 +48,10 @@ read comp
                                  94241 {{comp.inner.puo2.iso.pu241}}
                                  94242 {{comp.inner.puo2.iso.pu242}} end
   am   1 den={{comp.inner.density}}
-        {{comp.inner.amo2.dens_frac*comp.inner.info.amo2_hm_frac}} 900
+        {{comp.inner.amo2.dens_frac*comp.inner.info.amo2_hm_frac}} 923
         95241 {{comp.inner.amo2.iso.am241}} end
   o    1 den={{comp.inner.density}}
-        {{comp.inner.amo2.dens_frac*(1.0-comp.inner.info.amo2_hm_frac)}} 900 end
+        {{comp.inner.amo2.dens_frac*(1.0-comp.inner.info.amo2_hm_frac)}} 923 end
 
 '
 ' fuel inside edge
@@ -63,10 +63,10 @@ read comp
                                  94241 {{comp.iedge.puo2.iso.pu241}}
                                  94242 {{comp.iedge.puo2.iso.pu242}} end
   am   11 den={{comp.iedge.density}}
-        {{comp.iedge.amo2.dens_frac*comp.iedge.info.amo2_hm_frac}} 900
+        {{comp.iedge.amo2.dens_frac*comp.iedge.info.amo2_hm_frac}} 923
         95241 {{comp.iedge.amo2.iso.am241}} end
   o    11 den={{comp.iedge.density}}
-        {{comp.iedge.amo2.dens_frac*(1.0-comp.iedge.info.amo2_hm_frac)}} 900 end
+        {{comp.iedge.amo2.dens_frac*(1.0-comp.iedge.info.amo2_hm_frac)}} 923 end
 
 '
 ' fuel edge
@@ -78,10 +78,10 @@ read comp
                                  94241 {{comp.edge.puo2.iso.pu241}}
                                  94242 {{comp.edge.puo2.iso.pu242}} end
   am   21 den={{comp.edge.density}}
-        {{comp.edge.amo2.dens_frac*comp.edge.info.amo2_hm_frac}} 900
+        {{comp.edge.amo2.dens_frac*comp.edge.info.amo2_hm_frac}} 923
         95241 {{comp.edge.amo2.iso.am241}} end
   o    21 den={{comp.edge.density}}
-        {{comp.edge.amo2.dens_frac*(1.0-comp.edge.info.amo2_hm_frac)}} 900 end
+        {{comp.edge.amo2.dens_frac*(1.0-comp.edge.info.amo2_hm_frac)}} 923 end
 
 '
 ' fuel corner
@@ -93,10 +93,10 @@ read comp
                                  94241 {{comp.corner.puo2.iso.pu241}}
                                  94242 {{comp.corner.puo2.iso.pu242}} end
   am   31 den={{comp.corner.density}}
-        {{comp.corner.amo2.dens_frac*comp.corner.info.amo2_hm_frac}} 900
+        {{comp.corner.amo2.dens_frac*comp.corner.info.amo2_hm_frac}} 923
         95241 {{comp.corner.amo2.iso.am241}} end
   o    31 den={{comp.corner.density}}
-        {{comp.corner.amo2.dens_frac*(1.0-comp.corner.info.amo2_hm_frac)}} 900 end
+        {{comp.corner.amo2.dens_frac*(1.0-comp.corner.info.amo2_hm_frac)}} 923 end
 '
 ' clad
   zirc4 $clad 1 595 end
