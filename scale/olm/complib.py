@@ -177,9 +177,9 @@ def mox_multizone_2023(
     x = mox_ornltm2003_2(state, density, uo2=uo2, am241=am241)
     putotal = 0
     hmtotal = 0
+    hm_frac = x["info"]["hmo2_hm_frac"] / 100.0
     for i in range(len(zone_pins)):
-        wt_hm = x["info"]["hmo2_hm_frac"] / 100.0
-        hm = wt_hm * zone_pins[i]
+        hm = hm_frac * zone_pins[i]
         putotal += hm * zone_pu_fracs[i]
         hmtotal += hm
 
@@ -189,21 +189,18 @@ def mox_multizone_2023(
         # This is approximate based on the uo2 that is combined with puo2,
         # to make MOX, not the UO2 combined with the Gd2O3 that we do not
         # pass in here.
-        m_u = x["info"]["m_u"]
-        m_o2 = x["info"]["m_o2"]
-        m_uo2 = m_u + m_o2
-        m_gd2o3 = 2 * 157.25 + 1.5 * m_o2
-        wt_hm = (m_u) / (m_uo2 * (1.0 - gd2o3_wtpct) + gd2o3_wtpct * m_gd2o3)
+        hm_frac = x["info"]["uo2_hm_frac"]
+        gd_frac = gd2o3_wtpct / 100.0
         # Note does not increase Pu total
-        hmtotal += wt_hm * gd2o3_pins
-        guox["info"] = {"gd2o3_plus_uo2_hm_frac": wt_hm, "m_gd2o3": m_gd2o3}
+        hmtotal += hm_frac * (1 - gd_frac) * gd2o3_pins
+        guox["info"] = {"uo2_hm_frac": hm_frac}
         guox["uo2"] = x["uo2"]
-        guox["gd2o3"] = {"dens_frac": gd2o3_wtpct / 100.0}
-        guox["uo2"]["dens_frac"] = 1.0 - gd2o3_wtpct / 100.0
+        guox["uo2"]["dens_frac"] = 1.0 - gd_frac
+        guox["gd2o3"] = {"dens_frac": gd_frac}
 
     # We want to match the Pu/HM total over the assembly which should be
     # state['pu_frac'] but it will not be.
-    multiplier = state["pu_frac"] / (putotal / hmtotal)
+    multiplier = (state["pu_frac"] / 100.0) / (putotal / hmtotal)
 
     data = {
         "_zone": {
