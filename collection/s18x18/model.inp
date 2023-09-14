@@ -1,6 +1,6 @@
-=t-depl parm=(addnux={{params.addnux}})
+=t-depl parm=(addnux={{static.addnux}})
 PWR Siemens 18x18, 2D quarter assembly model
-{{params.xslib}}
+{{static.xslib}}
 ' ----------------------------------------------------------------
 '  template to generate libraries for ORIGEN-S 
 '  parameters are: wtpt_u235       - wt% U235
@@ -18,7 +18,7 @@ PWR Siemens 18x18, 2D quarter assembly model
 '  [Author(s)] B. R. Betzler
 '  [SCALE Version] SCALE 6.3
 '  [Reactor Type] Pressurized Water Reactor Siemens 18x18
-'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:s18x18}), {{params.xslib}} cross-section library
+'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:s18x18}), {{static.xslib}} cross-section library
 '  [Sources] 1. J. Neuber and T. Lamprecht, ``Phase II-C: Benchmark on the Effect of Axial Burnup Shapes'', Siemens Nuclear Power GmbH, 2000.
 '  [Data Range]
 '  [Libraries]
@@ -31,10 +31,10 @@ PWR Siemens 18x18, 2D quarter assembly model
 read comp
 '
 ' fuel - 94-95% theoretical density (10.96g/cc) (set to max)
-  uo2   1 den={{fuelcomp.fuel_density}} 1 1000 92234 {{fuelcomp.wtpt_u234}} 
-                            92235 {{fuelcomp.wtpt_u235}} 
-                            92236 {{fuelcomp.wtpt_u236}} 
-                            92238 {{fuelcomp.wtpt_u238}} end 
+  uo2   1 den={{comp.density}} 1 1000 92234 {{comp.uo2.iso.u234}} 
+                            92235 {{comp.uo2.iso.u235}} 
+                            92236 {{comp.uo2.iso.u236}} 
+                            92238 {{comp.uo2.iso.u238}} end 
 '
 ' clad
   zirc2 2 1 620 end 
