@@ -1,6 +1,6 @@
-=t-depl parm=(addnux={{params.addnux}})
+=t-depl parm=(addnux={{static.addnux}})
 BWR SVEA-100 (10x10-0), 2D full assembly model 
-{{params.xslib}}
+{{static.xslib}}
 ' ----------------------------------------------------------------
 '  template to generate libraries for ORIGEN-S 
 '  parameters are: wtpt_u235       - wt% U235
@@ -21,7 +21,7 @@ BWR SVEA-100 (10x10-0), 2D full assembly model
 '  [Author(s)] B. R. Betzler
 '  [SCALE Version] SCALE 6.3
 '  [Reactor Type] Boiling Water Reactor SVEA-100 (10x10-0)
-'  [Model Info] 2D t-depl full assembly model (see Figure \ref{fi:svea100-0}), {{params.xslib}} cross-section library
+'  [Model Info] 2D t-depl full assembly model (see Figure \ref{fi:svea100-0}), {{static.xslib}} cross-section library
 '  [Sources] 
 '    1. H. Zwicky, ``Isotopic Data of Sample F3F6 from a Rod Irradiated in the Swedish Boiling Water Reactor Forsmark 3'', ZC-08/001, Zwicky Consulting, 2008. | 
 '    2. S. Karnbranslehantering, ``Measurements of decay heat in spent nuclear fuel at the Swedish interim storage facility, Clab'', R-05-62, Swedish Nuclear Fuel and Waster Management Co, 2006. | 
@@ -49,17 +49,17 @@ end alias
 read comp
 '
 ' fuel
-  uo2  $fuel den={{fuelcomp.fuel_density}} 1 900 92234 {{fuelcomp.wtpt_u234}}
-                            92235 {{fuelcomp.wtpt_u235}}
-                            92236 {{fuelcomp.wtpt_u236}}
-                            92238 {{fuelcomp.wtpt_u238}} end
+  uo2  $fuel den={{comp.density}} 1 900 92234 {{comp.uo2.iso.u234}}
+                            92235 {{comp.uo2.iso.u235}}
+                            92236 {{comp.uo2.iso.u236}}
+                            92238 {{comp.uo2.iso.u238}} end
 '
 ' fuel - with {{state.wtpt_gd}}% Gd2O3
-  gd2o3 $fgad den={{fuelcomp.fuel_density}} {{state.wtpt_gd/100.0}} 900 end 
-  uo2   $fgad den={{fuelcomp.fuel_density}} {{1.0-state.wtpt_gd/100.0}} 900 92234 {{fuelcomp.wtpt_u234}}
-                                 92235 {{fuelcomp.wtpt_u235}}
-                                 92236 {{fuelcomp.wtpt_u236}}
-                                 92238 {{fuelcomp.wtpt_u238}} end
+  gd2o3 $fgad den={{comp.density}} {{state.wtpt_gd/100.0}} 900 end 
+  uo2   $fgad den={{comp.density}} {{1.0-state.wtpt_gd/100.0}} 900 92234 {{comp.uo2.iso.u234}}
+                                 92235 {{comp.uo2.iso.u235}}
+                                 92236 {{comp.uo2.iso.u236}}
+                                 92238 {{comp.uo2.iso.u238}} end
 '
 ' clad  
   zirc2  $clad 1 573 end
