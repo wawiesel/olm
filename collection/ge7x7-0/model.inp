@@ -1,6 +1,6 @@
-=t-depl parm=(addnux={{params.addnux}})
+=t-depl parm=(addnux={{static.addnux}})
 BWR GE 7x7-0, 2D full assembly model
-{{params.xslib}}
+{{static.xslib}}
 ' ----------------------------------------------------------------
 '  template to generate libraries for ORIGEN-S 
 '  parameters are: wtpt_u235       - wt% U235
@@ -24,7 +24,7 @@ BWR GE 7x7-0, 2D full assembly model
 '  [Author(s)] B. R. Betzler
 '  [SCALE Version] SCALE 6.3
 '  [Reactor Type] Boiling Water Reactor General Electric 7x7-0
-'  [Model Info] 2D t-depl full assembly model (see Figure \ref{fi:ge7x7-0}), {{params.xslib}} cross-section library
+'  [Model Info] 2D t-depl full assembly model (see Figure \ref{fi:ge7x7-0}), {{static.xslib}} cross-section library
 '  [Sources] 
 '    1. B. J. Ade, ``Generation of Collapsed Cross Sections for Hatch 1 Cycles 1-3 and Generation of Generic BWR Reflector Cross Sections'', ORNL/LTR-2012/559, Oak Ridge National Laboratory, 2012. |
 '    2. H. Smith, J. Peterson, and J. Hu, ``Fuel Assembly Modeling for the Modeling and Simulation Toolset'', ORNL/LTR-2012-555 Rev. 1, Oak Ridge National Laboratory, 2013.
@@ -47,18 +47,18 @@ end alias
 read comp
 '
 ' fuel
-  uo2 $fuel den={{fuelcomps.fuel_density}} 1 948.45 92234 {{fuelcomp.wtpt_u234}}
-                               92235 {{fuelcomp.wtpt_u235}}
-                               92236 {{fuelcomp.wtpt_u236}}
-                               92238 {{fuelcomp.wtpt_u238}} end
+  uo2 $fuel den={{comp.density}} 1 948.45 92234 {{comp.uo2.iso.u234}}
+                               92235 {{comp.uo2.iso.u235}}
+                               92236 {{comp.uo2.iso.u236}}
+                               92238 {{comp.uo2.iso.u238}} end
 '
 '
 ' fuel - with {{state.wtpt_gd}}% Gd2O3
-  gd2o3 $fgad den={{fuelcomps.fuel_density_gd}} {{state.wtpt_gd/100.0} 948.45 end
-  uo2   $fgad den={{fuelcomps.fuel_density_gd}} {{1.0-state.wtpt_gd/100.0}} 948.45 92234 {{fuelcomp.wtpt_u234}}
-                                    92235 {{fuelcomp.wtpt_u235}}
-                                    92236 {{fuelcomp.wtpt_u236}}
-                                    92238 {{fuelcomp.wtpt_u238}} end
+  gd2o3 $fgad den=10.26 {{state.wtpt_gd/100.0}} 948.45 end
+  uo2   $fgad den=10.26 {{1.0-state.wtpt_gd/100.0}} 948.45 92234 {{comp.uo2.iso.u234}}
+                                    92235 {{comp.uo2.iso.u235}}
+                                    92236 {{comp.uo2.iso.u236}}
+                                    92238 {{comp.uo2.iso.u238}} end
 '
 ' clad  
   zirc2 $clad 1 636.06 end
