@@ -1,6 +1,6 @@
-=t-depl parm=(addnux={{params.addnux}})
+=t-depl parm=(addnux={{static.addnux}})
 PWR Siemens 14x14, 2D quarter assembly model 
-{{params.xslib}}
+{{static.xslib}}
 ' ----------------------------------------------------------------
 '  template to generate libraries for ORIGEN 
 '  parameters are: wtpt_u235       - wt% U235
@@ -20,7 +20,7 @@ PWR Siemens 14x14, 2D quarter assembly model
 '  [Author(s)] B. R. Betzler
 '  [SCALE Version] SCALE 6.3
 '  [Reactor Type] Pressurized Water Reactor Siemens 14x14
-'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:s14x14}), {{model.xslib}} cross-section library
+'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:s14x14}), {{static.xslib}} cross-section library
 '  [Sources] 
 '    1. U. Fischer and H. W. Wiese, ``Improved and Consistent Determination of the Nuclear Inventory of Spent PWR Fuel on the Bask of Cell Burnup Methods Using KORIGEN'' (ORNL-TR-5043), KFK 3014, Karlsruhe Nuclear Research Center, January 1983; available from Radiation Shielding Information Center, Oak Ridge National Laboratory, as GCC-457. | 
 '    2. U. Hesse, ``Verification of the OREST (HAMMER-ORlGEN) Depletion Program System Using Post-Irradiation Analyses of Fuel Assemblies 168, 170, 171, and 176 from the Obrigheim Reactor'' (ORNLTR-88/20), GRS-A-962, Gesellschaft fur Reaktorscherheit (GRS) mbH, 1984.
@@ -36,10 +36,10 @@ PWR Siemens 14x14, 2D quarter assembly model
 read comp
 '
 ' fuel
-  uo2   1 den=9.742 1 859 92234 {{fuelcomp.wtpt_u234}} 
-                          92235 {{fuelcomp.wtpt_u235}} 
-                          92236 {{fuelcomp.wtpt_u236}} 
-                          92238 {{fuelcomp.wtpt_u238}} end 
+  uo2   1 den=9.742 1 859 92234 {{comp.uo2.iso.u234}} 
+                          92235 {{comp.uo2.iso.u235}} 
+                          92236 {{comp.uo2.iso.u236}} 
+                          92238 {{comp.uo2.iso.u238}} end 
 '
 ' clad
   zirc4 2 1 605 end
