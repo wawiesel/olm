@@ -1,6 +1,6 @@
-=t-depl parm=(addnux={{params.addnux}})
+=t-depl parm=(addnux={{static.addnux}})
 PWR-MOX Siemens 14x14, 2D quarter assembly model 
-{{params.xslib}}
+{{static.xslib}}
 ' ----------------------------------------------------------------
 '  template to generate libraries for ORIGEN 
 '  parameters are: wtpt_inner      - wt% plutonium: inner
@@ -26,7 +26,7 @@ PWR-MOX Siemens 14x14, 2D quarter assembly model
 '  [Author(s)] B. R. Betzler
 '  [SCALE Version] SCALE 6.3
 '  [Reactor Type] Mixed Oxide Pressurized Water Reactor Siemens 14x14
-'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:mox_s14x14}), {{params.xslib}} cross-section library
+'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:mox_s14x14}), {{static.xslib}} cross-section library
 '  [Sources] 
 '    1. U. Fischer and H. W. Wiese, ``Improved and Consistent Determination of the Nuclear Inventory of Spent PWR Fuel on the Bask of Cell Burnup Methods Using KORIGEN'' (ORNL-TR-5043), KFK 3014, Karlsruhe Nuclear Research Center, January 1983; available from Radiation Shielding Information Center, Oak Ridge National Laboratory, as GCC-457. | 
 '    2. U. Hesse, ``Verification of the OREST (HAMMER-ORlGEN) Depletion Program System Using Post-Irradiation Analyses of Fuel Assemblies 168, 170, 171, and 176 from the Obrigheim Reactor'' (ORNLTR-88/20), GRS-A-962, Gesellschaft fur Reaktorscherheit (GRS) mbH, 1984. | 
@@ -54,48 +54,60 @@ end alias
 read comp
 '
 ' fuel inner
-  uo2  1 den={{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_inner}} 859 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 1 den={{fuelcomp.fuel_density}} {{fuelcomp.wtpt_inner}} 859 94238 {{fuelcomp.wtpt_pu238}}
-                                 94239 {{fuelcomp.wtpt_pu239}}
-                                 94240 {{fuelcomp.wtpt_pu240}}
-                                 94241 {{fuelcomp.wtpt_pu241}}
-                                 94242 {{fuelcomp.wtpt_pu242}} end
-{% if params.density_Am > 0.0 -%}
-  am-241 1 den={{params.density_Am}} {{fuelcomp.wtpt_inner}} 859 end
-{% endif -%}
+  uo2  1 den={{comp.inner.density}} {{comp.inner.uo2.dens_frac}} 859 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 1 den={{comp.inner.density}} {{comp.inner.puo2.dens_frac}} 859 94238 {{comp.inner.puo2.iso.pu238}}
+                                 94239 {{comp.inner.puo2.iso.pu239}}
+                                 94240 {{comp.inner.puo2.iso.pu240}}
+                                 94241 {{comp.inner.puo2.iso.pu241}}
+                                 94242 {{comp.inner.puo2.iso.pu242}} end
+
+  am   1 den={{comp.inner.density}}
+        {{comp.inner.amo2.dens_frac*comp.inner.info.amo2_hm_frac}} 859
+        95241 {{comp.inner.amo2.iso.am241}} end
+  o    1 den={{comp.inner.density}}
+        {{comp.inner.amo2.dens_frac*(1.0-comp.inner.info.amo2_hm_frac)}} 859 end
 '
 ' fuel inside edge
-  uo2  11 den={{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_inedge}} 859 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 11 den={{fuelcomp.fuel_density}} {{fuelcomp.wtpt_inedge}} 859 94238 {{fuelcomp.wtpt_pu238}}
-                                   94239 {{fuelcomp.wtpt_pu239}}
-                                   94240 {{fuelcomp.wtpt_pu240}}
-                                   94241 {{fuelcomp.wtpt_pu241}}
-                                   94242 {{fuelcomp.wtpt_pu242}} end
-{% if params.density_Am > 0.0 -%}
-  am-241 11 den={{params.density_Am}} {{fuelcomp.wtpt_inedge}} 859 end
-{% endif -%}
+  uo2  11 den={{comp.iedge.density}} {{comp.iedge.uo2.dens_frac}} 859 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 11 den={{comp.iedge.density}} {{comp.iedge.puo2.dens_frac}} 859 94238 {{comp.iedge.puo2.iso.pu238}}
+                                   94239 {{comp.iedge.puo2.iso.pu239}}
+                                   94240 {{comp.iedge.puo2.iso.pu240}}
+                                   94241 {{comp.iedge.puo2.iso.pu241}}
+                                   94242 {{comp.iedge.puo2.iso.pu242}} end
+
+  am   11 den={{comp.iedge.density}}
+        {{comp.iedge.amo2.dens_frac*comp.iedge.info.amo2_hm_frac}} 859
+        95241 {{comp.iedge.amo2.iso.am241}} end
+  o    11 den={{comp.iedge.density}}
+        {{comp.iedge.amo2.dens_frac*(1.0-comp.iedge.info.amo2_hm_frac)}} 859 end
 '
 ' fuel edge
-  uo2  21 den={{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_edge}} 859 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 21 den={{fuelcomp.fuel_density}} {{fuelcomp.wtpt_edge}} 859 94238 {{fuelcomp.wtpt_pu238}}
-                                  94239 {{fuelcomp.wtpt_pu239}}
-                                  94240 {{fuelcomp.wtpt_pu240}}
-                                  94241 {{fuelcomp.wtpt_pu241}}
-                                  94242 {{fuelcomp.wtpt_pu242}} end
-{% if params.density_Am > 0.0 -%}
-  am-241 21 den={{params.density_Am}} {{fuelcomp.wtpt_edge}} 859 end
-{% endif -%}
+  uo2  21 den={{comp.iedge.density}} {{comp.iedge.uo2.dens_frac}} 859 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 21 den={{comp.iedge.density}} {{comp.iedge.puo2.dens_frac}} 859 94238 {{comp.iedge.puo2.iso.pu238}}
+                                  94239 {{comp.iedge.puo2.iso.pu239}}
+                                  94240 {{comp.iedge.puo2.iso.pu240}}
+                                  94241 {{comp.iedge.puo2.iso.pu241}}
+                                  94242 {{comp.iedge.puo2.iso.pu242}} end
+
+  am   21 den={{comp.iedge.density}}
+        {{comp.iedge.amo2.dens_frac*comp.iedge.info.amo2_hm_frac}} 859
+        95241 {{comp.iedge.amo2.iso.am241}} end
+  o    21 den={{comp.iedge.density}}
+        {{comp.iedge.amo2.dens_frac*(1.0-comp.iedge.info.amo2_hm_frac)}} 859 end
 '
 ' fuel corner
-  uo2  31 den={{fuelcomp.fuel_density}} {{100.0-fuelcomp.wtpt_corner}}  859 92234 0.001 92235 0.24 92238 99.759 end
-  puo2 31 den={{fuelcomp.fuel_density}} {{fuelcomp.wtpt_corner}} 859 94238 {{fuelcomp.wtpt_pu238}}
-                                  94239 {{fuelcomp.wtpt_pu239}}
-                                  94240 {{fuelcomp.wtpt_pu240}}
-                                  94241 {{fuelcomp.wtpt_pu241}}
-                                  94242 {{fuelcomp.wtpt_pu242}} end
-{% if params.density_Am > 0.0 -%}
-  am-241 31 den={{params.density_Am}} {{fuelcomp.wtpt_corner}} 859 end
-{% endif -%}
+  uo2  31 den={{comp.corner.density}} {{comp.corner.uo2.dens_frac}}  859 92234 0.001 92235 0.24 92238 99.759 end
+  puo2 31 den={{comp.corner.density}} {{comp.corner.puo2.dens_frac}} 859 94238 {{comp.corner.puo2.iso.pu238}}
+                                  94239 {{comp.corner.puo2.iso.pu239}}
+                                  94240 {{comp.corner.puo2.iso.pu240}}
+                                  94241 {{comp.corner.puo2.iso.pu241}}
+                                  94242 {{comp.corner.puo2.iso.pu242}} end
+
+  am   31 den={{comp.corner.density}}
+        {{comp.corner.amo2.dens_frac*comp.corner.info.amo2_hm_frac}} 859
+        95241 {{comp.corner.amo2.iso.am241}} end
+  o    31 den={{comp.corner.density}}
+        {{comp.corner.amo2.dens_frac*(1.0-comp.corner.info.amo2_hm_frac)}} 859 end
 '
 ' clad
   zirc4 $clad 1 605 end

@@ -1,106 +1,108 @@
 {
-	"model": {
-		"name": "mox_s14x14",
-		"work_dir": "_build",
-		"scale_env_var": "SCALE"
-	},
-	"generate": {
-		".type": "scale.olm.generate:expander",
-	    "template": "model.inp",
-		"fuelcomp": {
-		    ".type": "scale.olm.generate:fuelcomp_mox_ornltm2003_2",
-                    "pins_gd" : 0,
-                    "pins_zone" : [84, 44, 40, 12],
-                    "pct_gd" : 0.0,
-                    "nuclide_prefix" : "wtpt_",
-                    "fuel_density" : 10.4
-                 },
-		"params": {
-			".type": "scale.olm.common:pass_through",
-			"addnux": 4,
-			"xslib": "xn252",
-                        "density_Am" : 0.0
-		},
-		"states": {
-			".type": "scale.olm.generate:all_permutations",
-			"coolant_density": [
-				0.7283
-			],
-			"wtpt_pu": [
-                                4.0,
-                                7.0,
-                                10.0
-			],
-                        "wtpt_pu239": [ 
-                                50.0,
-                                55.0,
-                                60.0,
-                                65.0,
-                                70.0
-                        ],
-                        "ppm_boron": [
-                                450
-                        ],
-			"specific_power": [
-				40
-			]
-		},
-		"time": {
-			".type": "scale.olm.generate:triton_constpower_burndata",
-			"gwd_burnups": [
-				0.0,
-                                0.04,
-				1.04,
-				3.00,
-				5.00,
-				7.50,
-                                10.5,
-                                13.5,
-                                16.5,
-                                19.5,
-                                22.5,
-                                25.5,
-                                28.5,
-                                31.5,
-                                34.5,
-                                37.5,
-                                40.5,
-                                43.5,
-                                46.5,
-                                49.5,
-                                52.5,
-                                55.5,
-                                58.5,
-                                61.5,
-                                64.5,
-                                67.5,
-                                70.5,
-                                73.5,
-                                76.5,
-                                79.5,
-                                82.5
-			]
-		}
-	},
-	"run": {
-		".type": "scale.olm.run:makefile",
-		"nprocs": 3
-	},
-	"build": {
-		".type": "scale.olm.build:arpdata_txt",
-		"fuel_type": "MOX",
-		"suffix": ".system.f33"
-	},
-	"check": {
-	    ".type": "scale.olm.check:sequencer",
-	    "sequence": 
-	    [{
-			"eps0": 0.0001,
-			".type": "scale.olm.check:GridGradient"
-		}]
-	},
-	"report": {
-		".type": "scale.olm.report:generate_rst",
-		"template": "report.rst"
-	}
+    "model": {
+        "name": "mox_s14x14"
+    },
+    "generate": {
+        "_type": "scale.olm.generate:jt_expander",
+        "template": "model.inp",
+        "comp": {
+            "_type": "scale.olm.complib:mox_multizone_2023",
+            "density": 10.4,
+            "zone_pins": [
+                84,
+                44,
+                40,
+                12
+            ],
+            "zone_names": "PWR2016",
+            "gd2o3_pins": 0,
+            "gd2o3_wtpct": 0.0
+        },
+        "static": {
+            "_type": "scale.olm.internal:pass_through",
+            "addnux": 4,
+            "xslib": "xn252"
+        },
+        "states": {
+            "_type": "scale.olm.generate:full_hypercube",
+            "coolant_density": [
+                0.7283
+            ],
+            "pu_frac": [
+                4.0,
+                7.0,
+                10.0
+            ],
+            "pu239_frac": [
+                50.0,
+                55.0,
+                60.0,
+                65.0,
+                70.0
+            ],
+            "ppm_boron": [
+                450
+            ],
+            "specific_power": [
+                40
+            ]
+        },
+        "time": {
+            "_type": "scale.olm.generate:constpower_burndata",
+            "gwd_burnups": [
+                0.0,
+                0.04,
+                1.04,
+                3.0,
+                5.0,
+                7.5,
+                10.5,
+                13.5,
+                16.5,
+                19.5,
+                22.5,
+                25.5,
+                28.5,
+                31.5,
+                34.5,
+                37.5,
+                40.5,
+                43.5,
+                46.5,
+                49.5,
+                52.5,
+                55.5,
+                58.5,
+                61.5,
+                64.5,
+                67.5,
+                70.5,
+                73.5,
+                76.5,
+                79.5,
+                82.5
+            ]
+        }
+    },
+    "run": {
+        "_type": "scale.olm.run:makefile",
+        "dry_run": false
+    },
+    "assemble": {
+        "_type": "scale.olm.assemble:arpdata_txt",
+        "fuel_type": "MOX"
+    },
+    "check": {
+        "_type": "scale.olm.check:sequencer",
+        "sequence": [
+            {
+                "eps0": 0.0001,
+                "_type": "scale.olm.check:GridGradient"
+            }
+        ]
+    },
+    "report": {
+        "_type": "scale.olm.report:rst2pdf",
+        "template": "report.rst"
+    }
 }
