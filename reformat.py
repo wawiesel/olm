@@ -91,8 +91,8 @@ def find_replace(xstr):
     xstr = xstr.replace("common", "internal")
     xstr = xstr.replace("build", "assemble")
     xstr = xstr.replace("fuelcomp", "comp")
-    xstr = xstr.replace("param", "static")
     xstr = xstr.replace("params", "static")
+    xstr = xstr.replace("param", "static")
     xstr = xstr.replace("fuel_density", "density")
     xstr = xstr.replace("scale.olm.generate:expander", "scale.olm.generate:jt_expander")
     xstr = xstr.replace("generate:comp_mox_ornltm2003_2", "complib:mox_multizone_2023")
@@ -117,37 +117,37 @@ with open(model, "r") as f:
 with open(model, "w") as f:
     f.write(xstr)
 
-x["generate"]["comp"].pop("nuclide_prefix", None)
-x["model"].pop("work_dir", None)
-x["model"].pop("scale_env_var", None)
-x["run"].pop("nprocs", None)
-x["run"]["dry_run"] = False
-x["generate"]["static"].pop("density_Am", None)
-x["assemble"].pop("suffix", None)
+if True:
+    x["generate"]["comp"].pop("nuclide_prefix", None)
+    x["model"].pop("work_dir", None)
+    x["model"].pop("scale_env_var", None)
+    x["run"].pop("nprocs", None)
+    x["run"]["dry_run"] = False
+    x["generate"]["static"].pop("density_Am", None)
+    x["assemble"].pop("suffix", None)
 
-generate = x["generate"]
-if "dynamic" in generate:
-    for k, v in generate["dynamic"].items():
-        if "state_vector" in v:
-            v["state_var"] = v.pop("state_vector")[0]
-        if "data_list" in v:
-            v["data_pairs"] = v.pop("data_list")
-        v["_type"] = "scale.olm.generate:scipy_interp"
-        v["method"] = "linear"
-    x["generate"] = generate
+    generate = x["generate"]
+    if "dynamic" in generate:
+        for k, v in generate["dynamic"].items():
+            if "state_vector" in v:
+                v["state_var"] = v.pop("state_vector")[0]
+            if "data_list" in v:
+                v["data_pairs"] = v.pop("data_list")
+            v["_type"] = "scale.olm.generate:scipy_interp"
+            v["method"] = "linear"
+        x["generate"] = generate
 
+    is_bwr = len(x["generate"]["states"]["coolant_density"]) > 1
 
-is_bwr = len(x["generate"]["states"]["coolant_density"]) > 1
+    comp = x["generate"]["comp"]
+    if comp["_type"] == "scale.olm.complib:mox_multizone_2023":
+        comp["_type"] = "scale.olm.complib:mox_multizone_2023"
+        comp["zone_pins"] = comp.pop("pins_zone", comp.get("zone_pins", None))
+        comp["zone_names"] = "BWR2016" if is_bwr else "PWR2016"
+        comp["gd2o3_pins"] = comp.pop("pins_gd", comp.get("gd2o3_pins", None))
+        comp["gd2o3_wtpct"] = comp.pop("pct_gd", comp.get("gd2o3_wtpct", None))
 
-comp = x["generate"]["comp"]
-if comp["_type"] == "scale.olm.complib:mox_multizone_2023":
-    comp["_type"] = "scale.olm.complib:mox_multizone_2023"
-    comp["zone_pins"] = comp.pop("pins_zone", comp.get("zone_pins", None))
-    comp["zone_names"] = "BWR2016" if is_bwr else "PWR2016"
-    comp["gd2o3_pins"] = comp.pop("pins_gd", comp.get("gd2o3_pins", None))
-    comp["gd2o3_wtpct"] = comp.pop("pct_gd", comp.get("gd2o3_wtpct", None))
-
-x["generate"]["comp"] = comp
+    x["generate"]["comp"] = comp
 
 
 from collections import OrderedDict
