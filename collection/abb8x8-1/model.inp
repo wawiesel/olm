@@ -54,8 +54,8 @@ read comp
                                  92238 {{comp.uo2.iso.u238}} end
 '
 ' fuel - with {{state.wtpt_gd}}% Gd2O3
-  gd2o3 $fgad den={{comp.density}} {{state.wtpt_gd/100.0}} 900 end
-  uo2   $fgad den={{comp.density}} {{1-state.wtpt_gd/100.0}} 900 92234 {{comp.uo2.iso.u234}}
+  gd2o3 $fgad den=10.31619 {{state.wtpt_gd/100.0}} 900 end
+  uo2   $fgad den=10.31619 {{1-state.wtpt_gd/100.0}} 900 92234 {{comp.uo2.iso.u234}}
                                     92235 {{comp.uo2.iso.u235}}
                                     92236 {{comp.uo2.iso.u236}}
                                     92238 {{comp.uo2.iso.u238}} end

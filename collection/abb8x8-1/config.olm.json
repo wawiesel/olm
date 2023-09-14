@@ -7,9 +7,7 @@
         "template": "model.inp",
         "comp": {
             "_type": "scale.olm.complib:uo2_simple",
-            "density": [
-                10.31619
-            ]
+            "density": 10.31619
         },
         "static": {
             "_type": "scale.olm.internal:pass_through",
