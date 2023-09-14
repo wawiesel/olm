@@ -14,7 +14,7 @@ def find_replace_input(xstr):
     xstr = xstr.replace("fuelcomp.wt_", "fuelcomp.wtpt_")
 
     # Define a regular expression pattern to match the multiline string
-    pattern = r"{% if params\.density_Am > 0\.0 -%}(.*?){% endif -%}"
+    pattern = r"{% if (params|static)\.density_Am > 0(\.0)? -%}(.*?){% endif -%}"
 
     # Use re.sub() with re.DOTALL to match across multiple lines and replace
     xstr = re.sub(pattern, "AM241", xstr, flags=re.DOTALL)
