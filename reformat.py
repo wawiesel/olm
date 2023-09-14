@@ -11,6 +11,7 @@ def find_replace_input(xstr):
 
     # Global replacements to normalize input to expected below.
     xstr = xstr.replace("fuelcomps.", "fuelcomp.")
+    xstr = xstr.replace("fuelcomp.wt_", "fuelcomp.wtpt_")
 
     # Define a regular expression pattern to match the multiline string
     pattern = r"{% if params\.density_Am > 0\.0 -%}(.*?){% endif -%}"

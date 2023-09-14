@@ -257,7 +257,7 @@ def _load_env(config_file: str, nprocs: int = 0):
     logger.info("Creating new", model=name, sources=sources, revision=revision)
 
     # Determine where the work will take place.
-    work_path = os.environ.get("OLM_WORK_DIR", config_path.parent / "_work")
+    work_path = Path(os.environ.get("OLM_WORK_DIR", config_path.parent / "_work"))
 
     # Create the working directory.
     if not work_path.exists():
