@@ -1,6 +1,6 @@
-=t-depl parm=(addnux={{params.addnux}})
+=t-depl parm=(addnux={{static.addnux}})
 PWR Westinghouse OFA 17x17, 2D quarter assembly model 
-{{params.xslib}}
+{{static.xslib}}
 ' ----------------------------------------------------------------
 '  template to generate libraries for ORIGEN-S 
 '  parameters are: u235wt%         - wt% U235
@@ -20,7 +20,7 @@ PWR Westinghouse OFA 17x17, 2D quarter assembly model
 '  [Author(s)] B. R. Betzler
 '  [SCALE Version] SCALE 6.3
 '  [Reactor Type] Pressurized Water Reactor Westinghouse OFA 17x17
-'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:w17x17_ofa}), {{model.xslib}} cross-section library
+'  [Model Info] 2D t-depl quarter assembly model (see Figure \ref{fi:w17x17_ofa}), {{static.xslib}} cross-section library
 '  [Sources] 
 '    1. ``Characteristics of Spent Fuel, High-Level Waste, and other Radioactive Wastes which May Require Long-Term Isolation'', Appendix 2A. Physical Descriptions of LWR Fuel Assemblies, DOE/RW-0184, Volume 3 of 6, U.S. DOE Office of Civilian Radioactive Waste Management, 1987. | 
 '    2. SCALE: A Comprehensive Modeling and Simulation Suite for Nuclear Safety Analysis and Design, ORNL/TM-2005/39, Version 6.1, Oak Ridge National Laboratory, Oak Ridge, Tennessee, June 2011. |
@@ -39,10 +39,10 @@ PWR Westinghouse OFA 17x17, 2D quarter assembly model
 read comp
 '
 ' fuel - 95% theoretical density (10.96g/cc)
-  uo2   1 den={{fuelcomp.fuel_density}} 1 1000 92234 {{fuelcomp.wtpt_u234}} 
-                            92235 {{fuelcomp.wtpt_u235}} 
-                            92236 {{fuelcomp.wtpt_u236}} 
-                            92238 {{fuelcomp.wtpt_u238}} end 
+  uo2   1 den={{comp.density}} 1 1000 92234 {{comp.uo2.iso.u234}} 
+                            92235 {{comp.uo2.iso.u235}} 
+                            92236 {{comp.uo2.iso.u236}} 
+                            92238 {{comp.uo2.iso.u238}} end 
 '
 ' clad
   zirc4 2 1 620 end 

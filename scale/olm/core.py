@@ -133,7 +133,7 @@ class TemplateManager:
         Returns:
             str: text from the expanded template and data
         """
-        return TemplateManager.expand_file(self.templates[name], data, src_path=name)
+        return TemplateManager.expand_file(self.templates[name], data)
 
     @staticmethod
     def _jinja2_render_traceback(src_path):
