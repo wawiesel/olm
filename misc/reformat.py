@@ -142,6 +142,10 @@ if True:
     is_bwr = len(x["generate"]["states"]["coolant_density"]) > 1
 
     comp = x["generate"]["comp"]
+    if isinstance(comp["density"], list):
+        comp["density"] = comp["density"][0]
+    if "gd_density" in comp:
+        raise ValueError("gd_density NO")
     if comp["_type"] == "scale.olm.complib:mox_multizone_2023":
         comp["_type"] = "scale.olm.complib:mox_multizone_2023"
         comp["zone_pins"] = comp.pop("pins_zone", comp.get("zone_pins", None))
