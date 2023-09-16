@@ -446,6 +446,7 @@ class LowOrderConsistency:
         # For each point in space.
         ii_json_list = list()
         f71_list = list()
+        input_list = list()
         for point in assemble_d["points"]:
             # Create the check input path.
             lib = Path(point["files"]["lib"])
@@ -483,15 +484,16 @@ class LowOrderConsistency:
             internal.logger.debug(
                 "Writing LowOrderConsistency check", input_file=check_input
             )
+            input_list.append(str(check_input.relative_to(self.check_path)))
             with open(check_input, "w") as f:
                 f.write(filled_text)
 
-        # Run all the check inputs.
-        run.makefile(
+        # Use the makefile execution strategy for now.
+        runinfo = internal._execute_makefile(
             dry_run=not do_run,
-            base_dir=self.check_dir,
             _env=self._env,
-            _model=self._model,
+            base_path=self.check_path,
+            input_list=input_list,
         )
 
         # Actually generate the ii.json for the low fidelity calcs we just ran.

@@ -23,6 +23,7 @@ extensions = [
     "myst_parser",
     "sphinx.ext.autodoc",
     "matplotlib.sphinxext.plot_directive",
+    "sphinx_copybutton",
     "sphinx.ext.napoleon",
     "sphinx.ext.doctest",
 ]

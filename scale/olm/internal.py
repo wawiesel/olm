@@ -222,12 +222,185 @@ def init(config_dir, variant, list_variants):
     _write_init_variant(variant, config_dir)
 
 
+def _make_mini_arpdatatxt(dry_run, registry, dest, replace=False):
+    """Create a local arpdata.txt and arplibs"""
+
+    logger.debug(f"Setting up at destination dir={dest}")
+
+    # Concatenate the blocks from each name.
+    mini_arpdata = ""
+    files_to_copy = []
+    for name in registry:
+        arpinfo = registry[name]
+        path = arpinfo.path
+        logger.debug(f"Appending {name} from {path}")
+        mini_arpdata += f"!{name}\n" + arpinfo.block
+        for i in range(arpinfo.num_libs()):
+            files_to_copy.append(
+                Path(path.parent) / "arplibs" / arpinfo.get_lib_by_index(i)
+            )
+
+    # Create an arpdata.txt file with the concatenated content.
+    a = Path(dest) / "arpdata.txt"
+    if a.exists() and (not replace):
+        logger.error(
+            f"arpdata.txt already exists at path={path} and will not be overwritten"
+        )
+    else:
+        if dry_run:
+            logger.debug("Not writing {a} because --dry-run")
+        else:
+            if a.exists():
+                os.remove(a)
+            with open(a, "w") as f:
+                f.write(mini_arpdata)
+
+    # Create the arplibs directory by copying data files.
+    d = Path(dest) / "arplibs"
+    if d.exists() and (not replace):
+        logger.error(
+            f"arplibs directory already exists at path={path} and will not be overwritten"
+        )
+    else:
+        if dry_run:
+            logger.debug(f"Not writing {d} because --dry-run")
+        else:
+            d.mkdir(exist_ok=True)
+        for file in files_to_copy:
+            if dry_run:
+                logger.debug(f"Not copying {file} to {d} because --dry-run")
+            else:
+                logger.debug(f"Copying {file} to {d}")
+                shutil.copy(file, d)
+
+
+def _update_registry(registry, path):
+    """Update a registry of library names using all the paths"""
+
+    p = Path(path)
+    logger.debug("Searching path={}".format(p))
+
+    # Look for arpdata.txt version.
+    q1 = p / "arpdata.txt"
+    q1.resolve()
+    if q1.exists():
+        r = p / "arplibs"
+        r.resolve()
+        if not r.exists():
+            logger.warning(
+                "{} exists but the paired arplibs/ directory at {} does not--ignoring libraries listed".format(
+                    q1, r
+                )
+            )
+        else:
+            logger.debug("Found arpdata.txt!")
+            blocks = core.ArpInfo.parse_arpdata(q1)
+            for n in blocks:
+                if n in registry:
+                    logger.warning(
+                        "library name {} has already been registered at path={} ignoring same name found at {}".format(
+                            n, registry[n].path, p
+                        )
+                    )
+                else:
+                    logger.debug("Found library name {} in {}!".format(n, q1))
+                    arpinfo = core.ArpInfo()
+                    arpinfo.init_block(n, blocks[n])
+                    arpinfo.path = q1
+                    arpinfo.arplibs_dir = r
+                    registry[n] = arpinfo
+
+
+def _create_registry(paths, env):
+    """Search for a library 'name', at every path in 'paths', optionally using
+    environment variable SCALE_OLM_PATH"""
+    registry = dict()
+
+    logger.debug("Searching provided paths ({})...".format(len(paths)))
+    for path in paths:
+        _update_registry(registry, path)
+
+    if env and "SCALE_OLM_PATH" in os.environ:
+        env_paths = os.environ["SCALE_OLM_PATH"].split(":")
+        logger.debug("Searching SCALE_OLM_PATH paths ({})...".format(len(env_paths)))
+        for path in env_paths:
+            _update_registry(registry, path)
+
+    return registry
+
+
+def install(work_dir, destination, overwrite=False, dry_run=False):
+    # Note this docstring should appear in the command line interface help message so
+    # do not add additional information that would not be valid for the CLI.
+    """Install ORIGEN reactor libraries!
+
+    After creating a new ORIGEN reactor library, this command installs it to
+    a destination on the file system. After this, the work directory can be
+    deleted.
+
+    """
+    logger.debug("Entering install with args", **locals())
+
+    # Get useful paths.
+    work_path = Path(work_dir)
+    arpdata_txt = work_path / "arpdata.txt"
+    arplibs = work_path / "arplibs"
+
+    # Check the destination.
+    if destination == None:
+        for home in ["HOME", "HOMEDIR"]:
+            if home in os.environ:
+                destination = Path(os.environ[home]) / ".olm"
+                break
+    else:
+        destination = Path(destination)
+
+    # Determine if there is anything existing.
+    registry0 = _create_registry(paths=[destination], env=False)
+
+    # Checks for the potential install.
+    blocks = core.ArpInfo.parse_arpdata(arpdata_txt)
+    if len(blocks) > 1:
+        lib_str = ",".join(blocks.keys())
+        raise ValueError(
+            f"Only one library expected in {arpdata_txt}. Found {lib_str}."
+        )
+    name = list(blocks.keys())[0]
+    if name in registry0:
+        install_arpdata_txt = destination / "arpdata.txt"
+        if overwrite:
+            logger.debug(f"Overwriting {name} in {install_arpdata_txt}!")
+            for lib in registry0[name].lib_list:
+                file = destination / "arplibs" / lib
+                if not dry_run:
+                    if file.exists():
+                        os.remove(file)
+                logger.debug(f"Deleting file {file} because overwrite of {name}!")
+        else:
+            raise ValueError(
+                f"New library name={name} already exists in destination {install_arpdata_txt}! Will not overwrite!"
+            )
+    logger.info("Installing ", model=name, destination=str(destination))
+
+    # Add new/updated one to the registry.
+    arp_info = core.ArpInfo()
+    arp_info.init_block(name, blocks[name])
+    arp_info.path = arpdata_txt.resolve()
+    arp_info.arplibs_dir = arplibs.resolve()
+    registry0[name] = arp_info
+
+    # Create a new "mini" arpdata.txt in the destination that has all the previous libraries
+    # plus this new libraries.
+    destination.mkdir(parents=True, exist_ok=True)
+    _make_mini_arpdatatxt(dry_run, registry0, destination, replace=True)
+
+
 def _raise_scalerte_error():
     raise ValueError(
         """
     The scalerte executable was not found. Do one of the following and rerun.
     1. Set environment variable SCALE to a valid location of a SCALE install with
-       scalerte at ${SCALE}/bin/scalerte.
+       scalerte at ${SCALE_DIR}/bin/scalerte.
     2. Set environment variable OLM_SCALERTE directly to scalerte."""
     )
 
@@ -236,8 +409,8 @@ def _raise_obiwan_error():
     raise ValueError(
         """
     The obiwan executable was not found. Do one of the following and rerun.
-    1. Set environment variable SCALE to a valid location of a SCALE install with
-       obiwan at ${SCALE}/bin/obiwan.
+    1. Set environment variable SCALE_DIR to a valid location of a SCALE install with
+       obiwan at ${SCALE_DIR}/bin/obiwan.
     2. Set environment variable OLM_OBIWAN directly to obiwan."""
     )
 
@@ -283,12 +456,12 @@ def _load_env(config_file: str, nprocs: int = 0):
     env["config_file"] = str(config_path)
     env["work_dir"] = str(work_path)
 
-    if "SCALE" in os.environ:
-        scale_path = Path(os.environ["SCALE"])
+    if "SCALE_DIR" in os.environ:
+        scale_path = Path(os.environ["SCALE_DIR"])
         env["scalerte"] = str(scale_path / "bin" / "scalerte")
-        logger.info("From SCALE environment variable", scalerte=env["scalerte"])
+        logger.info("From SCALE_DIR environment variable", scalerte=env["scalerte"])
         env["obiwan"] = str(scale_path / "bin" / "obiwan")
-        logger.info("From SCALE environment variable", obiwan=env["obiwan"])
+        logger.info("From SCALE_DIR environment variable", obiwan=env["obiwan"])
     if "OLM_SCALERTE" in os.environ:
         env["scalerte"] = str(Path(os.environ["OLM_SCALERTE"]))
         logger.info("From OLM_SCALERTE environment variable", scalerte=env["scalerte"])
@@ -373,3 +546,85 @@ def run_command(command_line, check_return_code=True, echo=True, error_match="Er
                     raise ValueError(str(msg))
 
     return text
+
+
+def _runtime_in_hours(runtime):
+    """Convert runtime in seconds to well-formatted runtime in hours."""
+    return "{:.2g}".format(runtime / 3600.0)
+
+
+def _execute_makefile(dry_run, _env, base_path, input_list):
+    """Kernel to execute makefile-based runs
+
+    The main thing this provides is some parallelism opportunity and graceful job
+    cancelling. We should move to using the pure python executors in the future,
+    like the wrapper in core.ThreadPoolExecutor.
+
+    """
+    import scale.olm.core as core
+
+    if not "scalerte" in _env:
+        _raise_scalerte_error()
+
+    scalerte = _env["scalerte"]
+
+    input_listing = " ".join(input_list)
+
+    contents = f"""
+outputs = $(patsubst %.inp, %.out, {input_listing})
+
+.PHONY: all
+
+all: $(outputs)
+
+%.out: %.inp
+\t@rm -f $@.FAILED
+\t{scalerte} $<
+\t@grep 'Error' $@ && mv -f $@ $@.FAILED && echo "^^^^^^^^^^^^^^^^ errors from $<" || true
+
+clean:
+\trm -f $(outputs)
+"""
+
+    make_file = base_path / "Makefile"
+    with open(make_file, "w") as f:
+        f.write(contents)
+
+    version = core.ScaleRunner(scalerte).version
+    logger.info("Running SCALE", version=version)
+
+    nprocs = _env["nprocs"]
+    command_line = f"cd {base_path} && make -j {nprocs}"
+    if dry_run:
+        logger.warning("No SCALE runs will be performed because dry_run=True!")
+    else:
+        run_command(command_line)
+
+    # Get file listing.
+    runs = list()
+    total_runtime = 0
+    for input0 in input_list:
+        input = base_path / input0
+        output = Path(input).with_suffix(".out")
+        success = output.exists()
+        runtime = core.ScaleOutfile.get_runtime(output) if success else 3.6e6
+        total_runtime += runtime
+        runs.append(
+            {
+                "input_file": str(input),
+                "output_file": str(output),
+                "success": success,
+                "runtime_hrs": _runtime_in_hours(runtime),
+            }
+        )
+
+    return {
+        "scalerte": str(scalerte),
+        "base_dir": str(base_path.relative_to(_env["work_dir"])),
+        "dry_run": dry_run,
+        "nprocs": nprocs,
+        "command_line": command_line,
+        "version": version,
+        "runs": runs,
+        "total_runtime_hrs": _runtime_in_hours(total_runtime),
+    }

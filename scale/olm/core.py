@@ -1605,6 +1605,8 @@ class ScaleRunner:
 
 
 class ArpInfo:
+    """Handle the ARPDATA.TXT format for ORIGEN reactor libraries."""
+
     def __init__(self):
         self.name = ""
         self.lib_list = None

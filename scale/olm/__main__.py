@@ -61,6 +61,7 @@ def cli():
 )
 @click.option(
     "--nprocs",
+    "-j",
     type=int,
     default=3,
     help="how many processes to use",
@@ -130,6 +131,7 @@ def command_link(**kwargs):
 
 cli.add_command(command_link)
 
+
 # ---------------------------------------------------------------------------------------
 # OLM CHECK
 # ---------------------------------------------------------------------------------------
@@ -173,6 +175,7 @@ def methods_help(*methods):
 )
 @click.option(
     "--nprocs",
+    "-j",
     type=int,
     default=3,
     help="how many processes to use",
@@ -209,6 +212,12 @@ def command_check(archive_file, output_file, text_sequence, nprocs):
 cli.add_command(command_check)
 
 
+# ---------------------------------------------------------------------------------------
+# OLM INIT
+# ---------------------------------------------------------------------------------------
+#
+# This is the entry point to run OLM INIT command.
+#
 @click.command(name="init")
 @click.argument("config_dir", type=str, required=False)
 @click.option(
@@ -227,8 +236,42 @@ def command_init(**kwargs):
     try:
         internal.init(**kwargs)
     except ValueError as ve:
-        logger.error(str(ve))
+        internal.logger.error(str(ve))
         return str(ve)
 
 
 cli.add_command(command_init)
+
+
+# ---------------------------------------------------------------------------------------
+# OLM INSTALL
+# ---------------------------------------------------------------------------------------
+#
+# This is the entry point to run OLM INSTALL command.
+#
+@click.command(name="install")
+@click.argument("work_dir", type=str, required=False)
+@click.option(
+    "--dest",
+    "-d",
+    "destination",
+    type=str,
+    default=None,
+    help="Destination for the installation (defaults to $HOME/.olm).",
+)
+@click.option(
+    "--overwrite",
+    is_flag=True,
+    default=False,
+    help="Allow overwriting of destination files.",
+)
+@internal.copy_doc(internal.install)
+def command_install(**kwargs):
+    try:
+        internal.install(**kwargs)
+    except ValueError as ve:
+        internal.logger.error(str(ve))
+        return str(ve)
+
+
+cli.add_command(command_install)
