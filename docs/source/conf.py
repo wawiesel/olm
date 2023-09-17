@@ -26,6 +26,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinx.ext.napoleon",
     "sphinx.ext.doctest",
+    "sphinx.ext.viewcode",
 ]
 # # Suppress sphinx doctest when some deps are not installed.
 # doctest_global_setup = '''
@@ -34,6 +35,8 @@ extensions = [
 # except ImportError:
 #     pd = None
 # '''
+plot_rcparams = {"savefig.bbox": "tight"}
+plot_apply_rcparams = True  # if context option is used
 
 # Concatenate the class and __init__ docstring.
 autoclass_content = "both"

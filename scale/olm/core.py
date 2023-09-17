@@ -2205,19 +2205,20 @@ class NuclideInventory:
             m = "m" + str(i)
         return r"${^{" + str(a) + "\mathrm{" + m + "}}}\mathrm{" + Ee + "}$"
 
-    def get_total_mass(self):
-        total = 0
-        for id, moles in self.nuclide_amount:
-            molar_mass = self.composition_manager.mass(id)
-            total += molar_mass * moles
-        return total
+    def get_hm_mass(self, min_z=92):
+        cm = self.composition_manager
+        hm_mass = np.zeros(len(self.time))
+        for id, amount in self.nuclide_amount.items():
+            m = cm.mass(id)
+            i, z, a = cm.parse_izzzaaa(id)
+            if z >= min_z:
+                hm_mass += amount * m
+        return hm_mass
 
     def get_amount(self, nuclide, units="MOLES"):
         id = self.composition_manager.izzzaaa(nuclide)
         if units == "GRAMS":
             d = self.composition_manager.mass(id)
-        elif units == "WT%":
-            d = 100 * self.composition_manager.mass(id) / self.get_total_mass()
         elif units == "MOLES":
             d = 1.0
         else:
@@ -2249,12 +2250,15 @@ class NuclideInventory:
         amount_units="GRAMS",
         color_weight=0.95,
         plot_fun=plt.plot,
+        amount_mult=1.0,
         **kwargs,
     ):
         time = self.get_time(units=time_units)
+        amount_map = {}
         for nuclide in nuclide_list:
             iden = self.composition_manager.izzzaaa(nuclide)
-            amount = self.get_amount(iden, units=amount_units)
+            amount = amount_mult * self.get_amount(iden, units=amount_units)
+            amount_map[nuclide] = amount
             plot_fun(
                 time,
                 amount,
@@ -2265,6 +2269,7 @@ class NuclideInventory:
         plt.xlabel("Time ({})".format(time_units.lower()))
         plt.ylabel("Amount ({})".format(amount_units.lower()))
         plt.legend()
+        return amount_map
 
 
 class InventoryInterface:

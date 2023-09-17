@@ -144,20 +144,122 @@ def mox_multizone_2023(
     gd2o3_pins=0,
     gd2o3_wtpct=0.0,
 ):
-    """Create a zoned MOX assembly which preserves a desired average pu_frac including
-        allowance for UO2+Gd2O3 pins.
+    """Create compositions for a zoned MOX assembly with a desired average plutonium fraction.
 
-    Default MOX zones from Mertyurek and Gauld NED 2016
+    This function has handling for additional non-plutonium bearing pins with
+    UO2+Gd2O3.
 
-        Ugur Mertyurek, Ian C. Gauld,
-        Development of ORIGEN libraries for mixed oxide (MOX) fuel assembly designs,
-        Nuclear Engineering and Design,
-        Volume 297,
-        2016,
-        Pages 220-230,
-        ISSN 0029-5493,
-        https://doi.org/10.1016/j.nucengdes.2015.11.027.
-        (https://www.sciencedirect.com/science/article/pii/S0029549315005592)
+    Built-in zone plutonium fractions for BWR2016 and PWR2016 are from this publication.
+
+    Ugur Mertyurek, Ian C. Gauld,
+    Development of ORIGEN libraries for mixed oxide (MOX) fuel assembly designs,
+    Nuclear Engineering and Design,
+    Volume 297,2016,Pages 220-230,ISSN 0029-5493,https://doi.org/10.1016/j.nucengdes.2015.11.027.
+    (https://www.sciencedirect.com/science/article/pii/S0029549315005592)
+
+    Args:
+
+        state: Data about the state for which this composition should be created,
+            only uses the following fields.
+
+            - 'pu_frac' fraction of plutonium to heavy metal (as a percentage)
+            - 'pu239_frac' fraction of pu239 to plutonium (as a percentage)
+
+        zone_names: Names of zonewise compositions to output e.g. ['inner','edge']
+            OR a built-in composition name. Built-ins are:
+
+            - 'PWR2016' a four-zone distribution for a generic PWR with an 'inner',
+              'iedge' (inner edge), 'edge', and 'corner' zone with the zone plutonium
+              fractions varying according the 2016 Mertyurek and Gauld paper.
+            - 'BWR2016' a four-zone distribution for a generic BWR an 'inner',
+              'iedge' (inner edge), 'edge', and 'corner' zone with the zone plutonium
+              fractions varying according the 2016 Mertyurek and Gauld paper.
+
+        zone_pins: Number of pins in each zone (assumed to have same heavy metal fraction).
+            E.g. if zone_names=['inner','edge'], zone_pins=[100,44] would indicate there
+            are 100 inner pins and 44 edge pins so that the relevant heavy metal ratios
+            are preserved to renormalize to the assembly-average target of state['pu_frac'].
+
+        density: Density of the fuel. This is basically a pass-through option and not
+            used in the calculation itself.
+
+        uo2: A uranium oxide composition to use for the uo2 part of the MOX.
+
+        zone_pu_fracs: The zone plutonium fractions to use, associated with each of the
+            zone_names. For example, zone_names=['inner','edge'] could have zone_pu_fracs=[1.0,0.8]
+            to indicate the the 'edge' zone should have 80% of the inner zone plutonium
+            fraction, renormalized so that the assembly average is what was supplied in
+            state['pu_frac'].
+
+        am241: The weight percent in Am241 content. Typically this is not necessary because
+            there will be a decay calculation performed to account for the buildup of Am241.
+
+        gd2o3_pins: Number of pins of Gd2O3 and UO2 which are not contributing to the
+            assembly-average plutonium fraction. Therefore, if the assembly had 144 MOX
+            pins and 25 non-MOX pins then gd2o3_pins=25 would make sure that heavy metal
+            content is taken into account when renormalizing to the target state['pu_frac'].
+
+        gd2o3_wtpct: If the gd2o3_wtpct>0.0, then the heavy metal is reduced accordingly.
+
+    Returns:
+
+        dict: Dictionary of compositions by name. Internal to each composition is a
+            'uo2' and 'puo2' dictionary which includes details to be used in creating
+            a mixed-oxide composition with SCALE.
+
+    Examples:
+
+    Here is a basic example with two zones.
+
+    >>> x=mox_multizone_2023(state={"pu239_frac": 70.0, "pu_frac": 5.0},
+    ... zone_names=['inner','edge'],
+    ... density=10.38,
+    ... zone_pins=[100,44],
+    ... zone_pu_fracs=[1.0,0.8])
+
+    Let's define a simple printing function so that we don't see so many digits in
+    the output and it is formatted consistently.
+
+    >>> def prn(x):
+    ...     import json
+    ...     print( json.dumps(json.loads(json.dumps(x),
+    ...         parse_float=lambda x: round(float(x), 4)),
+    ...         indent=4, sort_keys=True) )
+
+    For the inner zone we will have slightly higher density fraction that 5.0% because
+    of the zone weighting of 1.0 versus 0.8 for the edge.
+
+    >>> prn(x['inner']['puo2'])
+    {
+        "dens_frac": 0.0533,
+        "iso": {
+            "pu238": 0.8642,
+            "pu239": 70.0,
+            "pu240": 21.1768,
+            "pu241": 5.5325,
+            "pu242": 2.4264
+        }
+    }
+
+    Note for the edge the isotopic distribution is identical, but the density fraction
+    is different.
+
+    >>> prn(x['edge']['puo2'])
+    {
+        "dens_frac": 0.0426,
+        "iso": {
+            "pu238": 0.8642,
+            "pu239": 70.0,
+            "pu240": 21.1768,
+            "pu241": 5.5325,
+            "pu242": 2.4264
+        }
+    }
+
+    We should be very close to 5% with this simple reconstruction.
+
+    >>> 100*(x['inner']['puo2']['dens_frac']*100 + x['edge']['puo2']['dens_frac']*44 ) / 144
+    5.0
 
     """
     if isinstance(zone_names, str):
@@ -200,7 +302,7 @@ def mox_multizone_2023(
 
     # We want to match the Pu/HM total over the assembly which should be
     # state['pu_frac'] but it will not be.
-    multiplier = (state["pu_frac"] / 100.0) / (putotal / hmtotal)
+    multiplier = state["pu_frac"] / (putotal / hmtotal)
 
     data = {
         "_zone": {
