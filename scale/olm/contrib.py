@@ -97,6 +97,7 @@ def sfcompo_guess_initial_mox(
     density=10.4,
     relmin=0.7,
     u235=0.231,
+    am241=0.0,
     nbins=10,
     plot=False,
     complib_fun=complib.mox_ornltm2003_2,
@@ -183,5 +184,5 @@ def sfcompo_guess_initial_mox(
         state={"pu239_frac": target_p9, "pu_frac": pu_frac},
         density=density,
         uo2=uo2,
-        am241=1e-20,
+        am241=am241,
     )

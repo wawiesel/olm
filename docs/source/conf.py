@@ -20,13 +20,13 @@ release = "0.2.0"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "myst_parser",
     "sphinx.ext.autodoc",
     "matplotlib.sphinxext.plot_directive",
     "sphinx_copybutton",
     "sphinx.ext.napoleon",
     "sphinx.ext.doctest",
     "sphinx.ext.viewcode",
+    "myst_nb",
 ]
 # # Suppress sphinx doctest when some deps are not installed.
 # doctest_global_setup = '''

@@ -37,6 +37,7 @@ It has the following basic modes.
 
     Quickstart <quickstart.rst>
     Step-by-step <step-by-step.rst>
+    Notebooks <notebooks.rst>
     For OLM Developers <developers.md>
     Code Reference <code_reference.rst>
 

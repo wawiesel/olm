@@ -839,7 +839,7 @@ class BurnupHistory:
 
         return {"options": options, "operations": operations}
 
-    def plot_power_history(self, label=None, add_to_existing=False):
+    def plot_power_history(self, label=None, add_to_existing=False, **kwargs):
         """Return a plot of the power in each interval."""
         import matplotlib.pyplot as plt
 
@@ -851,6 +851,7 @@ class BurnupHistory:
             [self.interval_power[0], *self.interval_power],
             where="pre",
             label=label,
+            **kwargs,
         )
         plt.legend()
 
@@ -2188,7 +2189,8 @@ class NuclideInventory:
         f_color = (
             int.from_bytes(hashlib.md5(id.encode("utf-8")).digest(), "big") % 256
         ) / 256.0
-        color = np.asarray(plt.get_cmap("jet")(f_color)) * weight
+        color = np.asarray(plt.get_cmap("jet")(f_color))
+        color[0:3] *= weight  # Leave out alpha
         return color
 
     def _nice_label(self, id):
@@ -2205,13 +2207,13 @@ class NuclideInventory:
             m = "m" + str(i)
         return r"${^{" + str(a) + "\mathrm{" + m + "}}}\mathrm{" + Ee + "}$"
 
-    def get_hm_mass(self, min_z=92):
+    def get_hm_mass(self, min_z=92, max_z=1000):
         cm = self.composition_manager
         hm_mass = np.zeros(len(self.time))
         for id, amount in self.nuclide_amount.items():
             m = cm.mass(id)
             i, z, a = cm.parse_izzzaaa(id)
-            if z >= min_z:
+            if z >= min_z and z <= max_z:
                 hm_mass += amount * m
         return hm_mass
 
@@ -2238,10 +2240,18 @@ class NuclideInventory:
         c = time_conv[units.upper()]
         return self.time * c
 
-    def wrel_diff(self, nuclide, reference):
-        a = self.get_amount(nuclide)
-        max = np.amax(reference)
-        return (a - reference) / max
+    def wrel_diff(self, nuclide, other_self, units="GRAMS"):
+        """Create a weighted relative difference."""
+        test = self.get_amount(nuclide, units=units)
+        ref = other_self.get_amount(nuclide, units=units)
+        max = np.amax(ref)
+        return (test - ref) / max
+
+    def rel_diff(self, nuclide, other_self, units="GRAMS", eps=1e-12):
+        """Create a relative difference."""
+        test = self.get_amount(nuclide, units=units)
+        ref = other_self.get_amount(nuclide, units=units)
+        return (test + eps) / (ref + eps) - 1.0
 
     def plot_nuclide_amounts(
         self,
