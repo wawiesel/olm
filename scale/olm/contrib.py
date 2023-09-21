@@ -115,7 +115,7 @@ def sfcompo_guess_initial_mox(
 
         Search for fissile pu of 72.3% and pu fraction of 7.0%.
 
-        >>> x = sfcompo_guess_initial_mox(fiss_pu_frac=72.3, pu_frac=7.0)
+        >>> x = 	(fiss_pu_frac=72.3, pu_frac=7.0)
         >>> "{:.2f}".format(x['info']['pu_frac'])
         '7.00'
 
@@ -142,7 +142,7 @@ def sfcompo_guess_initial_mox(
     """
     import scipy as sp
 
-    p9_list = p9_list = np.linspace(fiss_pu_frac * relmin, fiss_pu_frac, nbins)
+    p9_list = np.linspace(fiss_pu_frac * relmin, fiss_pu_frac, nbins)
     fp_list = []
     uo2 = {"iso": {"u235": u235, "u236": 1e-10, "u234": 1e-10, "u238": 100 - u235}}
     for pu239_frac in p9_list:
