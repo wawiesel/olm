@@ -400,8 +400,13 @@ def _raise_scalerte_error():
         """
     The scalerte executable was not found. Do one of the following and rerun.
     1. Set environment variable SCALE to a valid location of a SCALE install with
-       scalerte at ${SCALE_DIR}/bin/scalerte.
-    2. Set environment variable OLM_SCALERTE directly to scalerte."""
+       scalerte at ${SCALE_DIR}/bin/scalerte. Do this by writing a command in the
+       command line, for example: 
+       "export SCALE_DIR=/Applications/SCALE-6.3.0.app/Contents/Resources"
+    2. Set environment variable OLM_SCALERTE directly to scalerte by writing a command 
+       in the command line, for example:
+       "export OLM_SCALERTE=/Applications/SCALE-6.3.0.app/Contents/Resources/bin/scalerte"
+        """
     )
 
 
