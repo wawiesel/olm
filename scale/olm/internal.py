@@ -234,7 +234,7 @@ def _make_mini_arpdatatxt(dry_run, registry, dest, replace=False):
         arpinfo = registry[name]
         path = arpinfo.path
         logger.debug(f"Appending {name} from {path}")
-        mini_arpdata += f"!{name}\n" + arpinfo.block
+        mini_arpdata += f"!{name}\n" + arpinfo.block + "\n"
         for i in range(arpinfo.num_libs()):
             files_to_copy.append(
                 Path(path.parent) / "arplibs" / arpinfo.get_lib_by_index(i)

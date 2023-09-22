@@ -115,7 +115,7 @@ def sfcompo_guess_initial_mox(
 
         Search for fissile pu of 72.3% and pu fraction of 7.0%.
 
-        >>> x = 	(fiss_pu_frac=72.3, pu_frac=7.0)
+        >>> x = sfcompo_guess_initial_mox(fiss_pu_frac=72.3, pu_frac=7.0)
         >>> "{:.2f}".format(x['info']['pu_frac'])
         '7.00'
 
@@ -130,14 +130,14 @@ def sfcompo_guess_initial_mox(
         >>> abs(x['info']['fiss_pu_frac']/72.3-1)<1e-4
         True
 
-        Here is an example with plotting turned on.
+                Here is an example with plotting turned on.
 
-        .. plot::
-                :include-source: True
-                :show-source-link: False
+                .. plot::
+                                :include-source: True
+                                :show-source-link: False
 
-                import scale.olm.contrib as contrib
-                x = contrib.sfcompo_guess_initial_mox(fiss_pu_frac=72.3, pu_frac=7.0, plot=True)
+                                import scale.olm.contrib as contrib
+                                x = contrib.sfcompo_guess_initial_mox(fiss_pu_frac=72.3, pu_frac=7.0, plot=True)
 
     """
     import scipy as sp
