@@ -41,9 +41,20 @@ olm
 which olm
 ```
 
+### Creating docs
+
+With the development environment installed, the docs may be created within the
+`docs` directory. With the following commands.
+
+```
+cd docs
+make html
+open build/html/index.html
+```
+
 ### Notebooks
 
-There are notebooks contained in `notebooks` which may be helpful for debugging or
+There are notebooks contained in `docs/source/notebooks` which may be helpful for debugging or
 understanding how something is working. You may need to install your virtual environment
 kernel for the notebooks to work.
 
