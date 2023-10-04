@@ -1,12 +1,91 @@
-import scale.olm.complib as complib
-import scale.olm.internal as internal
-import scale.olm.core as core
-import numpy as np
-import math
-from pathlib import Path
-import json
-import copy
-import shutil
+"""
+
+OLM generate functions take as input the definition of a set of SCALE input permutations
+to create. Each function should perform the following key actions:
+
+1. create the input files on the file system
+2. return a dictionary containing the information on the written files
+
+The recommended ways to import the generate module is from :obj:`scale.olm` are as follows,
+from best to worst.
+
+.. code::
+
+    from scale.olm import create.generate # call functions as create.generate.f(x)
+    from scale.olm.create import generate # call functions as generate.f(x)
+    import scale.olm.create.generate      # call functions as scale.olm.create.generate.f(x)
+
+Return specification
+^^^^^^^^^^^^^^^^^^^^
+
+The return value for any :obj:`scale.olm.generate` function should be a dictionary, 
+defined as follows.
+
+.. code::
+
+    {
+        "work_dir": "/Users/ww5/olm/mox_quick/_work",
+        "static": {...},
+        "perms": [
+            {
+                "static": {...},
+                "comp": {...},
+                "time": {...},
+                "state": {...},
+                "dynamic": {...},
+                "input_file": "perms/9a1cb1ff6fdee2d9825ef4086f6f42a3/model_6f42a3.inp",
+                "_": {...}
+            },
+            {
+                "static": {...},
+                "comp": {...},
+                "time": {...},
+                "state": {...},
+                "dynamic": {...},
+                "input_file": "perms/9b1c4e1794359aaa8b55cee6cbe4e281/model_e4e281.inp",
+                "_": {...}
+            },
+            {...},
+            {...},
+            {...},
+            {...}
+        ]
+    }
+
+At the top level there are the following keys:
+
+- :code:`work_dir` - the working directory where all files are written
+- :code:`static` - a dictionary of static variables which are the same for all permutations
+- :code:`perms` - a list of permutations
+
+Inside each element of the :code:`perms` list are the variables which are available when
+the input file is written. Variables may be organized hierarchically. Even though
+the static variables do not change for each permutation, they are copied into each permutation
+data set so that all data available for a permutation is available locally in each
+list element.
+
+Possible implementation
+^^^^^^^^^^^^^^^^^^^^^^^
+
+By the time the above data is returned from a generate function, the input files have
+already been written and at this stage, we do not retain how these inputs were generated.
+It could be from a template system like Jinja or any other system. In the case of a
+template system, like Jinja, the input files should be able to be recreated with the 
+following code.
+
+.. code::
+    
+    # For a specific generator, f.
+    y = generate.f(x)
+
+    # Within the generate function is the equivalent of the following code to generate
+    # the input_file with the data contained in the permutation.
+    for perm in y["perms"]:
+        input_file = expand_template(template_file, data=perm)
+
+See the :obj:`jt_expander` for a concrete function which follows this specification.
+     
+"""
 
 
 def constpower_burndata(state, gwd_burnups):
@@ -38,6 +117,9 @@ def constpower_burndata(state, gwd_burnups):
 
 def full_hypercube(**states):
     """Generate all the permutations assuming a dense N-dimensional space."""
+    import numpy as np
+    import scale.olm.internal as internal
+
     dims = []
     axes = []
     for dim in states:
@@ -59,6 +141,7 @@ def full_hypercube(**states):
 
 def scipy_interp(state_var: str, data_pairs, state, method: str = "linear"):
     import scipy as sp
+    import scale.olm.internal as internal
 
     x0 = state[state_var]
     x_list = []
@@ -82,9 +165,94 @@ def scipy_interp(state_var: str, data_pairs, state, method: str = "linear"):
     return float(y0)
 
 
-def jt_expander(template, static, states, comp, time, _model, _env, dynamic=None):
-    """First expand the state to all the individual state combinations, then calculate the
-    times and the compositions which may require state. The static just pass through."""
+# Prepend these type hints with _ to prevent showing in autocomplete as members of
+# this package.
+from typing import Union as _Union
+
+_Static = dict[str, any]
+_States = dict[str, any]
+_OneComp = dict[str, any]
+_NestedComp = dict[str, _OneComp]
+_Time = dict[str, any]
+_Dynamic = dict[str, any]
+
+
+def jt_expander(
+    template: str,
+    static: _Static,
+    states: _States,
+    comp: _Union[_OneComp, _NestedComp],
+    time: _Time,
+    _model={},
+    _env={},
+    dynamic: _Union[_Dynamic, None] = None,
+):
+    """Expand a template with the result of user-specified operations.
+
+    There are two groups of arguments. The first argument for the template file name
+    contains the Jinja directives and variables. The remainder of the arguments are
+    special dictionaries which are processed according to a special :code:`_type`
+    directive. See examples below.
+
+    The processing results in a number of data sets defined. Each one of these data
+    packets is written to disk before it is substituted into the template. In this way,
+    during model development when the typical "variable not found" errors are encountered,
+    one can inspect this file for the actual variables available.
+
+    .. note::
+
+        The available data for template expansion is the *output* of running the
+        function specified by :code:`_type` on the input passed to this function.
+        See :obj:`scale.olm.create` for details.
+
+    Args:
+
+        template: Template file name relative to the directory containing
+                  :code:`_env['config_file']`.
+
+        static: Data dictionary that is independent of state. Data is passed through function
+                :code:`_type` and then available as :code:`static.<key>` to
+                Jinja for template expansion. See :obj:`scale.olm.internal.pass_through`
+                for an example.
+
+        states: Data dictionary that defines how to generate a number of states, each one
+                leading to a permutation of the input model. Data is passed through
+                :code:`_type` and then available as :code:`state.<key>` to Jinja for
+                template expansion. Note that the input definition of multiple *states*
+                becomes a list of *state*. For example, a states definition with
+                two enrichments and three moderator densities, using the full_hypercube
+                expansion, would lead to six states. Jinja is called six times with the
+                data that results from each one of those states.
+                See :obj:`scale.olm.generate.full_hypercube` for an example.
+
+        comp: Data dictionary that defines the compositions. If more than one composition
+              is needed, comp may be a dictionary of dictionaries, where the key for each
+              dictionary is the name of the composition. Data is passed through
+              :code:`_type` and then available as :code:`state.<key>` to Jinja for
+              template expansion. For example, the following comp dictionary defines
+              an inner and outer composition that will be available to the Jinja
+              expansion as :code:`comp.inner` and :code:`comp.outer`.
+
+              .. code::
+
+                  comp = {
+                      "inner": {"_type": "scale.olm.complib:uo2_simple", ... },
+                      "outer": {"_type": "scale.olm.complib:uo2_simple", ... },
+                 }
+
+              See :obj:`scale.olm.complib` functions such as
+              :obj:`scale.olm.complib:uo2_simple` for examples.
+
+    """
+    import scale.olm.complib as complib
+    import scale.olm.internal as internal
+    import scale.olm.core as core
+    from pathlib import Path
+    import numpy as np
+    import math
+    import json
+    import copy
+    import shutil
 
     internal.logger.info(f"Generating with scale.olm.jt_expander ...")
 
@@ -95,11 +263,17 @@ def jt_expander(template, static, states, comp, time, _model, _env, dynamic=None
     states2 = internal._fn_redirect(**states)
 
     # Useful paths.
-    work_path = Path(_env["work_dir"])
+    if not "work_dir" in _env:
+        work_path = Path.cwd() / "_work"
+    else:
+        work_path = Path(_env["work_dir"])
     generate_path = work_path / "perms"
 
     # Load the template file.
-    template_path = Path(_env["config_file"]).parent / template
+    if not "config_file" in _env:
+        template_path = template
+    else:
+        template_path = Path(_env["config_file"]).parent / template
     with open(template_path, "r") as f:
         template_text = f.read()
 

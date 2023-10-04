@@ -1606,7 +1606,11 @@ class ScaleRunner:
 
 
 class ArpInfo:
-    """Handle the ARPDATA.TXT format for ORIGEN reactor libraries."""
+    """
+    Handle the ARPDATA.TXT format for ORIGEN reactor libraries.
+
+
+    """
 
     def __init__(self):
         self.name = ""
@@ -1964,10 +1968,12 @@ class ArpInfo:
 
 
 class ReactorLibrary:
-    """Simple class to read an ORIGEN ReactorLibrary into memory. The hierarchy of ORIGEN
+    """
+    Simple class to read an ORIGEN ReactorLibrary into memory. The hierarchy of ORIGEN
     data is a Transition Matrix is the necessary computational piece. A Library is a
-    time-dependent sequence of Transition Matrices. An ReactorLibrary is a multi-dimensional
-    interpolatable space of Libraries."""
+    time-dependent sequence of Transition Matrices. A ReactorLibrary is a multi-dimensional
+    interpolatable space of Libraries.
+    """
 
     def __init__(self, file, name="", progress_bar=True):
         self.file_name = file

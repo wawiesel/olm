@@ -40,6 +40,7 @@ plot_apply_rcparams = True  # if context option is used
 
 # Concatenate the class and __init__ docstring.
 autoclass_content = "both"
+add_module_names = False
 
 templates_path = ["_templates"]
 exclude_patterns = []
