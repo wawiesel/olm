@@ -295,24 +295,32 @@ class LowOrderConsistency:
         plt.savefig(image, bbox_inches="tight")
 
  
-    def make_spag_plot2(n, k, image_s, time, min_diff, max_diff, max_diff0, err_array):
+    def make_spag_plot2(identifier, n, k, image_s, time, min_diff, max_diff, max_diff0, err_array):
 
         import matplotlib.pyplot as plt
         plt.rcParams.update({"font.size": 18})
         plt.figure()
-
-        plt.plot(
+        color = core.NuclideInventory._nuclide_color(identifier)
+        plt.fill_between(
             np.asarray(time) / 86400.0,
-            100 * np.asarray(min_diff), 'k-')
+            100 * np.asarray(min_diff),
+            100 * np.asarray(max_diff),
+            alpha=0.3,
+            color=color,
+        )
 
-        plt.plot(
-            np.asarray(time) / 86400.0,
-            100 * np.asarray(max_diff), 'k-')
+        #plt.plot(
+        #    np.asarray(time) / 86400.0,
+        #    100 * np.asarray(min_diff), 'k-')
+
+        #plt.plot(
+        #    np.asarray(time) / 86400.0,
+        #    100 * np.asarray(max_diff), 'k-')
 
         for perm in range(0, k):
             plt.plot(
                 np.asarray(time) / 86400.0,
-                100 * np.asarray(err_array[n][perm]), 'k-', alpha=0.2)
+                100 * np.asarray(err_array[n][perm]), 'k-', alpha=0.4)
 
 
         plt.xlabel("time (days)")
