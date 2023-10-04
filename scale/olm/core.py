@@ -2199,9 +2199,10 @@ class NuclideInventory:
         color[0:3] *= weight  # Leave out alpha
         return color
 
-    def _nice_label(self, id):
-        eam = self.composition_manager.eam(id)
-        e, a, i = CompositionManager.parse_eam_to_eai(eam)
+    @staticmethod
+    def _nice_label0(composition_manager, id):
+        eam = composition_manager.eam(id)
+        e, a, i = composition_manager.parse_eam_to_eai(eam)
         Ee = e[0].upper()
         if len(e) > 1:
             Ee += e[1:]
@@ -2212,6 +2213,9 @@ class NuclideInventory:
         else:
             m = "m" + str(i)
         return r"${^{" + str(a) + "\mathrm{" + m + "}}}\mathrm{" + Ee + "}$"
+
+    def _nice_label(self, id):
+        return NuclideInventory._nice_label0(self.composition_manager, id)
 
     def get_hm_mass(self, min_z=92, max_z=1000):
         cm = self.composition_manager

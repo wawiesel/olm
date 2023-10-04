@@ -260,7 +260,12 @@ class LowOrderConsistency:
         self.name = name
         self.nuclide_compare = nuclide_compare
 
-        tm = core.TemplateManager([Path(_env["config_file"]).parent])
+        if _env == None:
+            dir = Path.cwd()
+        else:
+            dir = Path(_env["config_file"]).parent
+
+        tm = core.TemplateManager([dir])
 
         self.template_path = tm.path(template)
         internal.logger.info(
@@ -277,27 +282,7 @@ class LowOrderConsistency:
         self.target_q2 = target_q2
 
     @staticmethod
-    def make_diff_plot(identifier, image, time, min_diff, max_diff, max_diff0):
-        import matplotlib.pyplot as plt
-
-        plt.rcParams.update({"font.size": 18})
-        plt.figure()
-        color = core.NuclideInventory._nuclide_color(identifier)
-        plt.fill_between(
-            np.asarray(time) / 86400.0,
-            100 * np.asarray(min_diff),
-            100 * np.asarray(max_diff),
-            alpha=0.7,
-            color=color,
-        )
-        plt.xlabel("time (days)")
-        plt.ylabel("lo/hi-1 (%)")
-        plt.legend(["{} (max error: {:.2f} %)".format(identifier, 100 * max_diff0)])
-        plt.savefig(image, bbox_inches="tight")
-
-    def make_spag_plot2(
-        identifier, n, k, image_s, time, min_diff, max_diff, max_diff0, err_array
-    ):
+    def make_diff_plot(identifier, image, time, min_diff, max_diff, max_diff0, perms):
         import matplotlib.pyplot as plt
 
         plt.rcParams.update({"font.size": 18})
@@ -311,26 +296,18 @@ class LowOrderConsistency:
             color=color,
         )
 
-        # plt.plot(
-        #    np.asarray(time) / 86400.0,
-        #    100 * np.asarray(min_diff), 'r-')
-
-        # plt.plot(
-        #    np.asarray(time) / 86400.0,
-        #    100 * np.asarray(max_diff), 'g-')
-
-        for perm in range(0, k):
+        for perm in perms:
             plt.plot(
                 np.asarray(time) / 86400.0,
-                100 * np.asarray(err_array[n][perm]),
+                100 * np.asarray(perm["(lo-hi)/max(|hi|)"]),
                 "k-",
                 alpha=0.4,
             )
 
         plt.xlabel("time (days)")
         plt.ylabel("lo/hi-1 (%)")
-        # plt.legend(["{} (max error spag: {:.2f} %)".format(identifier, 100 * max_diff0)])
-        plt.savefig(image_s, bbox_inches="tight")
+        plt.legend(["{} (max error: {:.2f} %)".format(identifier, 100 * max_diff0)])
+        plt.savefig(image, bbox_inches="tight")
 
     def info(self):
         import matplotlib.pyplot as plt
@@ -352,7 +329,7 @@ class LowOrderConsistency:
             info.test_pass = False
             return info
 
-        # Create a base comparison data structure        color = core.NuclideInventory._nuclide_color(identifier) to repeat for every permutation.
+        # Create a base comparison data structure to repeat for every permutation.
         internal.logger.info("Setting up detailed comparison structures...")
         info.nuclide_compare = dict()
         ntime = len(self.time_list)
@@ -361,7 +338,6 @@ class LowOrderConsistency:
             internal.logger.info(
                 f"Found nuclide={nuclide} at index {i} for detailed comparison"
             )
-
             info.nuclide_compare[nuclide] = {
                 "nuclide_index": i,
                 "nuclide": nuclide,
@@ -397,10 +373,8 @@ class LowOrderConsistency:
         # Extract each nuclide time series.
         internal.logger.info("Calculating nuclide-wise comparisons...")
 
-        nuclide_number = 0
         for n in info.nuclide_compare:
             i_nuclide = info.nuclide_compare[n]["nuclide_index"]
-            perm_num = 0
             for k in range(len(self.lo_list)):
                 lo = self.lo[k, :, i_nuclide]
                 hi = self.hi[k, :, i_nuclide]
@@ -420,18 +394,12 @@ class LowOrderConsistency:
                     }
                 )
 
-                err_array[nuclide_number][perm_num] = err
-                perm_num = perm_num + 1
-            nuclide_number = nuclide_number + 1
-
         # Get maximum and min error across all permutations.
         internal.logger.info("Calculating max/min across permutations...")
-        nuclide_number = 0
         for n, d in info.nuclide_compare.items():
             i_nuclide = d["nuclide_index"]
             for k in range(len(self.lo_list)):
                 err = d["perms"][k]["(lo-hi)/max(|hi|)"]
-                internal.logger.info(" err ", err=str(err))
                 for j in range(len(self.time_list)):
                     d["max_diff"][j] = np.amax([err[j], d["max_diff"][j]])
                     d["min_diff"][j] = np.amin([err[j], d["min_diff"][j]])
@@ -444,25 +412,17 @@ class LowOrderConsistency:
                 "creating nuclide diff", image=str(image.relative_to(self.work_path))
             )
             info.nuclide_compare[n]["image"] = str(image)
+
+            label = core.NuclideInventory._nice_label0(self.composition_manager, n)
             LowOrderConsistency.make_diff_plot(
-                n, image, d["time"], d["min_diff"], d["max_diff"], d["max_diff0"]
-            )
-
-            # internal.logger.info("time", image=str( d["time"]))
-
-            image_s = self.check_path / (n + "-spag.png")
-            LowOrderConsistency.make_spag_plot2(
-                n,
-                nuclide_number,
-                perm_num,
-                image_s,
+                label,
+                image,
                 d["time"],
                 d["min_diff"],
                 d["max_diff"],
                 d["max_diff0"],
-                err_array,
+                d["perms"],
             )
-            nuclide_number = nuclide_number + 1
 
         self.ahist = np.ndarray.flatten(self.ahist)
         self.rhist = np.ndarray.flatten(self.rhist)
@@ -579,6 +539,8 @@ class LowOrderConsistency:
 
     def __load_ii_json(self, ii_json_list):
         """Load the ii.json data that exists on disk for HIGH and LOWER fidelity into memory."""
+        # We want nuclide data from one of the ii.json files.
+        self.composition_manager = None
 
         # Convert the f71 to ii.json and extract the relevant information into memory.
         self.hi_list = list()
@@ -590,6 +552,13 @@ class LowOrderConsistency:
             with open(hi_ii_json, "r") as f:
                 jt = json.load(f)
                 case = jt["responses"]["system"]
+
+                # Just load once for the first available.
+                if self.composition_manager == None:
+                    self.composition_manager = core.CompositionManager(
+                        jt["data"]["nuclides"]
+                    )
+
                 hi = np.array(case["amount"])
                 hi_vector = case["nuclideVectorHash"]
                 self.hi_list.append(hi)
