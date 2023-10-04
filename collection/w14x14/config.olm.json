@@ -3,18 +3,18 @@
         "name": "w14x14"
     },
     "generate": {
-        "_type": "scale.olm.generate:jt_expander",
+        "_type": "scale.olm.generate.root:jt_expander",
         "comp": {
-            "_type": "scale.olm.complib:uo2_nuregcr5625",
+            "_type": "scale.olm.generate.comp:uo2_nuregcr5625",
             "density": 10.4
         },
         "static": {
-            "_type": "scale.olm.internal:pass_through",
+            "_type": "scale.olm.generate.static:pass_through",
             "addnux": 4,
             "xslib": "xn252"
         },
         "states": {
-            "_type": "scale.olm.generate:full_hypercube",
+            "_type": "scale.olm.generate.states:full_hypercube",
             "coolant_density": [
                 0.7264
             ],
@@ -39,7 +39,7 @@
         },
         "template": "model.inp",
         "time": {
-            "_type": "scale.olm.generate:constpower_burndata",
+            "_type": "scale.olm.generate.time:constpower_burndata",
             "gwd_burnups": [
                 0,
                 0.04,

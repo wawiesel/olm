@@ -1,5 +1,4 @@
-import scale.olm.check as check
-import scale.olm.core as core
+import scale.olm as so
 import pytest
 
 
@@ -19,13 +18,13 @@ def data_file(filename):
 
 def test_gridgradient_basic():
     # Test that we can change the basic parameters of the check.
-    c = check.GridGradient(eps0=1e-3)
+    c = so.check.GridGradient(eps0=1e-3)
     assert c.eps0 == 1e-3
     assert c.epsr == c.default_params()["epsr"]
     assert c.epsa == c.default_params()["epsa"]
 
     # Test that we can load an archive
-    a = core.ReactorLibrary(data_file("w17x17.arc.h5"))
+    a = so.core.ReactorLibrary(data_file("w17x17.arc.h5"))
     assert a != None
 
     # Test that we can change and get the default result.

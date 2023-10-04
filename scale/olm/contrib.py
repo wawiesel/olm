@@ -4,9 +4,7 @@ Module for contributed code that doesn't fit in the other places.
 Everything should have doctests.
 
 """
-import scale.olm.internal as internal
-import scale.olm.complib as complib
-import numpy as np
+import scale.olm as _so
 
 
 def parse_sfcompo_operating_history(input):
@@ -70,7 +68,7 @@ def parse_sfcompo_operating_history(input):
         time.append(float(row["Elapsed days"]))
         bu = float(row["Value"].split(" ")[0])
         if bu < bu_last:
-            internal.logger.warning(
+            _so.internal.logger.warning(
                 f"The cumulative burnup decreased from {bu_last} to {bu} which is impossible. Setting to {bu_last}."
             )
             bu = bu_last
@@ -100,7 +98,7 @@ def sfcompo_guess_initial_mox(
     am241=0.0,
     nbins=10,
     plot=False,
-    complib_fun=complib.mox_ornltm2003_2,
+    comp_fun=_so.generate.comp.mox_ornltm2003_2,
 ):
     """Generate an initial mox guess based on what SFCOMPO lists.
 
@@ -141,12 +139,13 @@ def sfcompo_guess_initial_mox(
 
     """
     import scipy as sp
+    import numpy as np
 
     p9_list = np.linspace(fiss_pu_frac * relmin, fiss_pu_frac, nbins)
     fp_list = []
     uo2 = {"iso": {"u235": u235, "u236": 1e-10, "u234": 1e-10, "u238": 100 - u235}}
     for pu239_frac in p9_list:
-        x = complib_fun(
+        x = comp_fun(
             state={"pu239_frac": pu239_frac, "pu_frac": pu_frac},
             density=density,
             uo2=uo2,
@@ -180,7 +179,7 @@ def sfcompo_guess_initial_mox(
         plt.legend(["relationship", "target"])
         change_plot_font_size(ax, 14)
 
-    return complib_fun(
+    return comp_fun(
         state={"pu239_frac": target_p9, "pu_frac": pu_frac},
         density=density,
         uo2=uo2,

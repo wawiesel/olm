@@ -399,7 +399,7 @@ def _raise_scalerte_error():
     raise ValueError(
         """
     The scalerte executable was not found. Do one of the following and rerun.
-    1. Set environment variable SCALE to a valid location of a SCALE install with
+    1. Set environment variable SCALE_DIR to a valid location of a SCALE install with
        scalerte at ${SCALE_DIR}/bin/scalerte. Do this by writing a command in the
        command line, for example: 
        "export SCALE_DIR=/Applications/SCALE-6.3.0.app/Contents/Resources"
@@ -498,11 +498,6 @@ def _fn_redirect(_type, **x):
     data except the _type."""
     fn_x = _get_function_handle(_type)
     return fn_x(**x)
-
-
-def pass_through(**x):
-    """Simple pass through used with the olm.json function specification."""
-    return x
 
 
 def run_command(command_line, check_return_code=True, echo=True, error_match="Error"):

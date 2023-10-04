@@ -1,10 +1,10 @@
-import os
 import pytest
-
-os.environ["SCALE_LOG_LEVEL"] = "30"
 import glob
 from pathlib import Path
-import scale.olm.internal as internal
+import os
+
+os.environ["SCALE_LOG_LEVEL"] = "30"
+import scale.olm as so
 
 
 def all_reactors():
@@ -19,7 +19,7 @@ def test_collection_generates_inputs(reactor):
     work_dir = str(Path(test_dir) / "_work")
     os.environ["OLM_WORK_DIR"] = work_dir
     try:
-        internal.create(
+        so.internal.create(
             config_file=reactor,
             generate=True,
             run=False,
@@ -29,7 +29,7 @@ def test_collection_generates_inputs(reactor):
             nprocs=1,
         )
     except:
-        assert False, f"Error generating {reactor} at {work_dir}"
+        assert False, f"Error generating {reactor} inputs at {work_dir}"
 
 
 if __name__ == "__main__":

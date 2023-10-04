@@ -3,10 +3,10 @@
         "name": "mox_bw15x15"
     },
     "generate": {
-        "_type": "scale.olm.generate:jt_expander",
+        "_type": "scale.olm.generate.root:jt_expander",
         "template": "model.inp",
         "comp": {
-            "_type": "scale.olm.complib:mox_multizone_2023",
+            "_type": "scale.olm.generate.comp:mox_multizone_2023",
             "density": 10.4,
             "zone_pins": [
                 104,
@@ -19,12 +19,12 @@
             "gd2o3_wtpct": 0.0
         },
         "static": {
-            "_type": "scale.olm.internal:pass_through",
+            "_type": "scale.olm.generate.static:pass_through",
             "addnux": 4,
             "xslib": "xn252"
         },
         "states": {
-            "_type": "scale.olm.generate:full_hypercube",
+            "_type": "scale.olm.generate.states:full_hypercube",
             "coolant_density": [
                 0.7135
             ],
@@ -48,7 +48,7 @@
             ]
         },
         "time": {
-            "_type": "scale.olm.generate:constpower_burndata",
+            "_type": "scale.olm.generate.time:constpower_burndata",
             "gwd_burnups": [
                 0.0,
                 0.04,

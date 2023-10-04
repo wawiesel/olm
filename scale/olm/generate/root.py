@@ -1,24 +1,21 @@
 """
 
-OLM generate functions take as input the definition of a set of SCALE input permutations
-to create. Each function should perform the following key actions:
+The OLM :obj:`root` module contains functions which manage the root expansion of 
+a generate block. Each root generation function should perform the following 
+key actions:
 
-1. create the input files on the file system
+1. traverse all other included data blocks and expand their data
+2. write this data to disk for each permutation
+3. generate and write a SCALE input file for each permutation
 2. return a dictionary containing the information on the written files
 
-The recommended ways to import the generate module is from :obj:`scale.olm` are as follows,
-from best to worst.
-
-.. code::
-
-    from scale.olm import create.generate # call functions as create.generate.f(x)
-    from scale.olm.create import generate # call functions as generate.f(x)
-    import scale.olm.create.generate      # call functions as scale.olm.create.generate.f(x)
+Once the pre-processing is complete, you are ready to execute the calculations
+using :obj:`scale.olm.run`.
 
 Return specification
 ^^^^^^^^^^^^^^^^^^^^
 
-The return value for any :obj:`scale.olm.generate` function should be a dictionary, 
+The return value for any :obj:`generate` function should be a dictionary, 
 defined as follows.
 
 .. code::
@@ -86,84 +83,6 @@ following code.
 See the :obj:`jt_expander` for a concrete function which follows this specification.
      
 """
-
-
-def constpower_burndata(state, gwd_burnups):
-    """Return a list of powers and times assuming constant burnup."""
-
-    specific_power = state["specific_power"]
-
-    # Calculate cumulative time to achieve each burnup.
-    burnups = [float(x) * 1e3 for x in gwd_burnups]
-    days = [burnup / float(specific_power) for burnup in burnups]
-
-    # Check warnings and errors.
-    if burnups[0] > 0:
-        raise ValueError("Burnup step 0.0 GWd/MTHM must be included.")
-
-    # Create the burndata block.
-    burndata = []
-    if len(days) > 1:
-        for i in range(len(days) - 1):
-            burndata.append({"power": specific_power, "burn": (days[i + 1] - days[i])})
-
-        # Add one final step so that we can interpolate to the final requested burnup.
-        burndata.append({"power": specific_power, "burn": (days[-1] - days[-2])})
-    else:
-        burndata.append({"power": specific_power, "burn": 0})
-
-    return {"burndata": burndata}
-
-
-def full_hypercube(**states):
-    """Generate all the permutations assuming a dense N-dimensional space."""
-    import numpy as np
-    import scale.olm.internal as internal
-
-    dims = []
-    axes = []
-    for dim in states:
-        axes.append(sorted(states[dim]))
-        internal.logger.debug(f"Processing dimension '{dim}'")
-        dims.append(dim)
-
-    permutations = []
-    grid = np.array(np.meshgrid(*axes)).T.reshape(-1, len(dims))
-    for x in grid:
-        y = dict()
-        for i in range(len(dims)):
-            y[dims[i]] = x[i]
-        internal.logger.debug(f"Generated permutation '{y}'")
-        permutations.append(y)
-
-    return permutations
-
-
-def scipy_interp(state_var: str, data_pairs, state, method: str = "linear"):
-    import scipy as sp
-    import scale.olm.internal as internal
-
-    x0 = state[state_var]
-    x_list = []
-    y_list = []
-    for xy in data_pairs:
-        x_list.append(xy[0])
-        y_list.append(xy[1])
-
-    y0 = None
-    if method.lower() == "pchip":
-        y0 = sp.interpolate.pchip_interpolate(x_list, y_list, x0)
-    elif method.lower() == "linear":
-        y0 = sp.interpolate.interp1d(x_list, y_list)(x0)
-    else:
-        raise ValueError(f"scipy_interp method={method} must be one of: PCHIP, LINEAR")
-
-    internal.logger.debug(
-        "scipy_interp for method={method}", x0=x0, y0=y0, x=x_list, y=y_list
-    )
-
-    return float(y0)
-
 
 # Prepend these type hints with _ to prevent showing in autocomplete as members of
 # this package.
@@ -236,15 +155,14 @@ def jt_expander(
               .. code::
 
                   comp = {
-                      "inner": {"_type": "scale.olm.complib:uo2_simple", ... },
-                      "outer": {"_type": "scale.olm.complib:uo2_simple", ... },
+                      "inner": {"_type": "scale.olm.generate.comp:uo2_simple", ... },
+                      "outer": {"_type": "scale.olm.generate.comp:uo2_simple", ... },
                  }
 
-              See :obj:`scale.olm.complib` functions such as
-              :obj:`scale.olm.complib:uo2_simple` for examples.
+              See :obj:`scale.olm.generate.comp` functions such as
+              :obj:`scale.olm.generate.comp:uo2_simple` for examples.
 
     """
-    import scale.olm.complib as complib
     import scale.olm.internal as internal
     import scale.olm.core as core
     from pathlib import Path

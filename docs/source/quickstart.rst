@@ -11,12 +11,12 @@ ending with a simple UOX ORIGEN reactor library.
 .. code::
 
     =shell
-    olm link mypin
+    olm link uox_quick
     end
 
     =origami
 
-    libs=[ mypin ]
+    libs=[ uox_quick ]
 
     fuelcomp{
         uox(fuel){ enrich=4.95 }
@@ -55,21 +55,21 @@ Initialize a new reactor library directory as follows.
 
 .. code::
 
-    olm init --variant=uox_quick mypin
+    olm init --variant=uox_quick
 
 You should see something similar to the following output.
 
 .. code:: text
 
-	2023-09-16 11:46:43 [info     ] Creating init dir              config_dir=mypin
-	2023-09-16 11:46:43 [info     ] Copying config from            destination=mypin/config.olm.json source=/Users/ww5/olm/scale/olm/init/uox_quick/config.olm.json
-	2023-09-16 11:46:43 [info     ] Copying files for variant=uox_quick destination=mypin/model.jt.inp source=/Users/ww5/olm/scale/olm/templates/model/triton/pin-uox.jt.inp
-	2023-09-16 11:46:43 [info     ] Copying files for variant=uox_quick destination=mypin/report.jt.rst source=/Users/ww5/olm/scale/olm/templates/report/scale-short.jt.rst
+	2023-09-16 11:46:43 [info     ] Creating init dir              config_dir=uox_quick
+	2023-09-16 11:46:43 [info     ] Copying config from            destination=uox_quick/config.olm.json source=/Users/ww5/olm/scale/olm/init/uox_quick/config.olm.json
+	2023-09-16 11:46:43 [info     ] Copying files for variant=uox_quick destination=uox_quick/model.jt.inp source=/Users/ww5/olm/scale/olm/templates/model/triton/pin-uox.jt.inp
+	2023-09-16 11:46:43 [info     ] Copying files for variant=uox_quick destination=uox_quick/report.jt.rst source=/Users/ww5/olm/scale/olm/templates/report/scale-short.jt.rst
 
 
 OLM uses templates for SCALE input files which are populated with data defined in special
-JSON files with extension :code:`.olm.json`. The :code:`data.olm.json` contains the data that defines
-the reactor library, such as the maximum burnup to consider or the enrichment range.
+JSON files with extension :code:`.olm.json`. The :code:`config.olm.json` contains the configuration
+data that defines the reactor library, such as the maximum burnup to consider or the enrichment range.
 The :code:`template.inp` contains a basic TRITON input template from which to generate all the
 permutations needed.
 
@@ -92,7 +92,7 @@ and the path to the configuration file, :code:`config.olm.json`.
 
 .. code:: shell
 
-    olm create -j6 mypin/config.olm.json
+    olm create -j6 uox_quick/config.olm.json
 
 You should see screen output as the calculation proceeds. All calculations happen in a
 working directory which is by default :code:`_work` in the same parent directory as
@@ -117,19 +117,19 @@ The recommended way to use this library is to first set the path variable.
 
 .. code:: text
 
-    export SCALE_OLM_PATH=$PWD/mypin/_work
+    export SCALE_OLM_PATH=$PWD/uox_quick/_work
 
 Then use a simple link command like so.
 
 .. code:: text
 
     =shell
-    olm link mypin
+    olm link uox_quick
     end
 
     =origami
 
-    libs=[ mypin ]
+    libs=[ uox_quick ]
 
     fuelcomp{
         uox(fuel){ enrich=4.95 }

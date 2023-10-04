@@ -3,20 +3,20 @@
         "name": "svea100-0"
     },
     "generate": {
-        "_type": "scale.olm.generate:jt_expander",
+        "_type": "scale.olm.generate.root:jt_expander",
         "template": "model.inp",
         "comp": {
-            "_type": "scale.olm.complib:uo2_simple",
+            "_type": "scale.olm.generate.comp:uo2_simple",
             "density": 10.36
         },
         "static": {
-            "_type": "scale.olm.internal:pass_through",
+            "_type": "scale.olm.generate.static:pass_through",
             "addnux": 4,
             "xslib": "xn252"
         },
         "dynamic": {
             "dancoff1": {
-                "_type": "scale.olm.generate:scipy_interp",
+                "_type": "scale.olm.generate.dynamic:scipy_interp",
                 "state_var": "coolant_density",
                 "data_pairs": [
                     [
@@ -43,7 +43,7 @@
                 "method": "linear"
             },
             "dancoff2": {
-                "_type": "scale.olm.generate:scipy_interp",
+                "_type": "scale.olm.generate.dynamic:scipy_interp",
                 "state_var": "coolant_density",
                 "data_pairs": [
                     [
@@ -71,7 +71,7 @@
             }
         },
         "states": {
-            "_type": "scale.olm.generate:full_hypercube",
+            "_type": "scale.olm.generate.states:full_hypercube",
             "coolant_density": [
                 0.1,
                 0.3,
@@ -99,7 +99,7 @@
             ]
         },
         "time": {
-            "_type": "scale.olm.generate:constpower_burndata",
+            "_type": "scale.olm.generate.time:constpower_burndata",
             "gwd_burnups": [
                 0.0,
                 0.025,

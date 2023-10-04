@@ -10,5 +10,3 @@ scale.olm.create
 	generate
 	run
 	assemble
-	check
-	report
