@@ -278,6 +278,7 @@ class LowOrderConsistency:
 
     @staticmethod
     def make_diff_plot(identifier, image, time, min_diff, max_diff, max_diff0):
+
         import matplotlib.pyplot as plt
         plt.rcParams.update({"font.size": 18})
         plt.figure()
@@ -311,11 +312,11 @@ class LowOrderConsistency:
 
         #plt.plot(
         #    np.asarray(time) / 86400.0,
-        #    100 * np.asarray(min_diff), 'k-')
+        #    100 * np.asarray(min_diff), 'r-')
 
         #plt.plot(
         #    np.asarray(time) / 86400.0,
-        #    100 * np.asarray(max_diff), 'k-')
+        #    100 * np.asarray(max_diff), 'g-')
 
         for perm in range(0, k):
             plt.plot(
@@ -332,6 +333,7 @@ class LowOrderConsistency:
 
     def info(self):
         import matplotlib.pyplot as plt
+        import sys
         # set number of permutations, timesteps, and nuclides for error array
         perms =len(self.lo_list) 
         timesteps=len(self.time_list) 
@@ -348,7 +350,7 @@ class LowOrderConsistency:
             info.test_pass = False
             return info
 
-        # Create a base comparison data structure to repeat for every permutation.
+        # Create a base comparison data structure        color = core.NuclideInventory._nuclide_color(identifier) to repeat for every permutation.
         internal.logger.info("Setting up detailed comparison structures...")
         info.nuclide_compare = dict()
         ntime = len(self.time_list)
@@ -357,12 +359,21 @@ class LowOrderConsistency:
             internal.logger.info(
                 f"Found nuclide={nuclide} at index {i} for detailed comparison"
             )
+            min_diff_initial = []
+            max_diff_initial = []
+         
+            for time in range(0, ntime):
+                min_diff_initial.append(sys.float_info.max)
+                max_diff_initial.append(-sys.float_info.max)
+
             info.nuclide_compare[nuclide] = {
                 "nuclide_index": i,
                 "nuclide": nuclide,
                 "time": self.time_list,
-                "max_diff": list(np.zeros(ntime)),
-                "min_diff": list(np.zeros(ntime)),
+                #"max_diff": list(np.zeros(ntime)),
+                "max_diff": list(max_diff_initial),
+                #"min_diff": list(np.zeros(ntime)),
+                "min_diff": list(min_diff_initial),
                 "perms": [],
                 "image": "",
             }
@@ -429,10 +440,11 @@ class LowOrderConsistency:
             i_nuclide = d["nuclide_index"]
             for k in range(len(self.lo_list)):
                 err = d["perms"][k]["(lo-hi)/max(|hi|)"]
+                internal.logger.info( " err ", err=str(err))
                 for j in range(len(self.time_list)):
                     d["max_diff"][j] = np.amax([err[j], d["max_diff"][j]])
                     d["min_diff"][j] = np.amin([err[j], d["min_diff"][j]])
-                    d["err_j"][j] = err[j]
+
             d["max_diff0"] = np.amax(
                 [np.absolute(d["max_diff"]), np.absolute(d["min_diff"])]
             )
@@ -445,14 +457,14 @@ class LowOrderConsistency:
                 n, image, d["time"], d["min_diff"], d["max_diff"], d["max_diff0"]
             )
 
-            internal.logger.info("time", image=str( d["time"]))
-
+            #internal.logger.info("time", image=str( d["time"]))
 
             image_s = self.check_path / (n + "-spag.png")
             LowOrderConsistency.make_spag_plot2(
-                nuclide_number, perm_num, image_s, d["time"], d["min_diff"], d["max_diff"], d["max_diff0"], err_array
+                n, nuclide_number, perm_num, image_s, d["time"], d["min_diff"], d["max_diff"], d["max_diff0"], err_array
             )
             nuclide_number =nuclide_number +1
+
         self.ahist = np.ndarray.flatten(self.ahist)
         self.rhist = np.ndarray.flatten(self.rhist)
         hist_image = self.check_path / "hist.png"
