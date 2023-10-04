@@ -1,6 +1,6 @@
 [project]
 name = "scale-olm"
-version = "0.4.1"
+version = "0.5.0"
 description='''ORIGEN Library Manager: A tool for building and managing ORIGEN reactor data libraries'''
 dependencies = ["click"]
 

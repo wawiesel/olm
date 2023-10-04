@@ -14,7 +14,7 @@ import scale.olm
 project = "OLM"
 copyright = "2023, UT-Batelle, LLC"
 author = "W. Wieselquist, S. Skutnik, S. Hart, B. Hiscox, G. Ilas"
-release = "0.2.0"
+release = "0.5.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -60,3 +60,20 @@ html_theme_path = [
 master_doc = "index"
 
 html_sidebars = {"**": ["globaltoc.html", "searchbox.html", "relations.html"]}
+
+# -- Options for LaTeX output ------------------------------------------------
+latex_elements = {
+    "sphinxsetup": "verbatimwithframe=false, VerbatimColor={gray}{0.95}",
+    "preamble": r"""\usepackage{tgcursor}""",
+}
+from sphinx.highlighting import PygmentsBridge
+from pygments.formatters.latex import LatexFormatter
+
+
+class CustomLatexFormatter(LatexFormatter):
+    def __init__(self, **options):
+        super(CustomLatexFormatter, self).__init__(**options)
+        self.verboptions = r"formatcom=\footnotesize"
+
+
+PygmentsBridge.latex_formatter = CustomLatexFormatter

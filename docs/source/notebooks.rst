@@ -1,24 +1,30 @@
 Notebooks
 ---------
 
+.. only:: html
 
-Analysis-oriented Notebooks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	Analysis-oriented Notebooks
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. toctree::
+	.. toctree::
 
-	notebooks/RunSfcompoCase.ipynb
+		notebooks/RunSfcompoCase.ipynb
 
 
-Class usage-oriented Notebooks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	Class usage-oriented Notebooks
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. toctree::
+	.. toctree::
 
-	notebooks/core_BurnupHistory.ipynb
-	notebooks/core_CompositionManager.ipynb
-	notebooks/core_ReactorLibrary.ipynb
-	notebooks/core_RelAbsHistogram.ipynb
-	notebooks/core_ScaleRunner.ipynb
-	notebooks/core_TemplateManager.ipynb
+		notebooks/core_BurnupHistory.ipynb
+		notebooks/core_CompositionManager.ipynb
+		notebooks/core_ReactorLibrary.ipynb
+		notebooks/core_RelAbsHistogram.ipynb
+		notebooks/core_ScaleRunner.ipynb
+		notebooks/core_TemplateManager.ipynb
 
+
+.. raw:: latex
+
+	Notebooks may not be included in PDF output currently due to limitations in
+	LaTeX where it throws errors due to unicode characters included in the notebook.

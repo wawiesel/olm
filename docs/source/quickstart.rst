@@ -1,7 +1,9 @@
 Quickstart
 ----------
 
-.. image:: quickstart.gif
+.. only:: html
+
+	.. image:: quickstart.gif
 
 This quickstart should take 5-10 minutes to complete, starting with a clean slate and
 ending with a simple UOX ORIGEN reactor library.
@@ -30,8 +32,8 @@ ending with a simple UOX ORIGEN reactor library.
 
     end
 
-.. note:: **Generating** a ORIGEN reactor library as shown here requires 
-		  SCALE 6.3.2 and later. **Using a UOX** ORIGEN reactor library in ORIGAMI 
+.. note:: **Generating** a ORIGEN reactor library as shown here requires
+		  SCALE 6.3.2 and later. **Using a UOX** ORIGEN reactor library in ORIGAMI
 		  as shown here only requires SCALE 6.2.4 at minimum. **Using a MOX** ORIGEN
 		  reactor library in ORIGAMI requires SCALE 7.0.
 
@@ -98,7 +100,7 @@ the configuration file. The :code:`-j6` specifies to use 6 processes to generate
 library.
 
 .. note:: To see more output you can set the environment variable :code:`SCALE_LOG_LEVEL`,
-		  where 10 is DEBUG, 20 is INFO, 30 is WARNING, 40 is ERROR only. See 
+		  where 10 is DEBUG, 20 is INFO, 30 is WARNING, 40 is ERROR only. See
 		  `structlog levels <https://docs.python.org/3/library/logging.html#logging-levels>`_
 		  for details.
 
