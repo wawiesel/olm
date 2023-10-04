@@ -279,7 +279,6 @@ class LowOrderConsistency:
     @staticmethod
     def make_diff_plot(identifier, image, time, min_diff, max_diff, max_diff0):
         import matplotlib.pyplot as plt
-
         plt.rcParams.update({"font.size": 18})
         plt.figure()
         color = core.NuclideInventory._nuclide_color(identifier)
@@ -295,7 +294,40 @@ class LowOrderConsistency:
         plt.legend(["{} (max error: {:.2f} %)".format(identifier, 100 * max_diff0)])
         plt.savefig(image, bbox_inches="tight")
 
+ 
+    def make_spag_plot2(n, k, image_s, time, min_diff, max_diff, max_diff0, err_array):
+
+        import matplotlib.pyplot as plt
+        plt.rcParams.update({"font.size": 18})
+        plt.figure()
+
+        plt.plot(
+            np.asarray(time) / 86400.0,
+            100 * np.asarray(min_diff), 'k-')
+
+        plt.plot(
+            np.asarray(time) / 86400.0,
+            100 * np.asarray(max_diff), 'k-')
+
+        for perm in range(0, k):
+            plt.plot(
+                np.asarray(time) / 86400.0,
+                100 * np.asarray(err_array[n][perm]), 'k-', alpha=0.2)
+
+
+        plt.xlabel("time (days)")
+        plt.ylabel("lo/hi-1 (%)")
+        #plt.legend(["{} (max error spag: {:.2f} %)".format(identifier, 100 * max_diff0)])
+        plt.savefig(image_s, bbox_inches="tight")
+
+
+
     def info(self):
+        import matplotlib.pyplot as plt
+        # set number of permutations, timesteps, and nuclides for error array
+        perms =len(self.lo_list) 
+        timesteps=len(self.time_list) 
+        nuclides=len(self.nuclide_compare) 
         info = CheckInfo()
         info.name = self.__class__.__name__
 
@@ -327,6 +359,7 @@ class LowOrderConsistency:
                 "image": "",
             }
 
+
         self.ahist = np.array(self.lo_list)
         self.rhist = np.array(self.lo_list)
         self.hi = np.array(self.hi_list)
@@ -348,10 +381,14 @@ class LowOrderConsistency:
                     (oden + self.eps0) / (tden + self.eps0) - 1.0
                 )
 
+        err_array =np.zeros ((nuclides,perms,timesteps))
         # Extract each nuclide time series.
         internal.logger.info("Calculating nuclide-wise comparisons...")
+
+        nuclide_number = 0
         for n in info.nuclide_compare:
             i_nuclide = info.nuclide_compare[n]["nuclide_index"]
+            perm_num = 0
             for k in range(len(self.lo_list)):
                 lo = self.lo[k, :, i_nuclide]
                 hi = self.hi[k, :, i_nuclide]
@@ -370,12 +407,16 @@ class LowOrderConsistency:
                         "(lo-hi)/max(|hi|)": list(err),
                     }
                 )
-                #### Add to spaghetti plot for each permutation, err vs. time
-                #### <INSERT HERE>
-                #### annotate each line the permutation index k but draw them very light
+
+
+                err_array[nuclide_number][perm_num] = err
+                perm_num = perm_num +1
+            nuclide_number = nuclide_number +1
+
 
         # Get maximum and min error across all permutations.
         internal.logger.info("Calculating max/min across permutations...")
+        nuclide_number = 0
         for n, d in info.nuclide_compare.items():
             i_nuclide = d["nuclide_index"]
             for k in range(len(self.lo_list)):
@@ -383,19 +424,27 @@ class LowOrderConsistency:
                 for j in range(len(self.time_list)):
                     d["max_diff"][j] = np.amax([err[j], d["max_diff"][j]])
                     d["min_diff"][j] = np.amin([err[j], d["min_diff"][j]])
-                #### Add to the plot here the max_diff and min_diff as darker lines.
+                    d["err_j"][j] = err[j]
             d["max_diff0"] = np.amax(
                 [np.absolute(d["max_diff"]), np.absolute(d["min_diff"])]
             )
             image = self.check_path / (n + "-diff.png")
             internal.logger.info(
-                "creating nuclide diff ", image=str(image.relative_to(self.work_path))
+                "creating nuclide diff", image=str(image.relative_to(self.work_path))
             )
             info.nuclide_compare[n]["image"] = str(image)
             LowOrderConsistency.make_diff_plot(
                 n, image, d["time"], d["min_diff"], d["max_diff"], d["max_diff0"]
             )
 
+            internal.logger.info("time", image=str( d["time"]))
+
+
+            image_s = self.check_path / (n + "-spag.png")
+            LowOrderConsistency.make_spag_plot2(
+                nuclide_number, perm_num, image_s, d["time"], d["min_diff"], d["max_diff"], d["max_diff0"], err_array
+            )
+            nuclide_number =nuclide_number +1
         self.ahist = np.ndarray.flatten(self.ahist)
         self.rhist = np.ndarray.flatten(self.rhist)
         hist_image = self.check_path / "hist.png"
@@ -427,6 +476,7 @@ class LowOrderConsistency:
         info.mean_rel_diff = np.mean(self.rhist)
         info.std_abs_diff = np.std(self.ahist)
         info.std_rel_diff = np.std(self.rhist)
+
 
         return info
 
