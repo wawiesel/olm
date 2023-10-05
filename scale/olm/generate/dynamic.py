@@ -1,4 +1,8 @@
 def scipy_interp(state_var: str, data_pairs, state, method: str = "linear"):
+    """
+    Interpolate data pairs to the value of a state variable.
+    """
+
     import scipy as sp
     import scale.olm.internal as internal
 

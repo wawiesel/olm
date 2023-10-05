@@ -14,15 +14,20 @@ def notebook_file(filename):
 def test_core_ScaleRunner(tb):
     """Test that we can execute the notebook.
 
-    Only run these notebook if the environment variable SCALE is set.
+    Only run these notebook if the environment variable SCALE_DIR is set.
 
     """
-    if "SCALE" in os.environ:
+    if "SCALE_DIR" in os.environ:
         tb.execute()
 
 
 @testbook(notebook_file("core_BurnupHistory.ipynb"), execute=True)
 def test_core_BurnupHistory(tb):
+    """Test that we can execute the notebook."""
+
+
+@testbook(notebook_file("core_CompositionManager.ipynb"), execute=True)
+def test_core_CompositionManager(tb):
     """Test that we can execute the notebook."""
 
 

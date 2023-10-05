@@ -12,31 +12,29 @@ any other parameters inside the input :code:`time` section.
 def constpower_burndata(state: dict[str, float], gwd_burnups: list[float]):
     """Return a list of powers and times assuming constant burnup.
 
-    .. todo::
+    TODO: Instead of returning burndata dictionary, just return the list. Make
+    this look less like a TRITON burndata specification.
 
-                Instead of returning burndata dictionary, just return the list. Make
-                this look less like a TRITON burndata specification.
+    Args:
 
-        Args:
+        state: state point data--only the "specific_power" key in MW/MTIHM units is
+               used
 
-                state: state point data--only the "specific_power" key in MW/MTIHM units is
-                       used
+        gwd_burnups: list of cumulative burnups in GWd/MTIHM
 
-                gwd_burnups: list of cumulative burnups in GWd/MTIHM
+    Returns:
 
-        Returns:
+        dictionary with single "burndata" key with values a list of power/burn pairs
+        as TRITON would expect for its burndata block
 
-                dictionary with single "burndata" key with values a list of power/burn pairs
-                as TRITON would expect for its burndata block
+    Examples:
 
-        Examples:
-
-                >>> import scale.olm as olm
-                >>> olm.generate.time.constpower_burndata(
-                ...     state={"specific_power": 40},
-                ...     gwd_burnups=[0,10,20]
-                ... )
-                {'burndata': [{'power': 40, 'burn': 250.0}, {'power': 40, 'burn': 250.0}, {'power': 40, 'burn': 250.0}]}
+        >>> import scale.olm as olm
+        >>> olm.generate.time.constpower_burndata(
+        ...     state={"specific_power": 40},
+        ...     gwd_burnups=[0,10,20]
+        ... )
+        {'burndata': [{'power': 40, 'burn': 250.0}, {'power': 40, 'burn': 250.0}, {'power': 40, 'burn': 250.0}]}
 
     """
 

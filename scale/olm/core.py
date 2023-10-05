@@ -10,11 +10,6 @@ some principles for the core.
 - The unit tests for a core class are at `testing/core_ClassName.test.py` file and should
   address edge cases and other behavior.
 - Classes can be further demonstrated in notebooks, `notebooks/core_ClassName_demo.ipynb`.
-
-.. code::
-
-   import scale.olm.core
-
 """
 import json
 from pathlib import Path

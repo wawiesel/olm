@@ -6,10 +6,24 @@ Package Reference: scale-olm
 
 .. toctree::
 	:hidden:
+	:caption: library creation
+	
+	modules/generate
+	modules/assemble
+	modules/run
+	modules/check
+	modules/report
 
-	modules/complib
-	modules/core
-	modules/create
+.. toctree::
+	:hidden:
+	:caption: library linking
+
 	modules/link
+
+.. toctree::
+	:hidden:
+	:caption: other
+	
+	modules/core
 	modules/contrib
-	modules/internal
+	
