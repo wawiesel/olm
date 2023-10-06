@@ -10,14 +10,22 @@ import scale.olm
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+import tomli
+from pathlib import Path
 
-project = "OLM"
+with open(Path(__file__).parent.parent.parent / "pyproject.toml", "rb") as f:
+    toml = tomli.load(f)
+
+project = toml["project"]["name"]
 copyright = "2023, UT-Batelle, LLC"
 author = "W. Wieselquist, S. Skutnik, S. Hart, B. Hiscox, G. Ilas"
-release = "0.5.0"
+release = toml["project"]["version"]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+
+# Add additional style.
+sys.path.append(os.path.abspath("_ext"))
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -26,8 +34,15 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.doctest",
     "sphinx.ext.viewcode",
-    "myst_nb",
+    "notfound.extension",
+    "sphinx_click.ext",
+    "click_extra.sphinx",
+    "myst_parser",
+    "sphinx_term.termynal",
+    "scale_highlighting",
 ]
+
+#
 # # Suppress sphinx doctest when some deps are not installed.
 # doctest_global_setup = '''
 # try:
@@ -45,17 +60,19 @@ add_module_names = False
 templates_path = ["_templates"]
 exclude_patterns = []
 
-
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 import sphinx_rtd_theme
 
 html_theme = "sphinx_rtd_theme"
-# html_static_path = ["_static"]
+html_static_path = ["_static"]
+html_css_files = ["css/termynal.css"]
+# html_js_files = ["js/custom.js"]
 html_theme_path = [
     "_themes",
 ]
+pygments_style = "default"
 
 master_doc = "index"
 
@@ -63,9 +80,13 @@ html_sidebars = {"**": ["globaltoc.html", "searchbox.html", "relations.html"]}
 
 # -- Options for LaTeX output ------------------------------------------------
 latex_elements = {
-    "sphinxsetup": "verbatimwithframe=false, VerbatimColor={gray}{0.95}",
-    "preamble": r"""\usepackage{tgcursor}""",
+    "sphinxsetup": """verbatimwithframe=true, VerbatimColor={gray}{0.95}""",
+    "preamble": r"""
+\usepackage{tgcursor}
+\catcode8=9 % ignore backspace
+""",
 }
+
 from sphinx.highlighting import PygmentsBridge
 from pygments.formatters.latex import LatexFormatter
 

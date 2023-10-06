@@ -2,12 +2,15 @@ from testbook import testbook
 from scale.olm.core import TempDir, ScaleRunner
 from pathlib import Path
 import os
+import sys
+
+this_dir = Path(__file__).parent.resolve()
+sys.path.append(this_dir)
 
 
 def notebook_file(filename):
-    p = Path(__file__)
-    p = p.parent.parent / "notebooks" / filename
-    return p
+    os.chdir(this_dir)
+    return filename
 
 
 @testbook(notebook_file("core_ScaleRunner.ipynb"), execute=False)
@@ -26,11 +29,11 @@ def test_core_BurnupHistory(tb):
     """Test that we can execute the notebook."""
 
 
-@testbook(notebook_file("core_CompositionManager.ipynb"), execute=True)
-def test_core_CompositionManager(tb):
+@testbook(notebook_file("core_TemplateManager.ipynb"), execute=True)
+def test_core_TemplateManager(tb):
     """Test that we can execute the notebook."""
 
 
-@testbook(notebook_file("core_TemplateManager.ipynb"), execute=True)
-def test_core_TemplateManager(tb):
+@testbook(notebook_file("core_CompositionManager.ipynb"), execute=True)
+def test_core_CompositionManager(tb):
     """Test that we can execute the notebook."""

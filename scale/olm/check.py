@@ -1,3 +1,6 @@
+"""
+Module for checking classes.
+"""
 import numpy as np
 from tqdm import tqdm, tqdm_notebook
 import scale.olm.core as core
@@ -76,6 +79,8 @@ class GridGradient:
             "eps0": "minimum value",
             "epsa": "absolute epsilon",
             "epsr": "relative epsilon",
+            "target_q1": "target for quality score 1",
+            "target_q2": "target for quality score 2",
         }
 
     @staticmethod
@@ -314,9 +319,6 @@ class LowOrderConsistency:
         import sys
 
         # set number of permutations, timesteps, and nuclides for error array
-        perms = len(self.lo_list)
-        timesteps = len(self.time_list)
-        nuclides = len(self.nuclide_compare)
         info = CheckInfo()
         info.name = self.__class__.__name__
 
@@ -369,7 +371,6 @@ class LowOrderConsistency:
                     (oden + self.eps0) / (tden + self.eps0) - 1.0
                 )
 
-        err_array = np.zeros((nuclides, perms, timesteps))
         # Extract each nuclide time series.
         internal.logger.info("Calculating nuclide-wise comparisons...")
 

@@ -1,6 +1,6 @@
-scale.olm.link
+scale.olm.internal
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: scale.olm.link
+.. automodule:: scale.olm.internal
     :members:
 

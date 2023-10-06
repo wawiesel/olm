@@ -46,9 +46,6 @@ import scale.olm.assemble as assemble
 import scale.olm.check as check
 import scale.olm.report as report
 
-# link library to SCALE
-import scale.olm.link as link
-
 # miscellaneous
 import scale.olm.contrib as contrib
 import scale.olm.internal as internal

@@ -1,13 +1,25 @@
+.. _user-home:
+
 Welcome to the ORIGEN Library Manager (OLM)
 ===========================================
 
 OLM is a command line utility that streamlines aspects of using the ORIGEN
-library to solve nuclide inventory generation problems.
+library to solve nuclide inventory generation problems. Install OLM using pip.
 
-.. code::
+.. only:: html
 
-    pip install scale-olm
+	.. termynal:: termynal:install
 
+		- value: pip install scale-olm
+		  type: input
+
+.. only:: latex
+
+	.. code:: console
+		
+		$ pip install scale-olm
+		
+------------------------------------------------------------------------------------------
 
 Overview
 --------
@@ -37,9 +49,10 @@ It has the following basic modes.
 
     Quickstart <quickstart.rst>
     Step-by-step <step-by-step.rst>
-    Notebooks <notebooks.rst>
-    For OLM Developers <developers.md>
-    Code Reference <code_reference.rst>
+    Configuration File <config-file.rst>
+    CLI Reference <cli_reference.rst>
+    API Reference <api_reference.rst>
+    Contributing <developers.md>
 
 
 Indices and tables

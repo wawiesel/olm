@@ -1,6 +1,6 @@
 [project]
 name = "scale-olm"
-version = "0.5.0"
+version = "0.6.0"
 description='''ORIGEN Library Manager: A tool for building and managing ORIGEN reactor data libraries'''
 dependencies = ["click"]
 
@@ -9,4 +9,4 @@ dependencies = ["click"]
 include = ['scale.*']
 
 [project.scripts]
-olm = "scale.olm.__main__:cli"
+olm = "scale.olm.__main__:olm"

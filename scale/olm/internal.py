@@ -1,8 +1,9 @@
 """
-This package directs results to other parts of the system. The command line
-interface should call functions from here and not implement any of its own
-logic. No click dependence should be here. This is mainly for unit testing.
-Nothing should depend on this package. It is a top level package.
+This :obj:`scale.olm.internal` module contains functions called from the click-based
+command line interface. This is so __main__ contains little logic. There should be no
+click dependence here--it should all be in __main__.
+
+------------------------------------------------------------------------------------------
 """
 
 import pathlib
@@ -78,32 +79,65 @@ def copy_doc(
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             return func(*args, **kwargs)
 
-        wrapper.__doc__ = copy_func.__doc__
+        # Here we make sure we remove anything after \f when we copy the docstring
+        # as per click rules. This is so the command line docs and the HTML docs
+        # for the CLI are the same. The API docs will use the local docstrings
+        # and have everything, including what follows \f.
+        s = copy_func.__doc__
+        i = s.find("\f")
+        if i >= 0:
+            s = s[0:i]
+        wrapper.__doc__ = s
         return wrapper
 
     return decorator
 
 
-def create(config_file, generate, run, assemble, check, report, nprocs):
-    # Note this docstring should appear in the command line interface help message so
-    # do not add additional information that would not be valid for the CLI.
+def create(
+    config_file: str,
+    generate: bool,
+    run: bool,
+    assemble: bool,
+    check: bool,
+    report: bool,
+    nprocs: int,
+):
     """Create ORIGEN reactor libraries!
 
     The create command manages an entire ORIGEN reactor library creation sequence
     which goes through these stages.
 
-        1. `generate` the various inputs that cover the desired input space
+        1. **generate** the various inputs that cover the desired input space
 
-        2. `run` the inputs with SCALE and generate individual libraries for each point in space
+        2. **run** the inputs with SCALE and generate individual libraries for each point in space
 
-        3. `assemble` the individual libraries into an ORIGEN reactor library that can interpolate throughout the space
+        3. **assemble** the individual libraries into an ORIGEN reactor library that can interpolate throughout the space
 
-        4. `check` the quality of the ORIGEN reactor library
+        4. **check** the quality of the ORIGEN reactor library
 
-        5. `report` the entire creation process in HTML or PDF
+        5. **report** the entire creation process in HTML or PDF
 
     The linchpin of the process is a configuration file which must always be passed
     to the command. This file defines the input for each stage in JSON format.
+
+    \f
+    See :ref:`config-file` for details.
+
+    Args:
+        config_dir: Directory where configuration files should be written.
+
+        generate: Whether to generate.
+
+        run: Whether to run.
+
+        assemble: Whether to assemble.
+
+        check: Whether to check.
+
+        report: Whether to report.
+
+        nprocs: Number of processess to use.
+
     """
     logger.debug("Entering create with args", **locals())
 
@@ -157,7 +191,7 @@ def create(config_file, generate, run, assemble, check, report, nprocs):
 
 
 def _get_init_variants():
-    init_path = Path(__file__).parent / "init"
+    init_path = Path(__file__).parent / "variants"
     logger.debug("Initialization variants located", init_path=init_path)
     variants = [
         str(Path(v).relative_to(init_path)) for v in glob.glob(str(init_path / "*"))
@@ -195,19 +229,18 @@ def _write_init_variant(variant, config_dir):
                 shutil.copyfile(resolved_path, config_path / file)
 
 
-def init(config_dir, variant, list_variants):
-    # Note this docstring should appear in the command line interface help message so
-    # do not add additional information that would not be valid for the CLI.
+def init(config_dir: str, variant: str, list_: bool):
+    """Initialize a new ORIGEN reactor library configuration.
+    \f
+    Args:
+        config_dir: Directory where configuration files should be written.
+
+        variant: Initialization variant to write.
+
+        list\_: Just list available variants.
+
     """
-    Initialize a new ORIGEN reactor library configuration.
-
-    Choose from one of the variants when you pass the --list option.
-
-        olm init --variant mox_quick
-
-    By default creates a directory called `mox_quick` with the files.
-    """
-    if list_variants or variant == None:
+    if list_ or variant == None:
         init_path, variants = _get_init_variants()
         i = 0
         for v in variants:
@@ -271,7 +304,10 @@ def _make_mini_arpdatatxt(dry_run, registry, dest, replace=False):
                 logger.debug(f"Not copying {file} to {d} because --dry-run")
             else:
                 logger.debug(f"Copying {file} to {d}")
-                shutil.copy(file, d)
+                try:
+                    shutil.copy(file, d)
+                except shutil.SameFileError:
+                    pass
 
 
 def _update_registry(registry, path):
@@ -329,14 +365,22 @@ def _create_registry(paths, env):
     return registry
 
 
-def install(work_dir, destination, overwrite=False, dry_run=False):
-    # Note this docstring should appear in the command line interface help message so
-    # do not add additional information that would not be valid for the CLI.
+def install(work_dir: str, dest: str, overwrite: bool = False, dry_run: bool = False):
     """Install ORIGEN reactor libraries!
 
     After creating a new ORIGEN reactor library, this command installs it to
-    a destination on the file system. After this, the work directory can be
+    a dest on the file system. After this, the work directory can be
     deleted.
+
+    \f
+    Args:
+        work_dir: Directory where ORIGEN library files are.
+
+        dest: Destination directory to install the reactor libraries.
+
+        overwrite: Overwrite at the destination.
+
+        dry_run: Do not move any files.
 
     """
     logger.debug("Entering install with args", **locals())
@@ -346,17 +390,17 @@ def install(work_dir, destination, overwrite=False, dry_run=False):
     arpdata_txt = work_path / "arpdata.txt"
     arplibs = work_path / "arplibs"
 
-    # Check the destination.
-    if destination == None:
+    # Check the dest.
+    if dest == None:
         for home in ["HOME", "HOMEDIR"]:
             if home in os.environ:
-                destination = Path(os.environ[home]) / ".olm"
+                dest = Path(os.environ[home]) / ".olm"
                 break
     else:
-        destination = Path(destination)
+        dest = Path(dest)
 
     # Determine if there is anything existing.
-    registry0 = _create_registry(paths=[destination], env=False)
+    registry0 = _create_registry(paths=[dest], env=False)
 
     # Checks for the potential install.
     blocks = core.ArpInfo.parse_arpdata(arpdata_txt)
@@ -367,20 +411,20 @@ def install(work_dir, destination, overwrite=False, dry_run=False):
         )
     name = list(blocks.keys())[0]
     if name in registry0:
-        install_arpdata_txt = destination / "arpdata.txt"
+        install_arpdata_txt = dest / "arpdata.txt"
         if overwrite:
             logger.debug(f"Overwriting {name} in {install_arpdata_txt}!")
             for lib in registry0[name].lib_list:
-                file = destination / "arplibs" / lib
+                file = dest / "arplibs" / lib
                 if not dry_run:
                     if file.exists():
                         os.remove(file)
                 logger.debug(f"Deleting file {file} because overwrite of {name}!")
         else:
             raise ValueError(
-                f"New library name={name} already exists in destination {install_arpdata_txt}! Will not overwrite!"
+                f"New library name={name} already exists in dest {install_arpdata_txt}! Will not overwrite!"
             )
-    logger.info("Installing ", model=name, destination=str(destination))
+    logger.info("Installing ", model=name, dest=str(dest))
 
     # Add new/updated one to the registry.
     arp_info = core.ArpInfo()
@@ -389,10 +433,10 @@ def install(work_dir, destination, overwrite=False, dry_run=False):
     arp_info.arplibs_dir = arplibs.resolve()
     registry0[name] = arp_info
 
-    # Create a new "mini" arpdata.txt in the destination that has all the previous libraries
+    # Create a new "mini" arpdata.txt in the dest that has all the previous libraries
     # plus this new libraries.
-    destination.mkdir(parents=True, exist_ok=True)
-    _make_mini_arpdatatxt(dry_run, registry0, destination, replace=True)
+    dest.mkdir(parents=True, exist_ok=True)
+    _make_mini_arpdatatxt(dry_run, registry0, dest, replace=True)
 
 
 def _raise_scalerte_error():
@@ -500,8 +544,27 @@ def _fn_redirect(_type, **x):
     return fn_x(**x)
 
 
-def run_command(command_line, check_return_code=True, echo=True, error_match="Error"):
-    """Run a command as a subprocess. Throw on bad error code or finding 'Error' in the output."""
+def run_command(
+    command_line: str,
+    check_return_code: bool = True,
+    echo: bool = True,
+    error_match: str = "Error",
+):
+    """Run a command as a subprocess.
+
+    Throw on bad error code or finding 'Error' in the output.
+
+    \f
+    Args:
+        command_line: Command line to run.
+
+        check_return_code: Whether to check the return code.
+
+        echo: Whether to echo STDOUT and STDERR.
+
+        error_match: String to match to decide if there are errors.
+
+    """
     logger.info("Running external ", command_line=command_line)
     p = subprocess.Popen(
         command_line,
@@ -628,3 +691,96 @@ clean:
         "runs": runs,
         "total_runtime_hrs": _runtime_in_hours(total_runtime),
     }
+
+
+def link(
+    names: list[str],
+    paths: list[str],
+    env: bool,
+    dest: str,
+    show: bool,
+    overwrite: bool,
+    dry_run: bool,
+):
+    """Link custom ORIGEN reactor libraries to a SCALE calculation.
+    \f
+    Args:
+        names: Names of libraries to link.
+
+        paths: List of paths to prepend to SCALE_OLM_PATH.
+
+        env: Whether to use the environment or not.
+
+        dest: Destination directory to link the reactor libraries.
+
+        show: Just show the available libraries.
+
+        overwrite: Overwrite at the destination.
+
+        dry_run: Do not move any files.
+
+    """
+
+    # Read all available libraries.
+    registry0 = _create_registry(paths, env)
+    if show:
+        print("{:40s} {}".format("name", "path"))
+        for name in registry0:
+            print("{:40s} {}".format(name, registry0[name].path))
+
+    # Copy into reduced registry of only things we want.
+    registry = dict()
+    for name in names:
+        if not name in registry0:
+            raise ValueError("name={} not found in provided paths!".format(name))
+
+        registry[name] = registry0[name]
+
+    if not show:
+        _make_mini_arpdatatxt(dry_run, registry, dest, replace=overwrite)
+
+    return 0
+
+
+def check(archive_file: str, output_file: str, text_sequence: list[str], nprocs: int):
+    """Run a sequence of checks on ORIGEN archives.
+
+    \f
+    Args:
+        archive_file: Input archive file to check.
+
+        output_file: Output file to write test results.
+
+        text_sequence: List of strings, each one the JSON string of a test.
+
+        nprocs: Number of simultaneous processes to use.
+
+    """
+    import scale.olm.check
+
+    sequence = []
+    for s in text_sequence:
+        sequence.append(json.loads(s))
+
+    # Back out what the sequencer expects.
+    x = archive_file.rsplit(":")
+    if len(x) > 1 and x[0].endswith("arpdata.txt"):
+        name = x[1]
+        work_dir = Path(x[0]).parent
+    else:
+        if not archive_file.endswith(".arc.h5"):
+            logger.error(
+                "Libraries in HDF5 archive format must end in .arc.h5 but found",
+                archive_file=archive_file,
+            )
+            return
+        name = re.sub("\.arc\.h5$", "", archive_file)
+        work_dir = Path(archive_file).parent
+
+    output = scale.olm.check.sequencer(
+        sequence, _model={"name": name}, _env={"work_dir": work_dir, "nprocs": nprocs}
+    )
+
+    logger.info(f"Writing {output_file} ...")
+    with open(output_file, "w") as f:
+        f.write(json.dumps(output, indent=4))

@@ -1,4 +1,4 @@
-# For Developers
+# Contributing
 
 ```{include} ../../README.md
 ```

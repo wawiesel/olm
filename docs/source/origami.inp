@@ -1,0 +1,26 @@
+'
+' Demonstration of linking new library in ORIGAMI.
+' 
+'            origami.inp
+'
+=shell
+olm link uox_quick
+end
+
+=origami
+
+libs=[ uox_quick ]
+
+fuelcomp{
+	uox(fuel){ enrich=4.95 }
+	mix(1){ comps[fuel=100] }
+}
+
+modz = [ 0.74 ]
+pz = [ 1.0 ]
+
+hist[
+  cycle{ power=40 burn=1000 nlib=10 }
+]
+
+end

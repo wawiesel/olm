@@ -9,5 +9,5 @@ pip install --editable .
 
 echo running tests
 
-pytest .
+pytest -n 6 .
 
