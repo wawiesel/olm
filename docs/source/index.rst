@@ -49,7 +49,7 @@ It has the following basic modes.
 
     Quickstart <quickstart.rst>
     Step-by-step <step-by-step.rst>
-    Configuration File <config-file.rst>
+    config.olm.json <config-file.rst>
     CLI Reference <cli_reference.rst>
     API Reference <api_reference.rst>
     Contributing <developers.md>

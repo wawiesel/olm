@@ -8,6 +8,15 @@ import sys
 # For autodoc.
 import scale.olm
 
+# For local modules.
+sys.path.append(os.path.abspath("."))
+
+# Rebuilds schema files.
+import create.schema.regen
+
+create.schema.regen.go()
+
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import tomli
@@ -40,6 +49,8 @@ extensions = [
     "myst_parser",
     "sphinx_term.termynal",
     "scale_highlighting",
+    "sphinx-jsonschema",
+    "sphinx_toolbox.collapse",
 ]
 
 #
@@ -67,7 +78,7 @@ import sphinx_rtd_theme
 
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
-html_css_files = ["css/termynal.css"]
+html_css_files = ["css/termynal.css", "css/custom.css"]
 # html_js_files = ["js/custom.js"]
 html_theme_path = [
     "_themes",

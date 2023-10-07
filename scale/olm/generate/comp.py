@@ -6,11 +6,36 @@ be used interchangeably (somewhat).
 
 """
 import scale.olm.core as core
+import scale.olm.internal as internal
 import numpy as np
 import math
 from pathlib import Path
 import json
 import copy
+import pydantic
+from typing import Optional, Dict, List, Literal
+
+__all__ = [
+    "uo2_simple",
+    "uo2_vera",
+    "uo2_nuregcr5625",
+    "mox_ornltm2003_2",
+    "mox_multizone_2023",
+]
+
+
+# Data model definitions.
+class StateWithEnrichment(pydantic.BaseModel):
+    enrichment: float
+
+
+class StateWithPuFracs(pydantic.BaseModel):
+    pu_frac: float
+    pu239_frac: float
+
+
+class IsotopicWts(pydantic.BaseModel):
+    iso: Dict[str, float]
 
 
 def _iso_uo2(u234, u235, u236):
@@ -23,7 +48,27 @@ def _iso_uo2(u234, u235, u236):
     }
 
 
-def uo2_simple(state, density=0):
+# -----------------------------------------------------------------------------------------
+_TYPE_UO2_SIMPLE = "scale.olm.generate.comp:uo2_simple"
+
+
+def _schema_uo2_simple(with_state: bool = False):
+    _schema = internal._infer_schema(_TYPE_UO2_SIMPLE, with_state=with_state)
+    return _schema
+
+
+def _test_args_uo2_simple(with_state: bool = False):
+    args = {"_type": _TYPE_UO2_SIMPLE, "state": {"enrichment": 4.95}}
+    if not with_state:
+        args.pop("state")
+    return args
+
+
+def uo2_simple(
+    state: StateWithEnrichment,
+    density: Optional[float] = 0.0,
+    _type: Literal[_TYPE_UO2_SIMPLE] = None,
+):
     """Example of a simple enrichment formula."""
     enrichment = float(state["enrichment"])
     if enrichment > 100:
@@ -35,7 +80,27 @@ def uo2_simple(state, density=0):
     }
 
 
-def uo2_vera(state, density=0):
+# -----------------------------------------------------------------------------------------
+_TYPE_UO2_VERA = "scale.olm.generate.comp:uo2_vera"
+
+
+def _schema_uo2_vera(with_state: bool = False):
+    _schema = internal._infer_schema(_TYPE_UO2_VERA, with_state=with_state)
+    return _schema
+
+
+def _test_args_uo2_vera(with_state: bool = False):
+    args = {"_type": _TYPE_UO2_VERA, "state": {"enrichment": 4.95}}
+    if not with_state:
+        args.pop("state")
+    return args
+
+
+def uo2_vera(
+    state: StateWithEnrichment,
+    density: float = 0.0,
+    _type: Literal[_TYPE_UO2_VERA] = None,
+):
     """Enrichment formula from:
     Andrew T. Godfrey. VERA core physics benchmark progression problem specifications.
     Consortium for Advanced Simulation of LWRs, 2014.
@@ -58,7 +123,27 @@ def uo2_vera(state, density=0):
     }
 
 
-def uo2_nuregcr5625(state, density=0):
+# -----------------------------------------------------------------------------------------
+_TYPE_UO2_NUREGCR5625 = "scale.olm.generate.comp:uo2_nuregcr5625"
+
+
+def _schema_uo2_nuregcr5625(with_state: bool = False):
+    _schema = internal._infer_schema(_TYPE_UO2_NUREGCR5625, with_state=with_state)
+    return _schema
+
+
+def _test_args_uo2_nuregcr5625(with_state: bool = False):
+    args = {"_type": _TYPE_UO2_NUREGCR5625, "state": {"enrichment": 4.95}}
+    if not with_state:
+        args.pop("state")
+    return args
+
+
+def uo2_nuregcr5625(
+    state: StateWithEnrichment,
+    density: Optional[float] = 0.0,
+    _type: Literal[_TYPE_UO2_NUREGCR5625] = None,
+):
     """Enrichment formula from NUREG/CR-5625."""
 
     enrichment = float(state["enrichment"])
@@ -80,7 +165,32 @@ def uo2_nuregcr5625(state, density=0):
     }
 
 
-def mox_ornltm2003_2(state, density, uo2=None, am241=0):
+# -----------------------------------------------------------------------------------------
+_TYPE_MOX_ORNLTM2003_2 = "scale.olm.generate.comp:mox_ornltm2003_2"
+
+
+def _schema_mox_ornltm2003_2(with_state: bool = False):
+    _schema = internal._infer_schema(_TYPE_MOX_ORNLTM2003_2, with_state=with_state)
+    return _schema
+
+
+def _test_args_mox_ornltm2003_2(with_state: bool = False):
+    args = {
+        "_type": _TYPE_MOX_ORNLTM2003_2,
+        "state": {"pu239_frac": 70.0, "pu_frac": 5.0},
+    }
+    if not with_state:
+        args.pop("state")
+    return args
+
+
+def mox_ornltm2003_2(
+    state: StateWithPuFracs,
+    density: Optional[float] = 0.0,
+    uo2: Optional[IsotopicWts] = None,
+    am241: Optional[float] = 0.0,
+    _type: Literal[_TYPE_MOX_ORNLTM2003_2] = None,
+):
     """MOX isotopic vector calculation from ORNL/TM-2003/2, Sect. 3.2.2.1"""
 
     # Set to something small to avoid unnecessary extra logic below.
@@ -133,16 +243,38 @@ def mox_ornltm2003_2(state, density, uo2=None, am241=0):
     return comp
 
 
+# -----------------------------------------------------------------------------------------
+_TYPE_MOX_MULTIZONE_2023 = "scale.olm.generate.comp:mox_multizone_2023"
+
+
+def _schema_mox_multizone_2023(with_state: bool = False):
+    _schema = internal._infer_schema(_TYPE_MOX_MULTIZONE_2023, with_state=with_state)
+    return _schema
+
+
+def _test_args_mox_multizone_2023(with_state: bool = False):
+    args = {
+        "_type": _TYPE_MOX_MULTIZONE_2023,
+        "state": {"pu239_frac": 70.0, "pu_frac": 5.0},
+        "zone_names": "PWR2016",
+        "zone_pins": [81, 9, 9, 16],
+    }
+    if not with_state:
+        args.pop("state")
+    return args
+
+
 def mox_multizone_2023(
-    state,
-    zone_names,
-    zone_pins,
-    density,
-    uo2=None,
-    zone_pu_fracs=None,
-    am241=0.0,
-    gd2o3_pins=0,
-    gd2o3_wtpct=0.0,
+    state: StateWithPuFracs,
+    zone_names: List[str],
+    zone_pins: List[int],
+    density: Optional[float] = 0.0,
+    uo2: Optional[IsotopicWts] = None,
+    zone_pu_fracs: Optional[List[float]] = None,
+    am241: Optional[float] = 0.0,
+    gd2o3_pins: Optional[int] = 0,
+    gd2o3_wtpct: Optional[float] = 0.0,
+    _type: Literal[_TYPE_MOX_MULTIZONE_2023] = None,
 ):
     """Create compositions for a zoned MOX assembly with a desired average plutonium fraction.
 

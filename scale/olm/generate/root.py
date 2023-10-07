@@ -86,14 +86,45 @@ See the :obj:`jt_expander` for a concrete function which follows this specificat
 
 # Prepend these type hints with _ to prevent showing in autocomplete as members of
 # this package.
-from typing import Union as _Union
+from typing import Union as _Union, Any, Literal
+import scale.olm.internal as internal
 
-_Static = dict[str, any]
-_States = dict[str, any]
-_OneComp = dict[str, any]
+__all__ = ["jt_expander"]
+
+_TYPE_JT_EXPANDER = "scale.olm.generate.root:jt_expander"
+
+_Static = dict[str, Any]
+_States = dict[str, Any]
+_OneComp = dict[str, Any]
+_OneDynamic = dict[str, Any]
 _NestedComp = dict[str, _OneComp]
-_Time = dict[str, any]
-_Dynamic = dict[str, any]
+_Time = dict[str, Any]
+_Dynamic = dict[str, _OneDynamic]
+
+
+def _schema_jt_expander(with_state: bool = False):
+    _schema = internal._infer_schema(_TYPE_JT_EXPANDER, with_state=with_state)
+    return _schema
+
+
+def _test_args_jt_expander(with_state: bool = False):
+    import scale.olm.generate as generate
+
+    comp = {"fuel": generate.comp._test_args_uo2_simple()}
+    static = generate.static._test_args_pass_through()
+    states = generate.states._test_args_full_hypercube()
+    time = generate.time._test_args_constpower_burndata()
+    dynamic = {"z1": generate.dynamic._test_args_scipy_interp()}
+
+    return {
+        "_type": _TYPE_JT_EXPANDER,
+        "template": "",
+        "static": static,
+        "states": states,
+        "comp": comp,
+        "time": time,
+        "dynamic": dynamic,
+    }
 
 
 def jt_expander(
@@ -105,6 +136,7 @@ def jt_expander(
     _model={},
     _env={},
     dynamic: _Union[_Dynamic, None] = None,
+    _type: Literal[_TYPE_JT_EXPANDER] = None,
 ):
     """Expand a template with the result of user-specified operations.
 
@@ -182,7 +214,8 @@ def jt_expander(
 
     # Useful paths.
     if not "work_dir" in _env:
-        work_path = Path.cwd() / "_work"
+        td = core.TempDir()
+        work_path = td.path / "_work"
     else:
         work_path = Path(_env["work_dir"])
     generate_path = work_path / "perms"
@@ -192,8 +225,17 @@ def jt_expander(
         template_path = template
     else:
         template_path = Path(_env["config_file"]).parent / template
-    with open(template_path, "r") as f:
-        template_text = f.read()
+
+    if template_path == "":
+        internal.logger.warning(
+            "Template file not specified. Assuming template showing all data."
+        )
+        template_text = ""
+    else:
+        with open(template_path, "r") as f:
+            template_text = f.read()
+
+    print(template_text)
 
     internal.logger.info(
         "Expanding into permutations", template=str(template_path), nperms=len(states2)
@@ -238,7 +280,6 @@ def jt_expander(
         input_path = generate_path / data_hash / ("model_" + data_hash[-6:] + ".inp")
         input_file = str(input_path.relative_to(work_path))
         data["input_file"] = input_file
-        data["file"] = data["input_file"]  # deprecated alias
         data_path = input_path.parent / "data.olm.json"
         i += 1
         data_file = str(data_path.relative_to(work_path))
@@ -253,9 +294,16 @@ def jt_expander(
 
         # Expand the template and write the input to disk.
         internal.logger.info("Writing permutation", index=i, input_file=input_file)
-        filled_text = core.TemplateManager.expand_text(
-            template_text, data, src_path=str(template_path)
-        )
+        if template_text != "":
+            filled_text = core.TemplateManager.expand_text(
+                template_text, data, src_path=str(template_path)
+            )
+        else:
+            internal.logger.warning(
+                "Template text empty--using tree_print to fill input."
+            )
+            filled_text = core.TemplateManager._tree_print(data)
+
         with open(input_path, "w") as f:
             f.write(filled_text)
 
@@ -264,4 +312,4 @@ def jt_expander(
 
     internal.logger.info(f"Finished generating with scale.olm.jt_expander!")
 
-    return {"work_dir": _env["work_dir"], "perms": perms2, "static": static2}
+    return {"work_dir": str(work_path), "perms": perms2, "static": static2}

@@ -1,0 +1,58 @@
+{
+    "properties": {
+        "fuel_type": {
+            "title": "Fuel Type",
+            "type": "string"
+        },
+        "dim_map": {
+            "title": "Dim Map",
+            "type": "object"
+        },
+        "keep_every": {
+            "title": "Keep Every",
+            "type": "integer"
+        },
+        "dry_run": {
+            "default": null,
+            "title": "Dry Run",
+            "type": "boolean"
+        },
+        "_type": {
+            "const": "scale.olm.assemble:arpdata_txt",
+            "title": "Olm Redirect Type"
+        }
+    },
+    "required": [
+        "fuel_type",
+        "dim_map",
+        "keep_every",
+        "_type"
+    ],
+    "title": "arpdata_txt",
+    "type": "object",
+    "$$description": [
+        "Specified with :code:`\"_type\": \"scale.olm.assemble:arpdata_txt\"` in **config.olm.json**.",
+        "",
+        ".. collapse:: Example input in config.olm.json/assemble",
+        "",
+        "    .. code:: JSON",
+        "",
+        "",
+        "        {",
+        "            \"_type\": \"scale.olm.assemble:arpdata_txt\",",
+        "            \"dry_run\": false,",
+        "            \"fuel_type\": \"UOX\",",
+        "            \"dim_map\": {",
+        "                \"mod_dens\": \"mod_dens\",",
+        "                \"enrichment\": \"enrichment\"",
+        "            }",
+        "        }",
+        "",
+        ".. only::latex",
+        "",
+        "    END Example input in config.olm.json/assemble",
+        "",
+        "",
+        "See also: :obj:`scale.olm.assemble.arpdata_txt`"
+    ]
+}

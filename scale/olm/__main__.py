@@ -362,3 +362,74 @@ def olm_check(**kwargs):
 
 
 olm.add_command(olm_check)
+
+
+# ---------------------------------------------------------------------------------------
+# OLM SCHEMA
+# ---------------------------------------------------------------------------------------
+#
+# This is the entry point to run OLM SCHEMA command.
+#
+@click.command(
+    name="schema",
+    no_args_is_help=True,
+    epilog="""
+
+**Usage**
+
+Generate the schema for a specific :code:`_type` that could appear in a config.olm.json file.
+
+.. code:: console
+
+  \b
+  $ olm schema 'scale.olm.generate.comp:uo2_simple'
+
+""",
+)
+@click.argument("_type", type=str)
+@click.option(
+    "--color/--nocolor",
+    is_flag=True,
+    default=True,
+    help="Output in color.",
+)
+@click.option(
+    "--description/--nodescription",
+    is_flag=True,
+    default=False,
+    help="Output description (mainly intended for sphinx docs).",
+)
+@click.option(
+    "--infer",
+    is_flag=True,
+    default=False,
+    help="Infer the schema.",
+)
+@click.option(
+    "--state",
+    is_flag=True,
+    default=False,
+    help="Infer the schema.",
+)
+@internal.copy_doc(internal.schema)
+def olm_schema(**kwargs):
+    try:
+        from pygments import highlight, lexers, formatters
+        import json
+
+        d = internal.schema(**kwargs)
+        formatted_json = json.dumps(d, indent=4)
+        if kwargs["color"]:
+            colorful_json = highlight(
+                formatted_json, lexers.JsonLexer(), formatters.TerminalFormatter()
+            )
+            click.echo(colorful_json)
+        else:
+            print(formatted_json)
+
+    except ValueError as ve:
+        internal.logger.error(str(ve))
+        return str(ve)
+
+
+olm.add_command(olm_schema)

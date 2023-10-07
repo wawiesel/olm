@@ -2,9 +2,29 @@ from pathlib import Path
 import scale.olm.internal as internal
 import scale.olm.core as core
 import json
+from typing import Literal
+
+__all__ = ["rst2pdf"]
+
+_TYPE_RST2PDF = "scale.olm.report:rst2pdf"
 
 
-def rst2pdf(template, _model, _env):
+def _schema_rst2pdf(with_state: bool = False):
+    _schema = internal._infer_schema(_TYPE_RST2PDF, with_state=with_state)
+    return _schema
+
+
+def _test_args_rst2pdf(with_state: bool = False):
+    return {"_type": _TYPE_RST2PDF, "template": "report.jt.rst"}
+
+
+def rst2pdf(
+    template: str = "",
+    _model: dict = {},
+    _env: dict = {},
+    dry_run: bool = False,
+    _type: Literal[_TYPE_RST2PDF] = None,
+):
     """Generate a report using rst2pdf.
 
     Report templates are provided in restructured text. This function
@@ -17,6 +37,8 @@ def rst2pdf(template, _model, _env):
         4. check
 
     """
+    if dry_run:
+        return {}
 
     # Load the template file.
     template_path = Path(_env["config_file"]).parent / template

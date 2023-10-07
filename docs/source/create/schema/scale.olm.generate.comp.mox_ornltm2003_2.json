@@ -1,0 +1,174 @@
+{
+    "$defs": {
+        "IsotopicWts": {
+            "properties": {
+                "iso": {
+                    "additionalProperties": {
+                        "type": "number"
+                    },
+                    "title": "Iso",
+                    "type": "object"
+                }
+            },
+            "required": [
+                "iso"
+            ],
+            "title": "IsotopicWts",
+            "type": "object"
+        }
+    },
+    "properties": {
+        "density": {
+            "anyOf": [
+                {
+                    "type": "number"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "default": null,
+            "title": "Density"
+        },
+        "uo2": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/IsotopicWts"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "default": null
+        },
+        "am241": {
+            "anyOf": [
+                {
+                    "type": "number"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "default": null,
+            "title": "Am241"
+        },
+        "_type": {
+            "const": "scale.olm.generate.comp:mox_ornltm2003_2",
+            "title": "Olm Redirect Type"
+        }
+    },
+    "required": [
+        "_type"
+    ],
+    "title": "mox_ornltm2003_2",
+    "type": "object",
+    "$$description": [
+        "Specified with :code:`\"_type\": \"scale.olm.generate.comp:mox_ornltm2003_2\"` in **config.olm.json**.",
+        "",
+        ".. collapse:: Example input in config.olm.json/generate/comp",
+        "",
+        "    .. code:: JSON",
+        "",
+        "",
+        "        {",
+        "            \"_type\": \"scale.olm.generate.comp:mox_ornltm2003_2\"",
+        "        }",
+        "",
+        ".. only::latex",
+        "",
+        "    END Example input in config.olm.json/generate/comp",
+        "",
+        "",
+        "",
+        ".. collapse:: Args passed to Python function: scale.olm.generate.comp.mox_ornltm2003_2",
+        "",
+        "    .. code:: JSON",
+        "",
+        "",
+        "        {",
+        "            \"_type\": \"scale.olm.generate.comp:mox_ornltm2003_2\",",
+        "            \"state\": {",
+        "                \"pu239_frac\": 70.0,",
+        "                \"pu_frac\": 5.0",
+        "            }",
+        "        }",
+        "",
+        ".. only::latex",
+        "",
+        "    END Args passed to Python function: scale.olm.generate.comp.mox_ornltm2003_2",
+        "",
+        "",
+        "",
+        ".. collapse:: Data available in template: comp",
+        "",
+        "    .. code:: JSON",
+        "",
+        "",
+        "        {",
+        "            \"uo2\": {",
+        "                \"iso\": {",
+        "                    \"u235\": 0.24,",
+        "                    \"u238\": 99.75676000000001,",
+        "                    \"u234\": 0.002136,",
+        "                    \"u236\": 0.001104",
+        "                },",
+        "                \"dens_frac\": 0.95",
+        "            },",
+        "            \"puo2\": {",
+        "                \"iso\": {",
+        "                    \"pu238\": 0.8641805357555371,",
+        "                    \"pu240\": 21.176832924629764,",
+        "                    \"pu241\": 5.532547347004493,",
+        "                    \"pu242\": 2.4264391926102102,",
+        "                    \"pu239\": 70.0",
+        "                },",
+        "                \"dens_frac\": 0.05",
+        "            },",
+        "            \"amo2\": {",
+        "                \"iso\": {",
+        "                    \"am241\": 100.0",
+        "                },",
+        "                \"dens_frac\": 5e-24",
+        "            },",
+        "            \"hmo2\": {",
+        "                \"iso\": {",
+        "                    \"pu238\": 0.043209026787776855,",
+        "                    \"pu240\": 1.0588416462314882,",
+        "                    \"pu241\": 0.27662736735022464,",
+        "                    \"pu242\": 0.12132195963051051,",
+        "                    \"pu239\": 3.5,",
+        "                    \"am241\": 5e-22,",
+        "                    \"u235\": 0.22799999999999998,",
+        "                    \"u238\": 94.768922,",
+        "                    \"u234\": 0.0020291999999999997,",
+        "                    \"u236\": 0.0010488",
+        "                },",
+        "                \"dens_frac\": 1.0",
+        "            },",
+        "            \"info\": {",
+        "                \"am241_frac\": 9.999999999999998e-21,",
+        "                \"pu239_frac\": 70.0,",
+        "                \"pu_frac\": 5.0,",
+        "                \"fiss_pu_frac\": 75.5325473470045,",
+        "                \"m_o2\": 31.9988,",
+        "                \"m_u\": 237.99259914761905,",
+        "                \"m_am\": 241.0568,",
+        "                \"m_pu\": 239.38444872893055,",
+        "                \"m_hm\": 238.0618071158727,",
+        "                \"puo2_hm_frac\": 0.8820899957905589,",
+        "                \"amo2_hm_frac\": 0.8828121452187759,",
+        "                \"uo2_hm_frac\": 0.8814821505387862,",
+        "                \"hmo2_hm_frac\": 0.8815125229046437",
+        "            },",
+        "            \"density\": 0.0",
+        "        }",
+        "",
+        ".. only::latex",
+        "",
+        "    END Data available in template: comp",
+        "",
+        "",
+        "See also: :obj:`scale.olm.generate.comp.mox_ornltm2003_2`"
+    ]
+}

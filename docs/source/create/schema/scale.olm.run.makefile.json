@@ -1,0 +1,38 @@
+{
+    "properties": {
+        "dry_run": {
+            "default": null,
+            "title": "Dry Run",
+            "type": "boolean"
+        },
+        "_type": {
+            "const": "scale.olm.run:makefile",
+            "title": "Olm Redirect Type"
+        }
+    },
+    "required": [
+        "_type"
+    ],
+    "title": "makefile",
+    "type": "object",
+    "$$description": [
+        "Specified with :code:`\"_type\": \"scale.olm.run:makefile\"` in **config.olm.json**.",
+        "",
+        ".. collapse:: Example input in config.olm.json/run",
+        "",
+        "    .. code:: JSON",
+        "",
+        "",
+        "        {",
+        "            \"_type\": \"scale.olm.run:makefile\",",
+        "            \"dry_run\": false",
+        "        }",
+        "",
+        ".. only::latex",
+        "",
+        "    END Example input in config.olm.json/run",
+        "",
+        "",
+        "See also: :obj:`scale.olm.run.makefile`"
+    ]
+}

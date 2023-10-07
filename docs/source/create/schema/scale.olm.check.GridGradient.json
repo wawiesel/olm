@@ -1,0 +1,62 @@
+{
+    "properties": {
+        "eps0": {
+            "default": null,
+            "title": "Eps0",
+            "type": "number"
+        },
+        "epsa": {
+            "default": null,
+            "title": "Epsa",
+            "type": "number"
+        },
+        "epsr": {
+            "default": null,
+            "title": "Epsr",
+            "type": "number"
+        },
+        "target_q1": {
+            "default": null,
+            "title": "Target Q1",
+            "type": "number"
+        },
+        "target_q2": {
+            "default": null,
+            "title": "Target Q2",
+            "type": "number"
+        },
+        "_type": {
+            "const": "scale.olm.check:GridGradient",
+            "title": "Olm Redirect Type"
+        }
+    },
+    "required": [
+        "_type"
+    ],
+    "title": "GridGradient",
+    "type": "object",
+    "$$description": [
+        "Specified with :code:`\"_type\": \"scale.olm.check:GridGradient\"` in **config.olm.json**.",
+        "",
+        ".. collapse:: Example input in config.olm.json/check",
+        "",
+        "    .. code:: JSON",
+        "",
+        "",
+        "        {",
+        "            \"_type\": \"scale.olm.check:GridGradient\",",
+        "            \"eps0\": 1e-20,",
+        "            \"epsa\": 0.1,",
+        "            \"epsr\": 0.1,",
+        "            \"target_q2\": 0.7,",
+        "            \"target_q1\": 0.5",
+        "        }",
+        "",
+        ".. only::latex",
+        "",
+        "    END Example input in config.olm.json/check",
+        "",
+        "",
+        "See also: :obj:`scale.olm.check.GridGradient`"
+    ]
+}

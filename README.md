@@ -69,6 +69,15 @@ $ open build/html/index.html
 Alternatively the PDF docs may be generated using the `make latexpdf` command. Note
 that the HTML docs are intended as the main documentation.
 
+The following greatly simplifies iterating on documentation. Run this command
+and open your browser to http://localhost:8000.
+
+```console
+sphinx-autobuild docs/source/ docs/build/html/
+```
+
+
+
 ### Notebooks
 
 There are notebooks contained in `notebooks` which may be helpful for debugging or

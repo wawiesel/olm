@@ -1,0 +1,43 @@
+{
+    "properties": {
+        "template": {
+            "default": null,
+            "title": "Template",
+            "type": "string"
+        },
+        "dry_run": {
+            "default": null,
+            "title": "Dry Run",
+            "type": "boolean"
+        },
+        "_type": {
+            "const": "scale.olm.report:rst2pdf",
+            "title": "Olm Redirect Type"
+        }
+    },
+    "required": [
+        "_type"
+    ],
+    "title": "rst2pdf",
+    "type": "object",
+    "$$description": [
+        "Specified with :code:`\"_type\": \"scale.olm.report:rst2pdf\"` in **config.olm.json**.",
+        "",
+        ".. collapse:: Example input in config.olm.json/report",
+        "",
+        "    .. code:: JSON",
+        "",
+        "",
+        "        {",
+        "            \"_type\": \"scale.olm.report:rst2pdf\",",
+        "            \"template\": \"report.jt.rst\"",
+        "        }",
+        "",
+        ".. only::latex",
+        "",
+        "    END Example input in config.olm.json/report",
+        "",
+        "",
+        "See also: :obj:`scale.olm.report.rst2pdf`"
+    ]
+}

@@ -9,10 +9,52 @@ import shutil
 import numpy as np
 import subprocess
 import datetime
+from typing import Literal
+
+__all__ = ["arpdata_txt"]
+
+_TYPE_ARPDATA_TXT = "scale.olm.assemble:arpdata_txt"
 
 
-def arpdata_txt(fuel_type, dim_map, keep_every, _model, _env):
-    """Build an ORIGEN reactor library in arpdata.txt format."""
+def _schema_arpdata_txt(with_state: bool = False):
+    _schema = internal._infer_schema(_TYPE_ARPDATA_TXT, with_state=with_state)
+    return _schema
+
+
+def _test_args_arpdata_txt(with_state: bool = False):
+    return {
+        "_type": _TYPE_ARPDATA_TXT,
+        "dry_run": False,
+        "fuel_type": "UOX",
+        "dim_map": {"mod_dens": "mod_dens", "enrichment": "enrichment"},
+    }
+
+
+def arpdata_txt(
+    fuel_type: str,
+    dim_map: dict,
+    keep_every: int,
+    _model: dict = {},
+    _env: dict = {},
+    dry_run: bool = False,
+    _type: Literal[_TYPE_ARPDATA_TXT] = None,
+):
+    """Build an ORIGEN reactor library in arpdata.txt format.
+
+    Args:
+        fuel_type: Which type of fuel: UOX/MOX.
+
+        dim_map: arpdata.txt requires specially named dimensions. These may exist in the
+                 state or you may need to map them from the state variables.
+
+                 if fuel_type=='UOX', enrichment, mod_dens must be mapped to state variables
+                 if fuel_type=='MOX', pu239_frac, pu_frac, mod_dens must be mapped to state variables
+
+
+    """
+
+    if dry_run:
+        return {}
 
     # Get working directory.
     work_path = Path(_env["work_dir"])
@@ -62,8 +104,8 @@ def archive(model):
 
     # Tag each permutation's libraries
     for perm in data["perms"]:
-        perm_dir = Path(perm["file"]).parent
-        perm_name = Path(perm["file"]).stem
+        perm_dir = Path(perm["input_file"]).parent
+        perm_name = Path(perm["input_file"]).stem
         statevars = perm["state"]
         lib_path = os.path.join(perm_dir, perm_name + ".system.f33")
         lib_paths.append(lib_path)
@@ -139,7 +181,7 @@ def _get_files(work_dir, suffix, perms):
 
     file_list = list()
     for perm in perms:
-        input = perm["file"]
+        input = perm["input_file"]
 
         # Convert from .inp to expected suffix.
         lib = work_dir / Path(input)
@@ -383,7 +425,7 @@ def _process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
         # Generate the system composition information from the system ii.json.
         k = arpinfo.get_perm_by_index(i)
         perm = perms[k]
-        f71 = (work_dir / perm["file"]).with_suffix(".f71")
+        f71 = (work_dir / perm["input_file"]).with_suffix(".f71")
         text = internal.run_command(
             f"{obiwan} view -format=ii.json {f71} -cases='[{caseid}]'",
             echo=False,

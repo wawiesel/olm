@@ -36,7 +36,7 @@ logger = structlog.get_logger(__name__)
 
 # This is special for the docstring copier below.
 from functools import wraps
-from typing import Callable, TypeVar, Any
+from typing import Callable, TypeVar, Any, Set
 from typing_extensions import ParamSpec
 
 T = TypeVar("T")
@@ -84,6 +84,12 @@ def copy_doc(
         # for the CLI are the same. The API docs will use the local docstrings
         # and have everything, including what follows \f.
         s = copy_func.__doc__
+        if not s:
+            raise ValueError(
+                "@copy_doc({}) will not work because it has an empty docstring!".format(
+                    copy_func.__name__
+                )
+            )
         i = s.find("\f")
         if i >= 0:
             s = s[0:i]
@@ -121,7 +127,7 @@ def create(
     to the command. This file defines the input for each stage in JSON format.
 
     \f
-    See :ref:`config-file` for details.
+    See :ref:`config.olm.json` for details.
 
     Args:
         config_dir: Directory where configuration files should be written.
@@ -531,10 +537,178 @@ def _load_env(config_file: str, nprocs: int = 0):
 def _get_function_handle(mod_fn):
     """Takes module:function like uvw:xyz and returns the function handle to the
     function 'xyz' within the module 'uvw'."""
-    mod, fn = mod_fn.split(":")
-    this_module = sys.modules[mod]
-    fn_handle = getattr(this_module, fn)
-    return fn_handle
+    mod_fn = mod_fn.split(":")
+    if len(mod_fn) != 2:
+        raise ValueError(
+            f"The expected form for {mod_fn} is the module_name:function_name, separated by a single colon."
+        )
+
+    this_module = sys.modules[mod_fn[0]]
+    try:
+        fn_handle = getattr(this_module, mod_fn[1])
+        return fn_handle
+    except:
+        return None
+
+
+def _indent(text, i):
+    space = " " * i
+    return space.join(("\n" + text.lstrip()).splitlines(True))
+
+
+def _get_schema(_type: str, with_state: bool = False):
+    """Get the schema for the type."""
+
+    # Search for a hard-coded schema.
+    mod, schema_fn = _type.split(":")
+    _schema = mod + ":_schema_" + schema_fn
+    fn = _get_function_handle(_schema)
+    if fn == None:
+        raise ValueError(
+            f"No schema function associated with {_type}! Should be called {_schema}. You can try to infer with `olm schema --infer '{_type}'."
+        )
+    return fn(with_state=with_state)
+
+
+def _infer_schema(_type: str, _exclude: Set[str] = set(), with_state: bool = False):
+    """Infer a schema for the type."""
+    import typing
+    import pydantic
+    import inspect
+
+    # Shortcut to this common exclusion.
+    if not with_state:
+        _exclude.add("state")
+
+    # Use inspect to get required arguments.
+    required = {}
+    fn = _get_function_handle(_type)
+    for k, v in inspect.signature(fn).parameters.items():
+        required[k] = v.default is v.empty
+
+    # Iterate through type hints to collect types.
+    z = typing.get_type_hints(fn)
+    # If not a function try a class.
+    if not z:
+        z = typing.get_type_hints(fn.__init__)
+    t = {}
+    for k, v in z.items():
+        # Skip hidden arguments that start with _ by convention.
+        if k == "_type":
+            # v.__args__[0] is the inner Literal[] because we allow the functions
+            # to be called without _type so it is technically optional, but in
+            # terms of JSON schema we want it required.
+            t["olm_redirect_type"] = (v.__args__[0], ...)
+            continue
+        elif k.startswith("_") or (k in _exclude):
+            continue
+        if required[k]:
+            t[k] = (v, ...)
+        else:
+            t[k] = (v, None)
+
+    # Create a model using the arguments to get a JSON schema.
+    Model = pydantic.create_model(
+        _type.split(":")[1],
+        **t,
+    )
+
+    e = Model.model_json_schema()
+
+    # Fix up.
+    try:
+        i = e["required"].index("olm_redirect_type")
+        e["required"][i] = "_type"
+        e["properties"]["_type"] = e["properties"].pop("olm_redirect_type")
+    except:
+        pass
+
+    return e
+
+
+def _collapsible_json(title: str, json_str: str):
+    # Indent 4 for code + 4 for collapse = 8.
+    json_str = _indent(json_str, 8)
+
+    return f"""
+.. collapse:: {title}
+
+    .. code:: JSON
+
+{json_str}
+
+.. only::latex
+
+    END {title}
+
+"""
+
+
+def _get_schema_description(_type: str):
+    """Return a description for the schema for the documentation."""
+
+    # Populate this string.
+    description = ""
+
+    # Get example arguments, format as string and indent properly.
+    fn_path = _type.replace(":", ".")
+    mod, fn_name = _type.split(":")
+    test_fn = _get_function_handle(mod + ":_test_args_" + fn_name)
+    args = test_fn()
+    section = mod.replace("scale.olm.", "").replace(".", "/")
+    description += (
+        f'Specified with :code:`"_type": "{_type}"` in **config.olm.json**.\n'
+    )
+    description += _collapsible_json(
+        "Example input in config.olm.json/" + section, json.dumps(args, indent=4)
+    )
+    description += "\n"
+
+    # Get intermediate input and output only for generate.
+    if mod.startswith("scale.olm.generate"):
+        args = test_fn(with_state=True)
+        description += _collapsible_json(
+            f"Args passed to Python function: {fn_path}", json.dumps(args, indent=4)
+        )
+        description += "\n"
+
+        # Get example output
+        fn = _get_function_handle(_type)
+        out = fn(**args)
+        if isinstance(out, dict) and "_input" in out:
+            del out["_input"]
+        var = mod.replace("scale.olm.generate.", "")
+        description += _collapsible_json(
+            f"Data available in template: {var}", json.dumps(out, indent=4)
+        )
+        description += "\n"
+
+    # Add see also.
+    description += f"See also: :obj:`{fn_path}`"
+
+    return description
+
+
+def schema(
+    _type: str,
+    color: bool,
+    description: bool = False,
+    infer: bool = False,
+    state: bool = False,
+):
+    """Emit the JSON schema corresponding to a particular _type."""
+
+    logger.debug(f"Trying to determine schema for {_type}")
+    if infer:
+        e = _infer_schema(_type, with_state=state)
+    else:
+        e = _get_schema(_type, with_state=state)
+
+    if description:
+        logger.debug(f"Adding description to schema for {_type}")
+        e["$$description"] = _get_schema_description(_type).split("\n")
+
+    return e
 
 
 def _fn_redirect(_type, **x):
@@ -552,7 +726,7 @@ def run_command(
 ):
     """Run a command as a subprocess.
 
-    Throw on bad error code or finding 'Error' in the output.
+    Throw on bad error code or finding the error_match string in the output.
 
     \f
     Args:

@@ -1,0 +1,86 @@
+{
+    "properties": {
+        "name": {
+            "default": null,
+            "title": "Name",
+            "type": "string"
+        },
+        "template": {
+            "default": null,
+            "title": "Template",
+            "type": "string"
+        },
+        "eps0": {
+            "default": null,
+            "title": "Eps0",
+            "type": "number"
+        },
+        "epsa": {
+            "default": null,
+            "title": "Epsa",
+            "type": "number"
+        },
+        "epsr": {
+            "default": null,
+            "title": "Epsr",
+            "type": "number"
+        },
+        "target_q1": {
+            "default": null,
+            "title": "Target Q1",
+            "type": "number"
+        },
+        "target_q2": {
+            "default": null,
+            "title": "Target Q2",
+            "type": "number"
+        },
+        "nuclide_compare": {
+            "default": null,
+            "items": {
+                "type": "string"
+            },
+            "title": "Nuclide Compare",
+            "type": "array"
+        },
+        "_type": {
+            "const": "scale.olm.check:LowOrderConsistency",
+            "title": "Olm Redirect Type"
+        }
+    },
+    "required": [
+        "_type"
+    ],
+    "title": "LowOrderConsistency",
+    "type": "object",
+    "$$description": [
+        "Specified with :code:`\"_type\": \"scale.olm.check:LowOrderConsistency\"` in **config.olm.json**.",
+        "",
+        ".. collapse:: Example input in config.olm.json/check",
+        "",
+        "    .. code:: JSON",
+        "",
+        "",
+        "        {",
+        "            \"_type\": \"scale.olm.check:LowOrderConsistency\",",
+        "            \"name\": \"\",",
+        "            \"template\": \"\",",
+        "            \"eps0\": 1e-12,",
+        "            \"epsa\": 1e-06,",
+        "            \"epsr\": 0.001,",
+        "            \"target_q1\": 0.9,",
+        "            \"target_q2\": 0.95,",
+        "            \"nuclide_compare\": [",
+        "                \"0092235\",",
+        "                \"0094239\"",
+        "            ]",
+        "        }",
+        "",
+        ".. only::latex",
+        "",
+        "    END Example input in config.olm.json/check",
+        "",
+        "",
+        "See also: :obj:`scale.olm.check.LowOrderConsistency`"
+    ]
+}

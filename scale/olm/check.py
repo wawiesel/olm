@@ -1,6 +1,8 @@
 """
 Module for checking classes.
 """
+__all__ = ["sequencer", "GridGradient", "LowOrderConsistency"]
+
 import numpy as np
 from tqdm import tqdm, tqdm_notebook
 import scale.olm.core as core
@@ -10,6 +12,7 @@ from pathlib import Path
 import copy
 import os
 import scale.olm.internal as internal
+from typing import List, Union, Dict, Literal
 
 
 class CheckInfo:
@@ -17,8 +20,59 @@ class CheckInfo:
         self.test_pass = False
 
 
-def sequencer(sequence, _model, _env):
+Model = Dict[str, any]
+Env = Dict[str, any]
+
+# -----------------------------------------------------------------------------------------
+
+_TYPE_SEQUENCER = "scale.olm.check:sequencer"
+
+
+def _schema_sequencer(with_state: bool = False):
+    _schema = internal._infer_schema(_TYPE_SEQUENCER, with_state=with_state)
+    return _schema
+
+
+def _test_args_sequencer(with_state: bool = False):
+    return {
+        "_type": _TYPE_SEQUENCER,
+        "sequence": [
+            {"eps0": 0.0001, "_type": "scale.olm.check:GridGradient"},
+            {
+                "_type": "scale.olm.check:LowOrderConsistency",
+                "name": "loc",
+                "template": "model/origami/system-uox.jt.inp",
+                "target_q1": 0.70,
+                "target_q2": 0.95,
+                "eps0": 1e-12,
+                "epsa": 1e-6,
+                "epsr": 1e-3,
+                "nuclide_compare": ["0092235", "0094239"],
+            },
+        ],
+    }
+
+
+def sequencer(
+    sequence: List[dict],
+    _model: Model,
+    _env: Env,
+    dry_run: bool = False,
+    _type: Literal[_TYPE_SEQUENCER] = None,
+):
+    """Run a sequence of checks.
+
+    Args:
+        sequence: List of checks to run by name.
+
+        _model: Reference model data
+
+        _env: Environment data.
+
+    """
     output = []
+    if dry_run:
+        return {"test_pass": False, "output": output}
 
     test_pass = True
     try:
@@ -70,8 +124,51 @@ def sequencer(sequence, _model, _env):
     return {"test_pass": test_pass, "sequence": output}
 
 
+# -----------------------------------------------------------------------------------------
+
+_TYPE_GRIDGRADIENT = "scale.olm.check:GridGradient"
+
+
+def _schema_GridGradient(with_state: bool = False):
+    _schema = internal._infer_schema(_TYPE_GRIDGRADIENT, with_state=with_state)
+    return _schema
+
+
+def _test_args_GridGradient(with_state: bool = False):
+    args = {"_type": _TYPE_GRIDGRADIENT}
+    args.update(GridGradient.default_params())
+    return args
+
+
 class GridGradient:
-    """Class to compute the grid gradients"""
+    """Compute the grid gradients
+
+    Computes the absolute and relative gradients of the reaction coefficient data
+    in each dimension at each point and collects them into a data structure.
+
+    The fraction of relative gradients which fall below the specified limit :code:`epsr`
+    is the first quality score, :code:`q1=1-fr` where :code:`fr` is the failed fraction.
+    The test passes quality check 1 if the :code:`q1<=target_q1`.
+
+    Most often, we care less about relative differences when the absolute values are
+    very small, e.g. a 10% difference in a 1e-12 barn cross section is not as big
+    a deal as a 1% difference in a 100 barn cross section. Quality score :code:`q2`
+    takes this into account by considering the fraction of points which fail the
+    pure relative test, :code:`q1`, and those that fail a combined test where the
+    relative gradient must exceed :code:`epsr` and the absolute gradient must exceed
+    :code:`epsa`. The failed fraction is :code:`fa` and the combined score for
+    :code:`q2=1-0.9*fa-0.1*fr`. In this way, one cannot get a perfect 1.0 for either
+    score if there are any failures in a relative sense, but the second score penalizes
+    them less. The second test passes if :code:`q2<=target_q2`.
+
+    Args:
+        eprs: The limit for the relative gradient.
+        epsa: The limit for the absolute gradient.
+        target_q1: The target for the q1 (relative only) score.
+        target_g2: The target for the q2 (weighted relative and absolute) score.
+        eps0: The minimum gradient to care about.
+
+    """
 
     @staticmethod
     def describe_params():
@@ -96,13 +193,14 @@ class GridGradient:
 
     def __init__(
         self,
-        _model=None,
-        _env={},
-        eps0=1e-20,
-        epsa=1e-1,
-        epsr=1e-1,
-        target_q1=0.5,
-        target_q2=0.7,
+        _model: dict = None,
+        _env: dict = {},
+        eps0: float = 1e-20,
+        epsa: float = 1e-1,
+        epsr: float = 1e-1,
+        target_q1: float = 0.5,
+        target_q2: float = 0.7,
+        _type: Literal[_TYPE_GRIDGRADIENT] = None,
     ):
         self.eps0 = eps0
         self.epsa = epsa
@@ -133,6 +231,7 @@ class GridGradient:
         return info
 
     def info(self):
+        """Recalculate and return the score information."""
         info = CheckInfo()
         info.name = self.__class__.__name__
         info.eps0 = self.eps0
@@ -229,41 +328,104 @@ class GridGradient:
         return ahist, rhist, khist
 
 
+# -----------------------------------------------------------------------------------------
+
+_TYPE_LOWORDERCONSISTENCY = "scale.olm.check:LowOrderConsistency"
+
+
+def _schema_LowOrderConsistency(with_state: bool = False):
+    _schema = internal._infer_schema(_TYPE_LOWORDERCONSISTENCY, with_state=with_state)
+    return _schema
+
+
+def _test_args_LowOrderConsistency(with_state: bool = False):
+    args = {"_type": _TYPE_LOWORDERCONSISTENCY}
+    args.update(LowOrderConsistency.default_params())
+    return args
+
+
 class LowOrderConsistency:
-    """Check that we are consistent with the original calculation."""
+    """Check that we are consistent with the original calculation.
+
+    The ORIGEN library approach can be viewed as a high-order/low-order methodology
+    where the ORIGEN library interpolation represents a low-order method which
+    should agree with the high-order method.
+
+    This check assumes that we already have high-order (e.g. TRITON) nuclide
+    inventory results available. We use each of the libraries in the interpolation
+    space in a new low-order (ORIGAMI) calculation. Consistent inputs are automatically
+    constructed from available data. We then compare all nuclide inventory differences
+    in the same way as for the :obj:`GridGradient` method, instead of relative and
+    absolute gradients, we have relative and absolute differences in nuclide inventory.
+
+    A number of plots are produced as side effects, referenced in the dictionary
+    returned from the run() method.
+
+    Args:
+        name: Name of the test.
+        template: Template file to use for the low-order calculation.
+        nuclide_compare: List of nuclide identifiers for the detailed error plots.
+        eprs: The limit for the relative gradient.
+        epsa: The limit for the absolute gradient.
+        target_q1: The target for the q1 (relative only) score.
+        target_g2: The target for the q2 (weighted relative and absolute) score.
+        eps0: The minimum gradient to care about.
+
+    """
 
     @staticmethod
     def describe_params():
-        return {"nprocs": "number of processes to use to run consistency check"}
+        return {
+            "eps0": "minimum value",
+            "epsa": "absolute epsilon",
+            "epsr": "relative epsilon",
+            "target_q1": "target for quality score 1",
+            "target_q2": "target for quality score 2",
+            "nuclide_compare": "plot me",
+            "template": "template file name",
+            "name": "name for test",
+        }
 
     @staticmethod
     def default_params():
-        c = LowOrderConsistency()
-        return {
-            "eps0": c.eps0,
-            "epsa": c.epsa,
-            "epsr": c.epsr,
-            "target_q2": c.target_q2,
-            "target_q1": c.target_q1,
-        }
+        import inspect
+
+        # Use inspect to get required arguments.
+        defaults = {}
+        fn = internal._get_function_handle(_TYPE_LOWORDERCONSISTENCY)
+        for k, v in inspect.signature(fn).parameters.items():
+            if k.startswith("_"):
+                continue
+            defaults[k] = v.default
+        return defaults
 
     def __init__(
         self,
-        name="",
-        template="",
-        eps0=1e-12,
-        epsa=1e-6,
-        epsr=1e-3,
-        target_q1=0.9,
-        target_q2=0.95,
-        nuclide_compare=["0092235", "0094239"],
-        _model=None,
-        _env=None,
+        name: str = "",
+        template: str = "",
+        eps0: float = 1e-12,
+        epsa: float = 1e-6,
+        epsr: float = 1e-3,
+        target_q1: float = 0.9,
+        target_q2: float = 0.95,
+        nuclide_compare: List[str] = ["0092235", "0094239"],
+        _model: Model = None,
+        _env: Env = None,
+        _type: Literal[_TYPE_LOWORDERCONSISTENCY] = None,
+        _dry_run: bool = False,
     ):
         self._env = _env
         self._model = _model
         self.name = name
         self.nuclide_compare = nuclide_compare
+        self.eps0 = eps0
+        self.epsa = epsa
+        self.epsr = epsr
+        self.target_q1 = target_q1
+        self.target_q2 = target_q2
+
+        if _dry_run:
+            return
 
         if _env == None:
             dir = Path.cwd()
@@ -280,14 +442,10 @@ class LowOrderConsistency:
         self.work_path = Path(_env["work_dir"])
         self.check_path = self.work_path / "check" / name
         self.check_dir = self.check_path.relative_to(self.work_path)
-        self.eps0 = eps0
-        self.epsa = epsa
-        self.epsr = epsr
-        self.target_q1 = target_q1
-        self.target_q2 = target_q2
 
     @staticmethod
     def make_diff_plot(identifier, image, time, min_diff, max_diff, max_diff0, perms):
+        """Make the difference plot."""
         import matplotlib.pyplot as plt
 
         plt.rcParams.update({"font.size": 18})
@@ -315,6 +473,7 @@ class LowOrderConsistency:
         plt.savefig(image, bbox_inches="tight")
 
     def info(self):
+        """Recalculate test statistics."""
         import matplotlib.pyplot as plt
         import sys
 
@@ -611,28 +770,4 @@ class LowOrderConsistency:
             self.run_success = False
             internal.logger.error(str(ve))
 
-        return self.info()
-
-
-class Continuity:
-    @staticmethod
-    def describe_params():
-        return {
-            "c": "continuity order (0 or 1)",
-            "eps": "relative epsilon for continuity check",
-        }
-
-    @staticmethod
-    def default_params():
-        c = Continuity()
-        return {"c": c.c, "eps": c.eps}
-
-    def __init__(self, model=None, c=0, eps=1e-3):
-        self.c = c
-        self.eps = eps
-
-    def info(self):
-        return CheckInfo()
-
-    def run(self, archive):
         return self.info()

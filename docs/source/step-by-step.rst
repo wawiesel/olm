@@ -36,7 +36,7 @@ Inspect the files
 The :code:`model.jt.inp` file created contains 
 `Jinja <https://jinja.palletsprojects.com/en/3.1.x/templates/#synopsis>`_ 
 template directives. This SCALE input template is "expanded" into a proper SCALE
-input file using data contained in the :code:`config.olm.json`.
+input file using data contained in the :ref:`config.olm.json`.
 
 .. code:: scale
 
