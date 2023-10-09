@@ -98,6 +98,16 @@ Now, you can select the created kernel "venv" when you start Jupyter notebook or
 We use the [Click python library](https://click.palletsprojects.com/en/8.1.x)
 for command line. Here's a nice [video about click](https://www.youtube.com/watch?v=kNke39OZ2k0).
 
+### Commit messages
+
+Follow these [guidelines](https://cbea.ms/git-commit/) for commit messages.
+
+### Version updates
+
+OLM uses [semantic versioning](https://semver.org/). You should commit the 
+relevant code with the usual description commit message. Then run 
+`bumpversion major`, `bumpversion minor`, or `bumpversion patch` which will
+automatically create a new commit message and version tag.
 
 ### Pytest for unit tests
 
