@@ -235,11 +235,10 @@ def jt_expander(
         with open(template_path, "r") as f:
             template_text = f.read()
 
-    print(template_text)
-
     internal.logger.info(
         "Expanding into permutations", template=str(template_path), nperms=len(states2)
     )
+    internal.logger.info("Template text (before expansion):\n" + template_text)
 
     # Create all the permutation information.
     perms2 = []

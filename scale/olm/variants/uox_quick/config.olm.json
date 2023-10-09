@@ -86,8 +86,7 @@
     "check": {
         "_type": "scale.olm.check:sequencer",
         "sequence":
-        [
-        {
+        [{
             "_type": "scale.olm.check:LowOrderConsistency",
             "name": "loc",
             "template": "model/origami/system-uox.jt.inp",
@@ -96,7 +95,9 @@
             "eps0": 1e-12,
             "epsa": 1e-6,
             "epsr": 1e-3,
-            "nuclide_compare": ["0092235","0094239","0094240","0094241","0094242","0095241","0094238","0092234","0092238","0055134","0055137","0060148","0063154","1095242","0095243","0096242","0096244"]
+            "nuclide_compare": ["u235","pu239","pu240","pu241","pu242","am241",
+                "pu239", "u234", "u238", "cs134", "cs137","nd148","eu154",
+                "am242m","am243", "cm242", "cm244"]
         }]
     },
     "report": {

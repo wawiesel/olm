@@ -408,7 +408,7 @@ class LowOrderConsistency:
         epsr: float = 1e-3,
         target_q1: float = 0.9,
         target_q2: float = 0.95,
-        nuclide_compare: List[str] = ["0092235", "0094239"],
+        nuclide_compare: List[str] = ["u235", "pu239"],
         _model: Model = None,
         _env: Env = None,
         _type: Literal[_TYPE_LOWORDERCONSISTENCY] = None,
@@ -495,13 +495,16 @@ class LowOrderConsistency:
         info.nuclide_compare = dict()
         ntime = len(self.time_list)
         for nuclide in self.nuclide_compare:
-            i = self.names.index(nuclide)
+            eam = self.composition_manager.eam(nuclide)
+            izzzaaa = self.composition_manager.izzzaaa(nuclide)
+            i = self.names.index(izzzaaa)
             internal.logger.info(
                 f"Found nuclide={nuclide} at index {i} for detailed comparison"
             )
-            info.nuclide_compare[nuclide] = {
+            info.nuclide_compare[eam] = {
                 "nuclide_index": i,
-                "nuclide": nuclide,
+                "nuclide": eam,
+                "nuclide_izzzaaa": izzzaaa,
                 "time": self.time_list,
                 "max_diff": [-sys.float_info.max] * ntime,
                 "min_diff": [sys.float_info.max] * ntime,
