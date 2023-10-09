@@ -5,11 +5,11 @@ import os
 import sys
 
 this_dir = Path(__file__).parent.resolve()
-sys.path.append(this_dir)
+sys.path.append(str(this_dir))
 
 
 def notebook_file(filename):
-    os.chdir(this_dir)
+    os.chdir(str(this_dir))
     return filename
 
 
