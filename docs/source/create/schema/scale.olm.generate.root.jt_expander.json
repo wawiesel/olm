@@ -213,7 +213,7 @@
         "",
         "",
         "        {",
-        "            \"work_dir\": \"/var/folders/gd/ns6g1ncd7kgbxglpynczvlznxpq4sw/T/tmpaleh6d8x/_work\",",
+        "            \"work_dir\": \"/path/to/_work\",",
         "            \"perms\": [",
         "                {",
         "                    \"static\": {",

@@ -675,8 +675,11 @@ def _get_schema_description(_type: str):
         # Get example output
         fn = _get_function_handle(_type)
         out = fn(**args)
-        if isinstance(out, dict) and "_input" in out:
-            del out["_input"]
+        if isinstance(out, dict):
+            if "_input" in out:
+                del out["_input"]
+            if "work_dir" in out:
+                out["work_dir"] = "/path/to/_work"
         var = mod.replace("scale.olm.generate.", "")
         description += _collapsible_json(
             f"Data available in template: {var}", json.dumps(out, indent=4)
