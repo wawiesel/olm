@@ -47,7 +47,6 @@ extensions = [
     "sphinx_click.ext",
     "click_extra.sphinx",
     "myst_parser",
-    "sphinx_term.termynal",
     "scale_highlighting",
     "sphinx-jsonschema",
     "sphinx_toolbox.collapse",
