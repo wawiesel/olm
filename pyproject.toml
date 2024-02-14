@@ -25,7 +25,7 @@ dependencies = [
     "pytest",
     "pydantic",
 ]
-python-requirements = ">=3.9"
+requires-python = ">=3.9"
 
 [project.urls]
 documentation = "https://code.ornl.gov/scale/code/olm"
