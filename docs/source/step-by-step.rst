@@ -294,7 +294,6 @@ The recommended way to use this library is to first set the path variable.
 Copy/paste the input below into a file, :code:`origami.inp`.
 
 .. literalinclude:: origami.inp
-	:language: scale
 
 Run the input with SCALE.
 

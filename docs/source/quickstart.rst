@@ -27,7 +27,6 @@ Executing the above commands will allow one to run ORIGAMI with the newly
 created library as shown below.
 
 .. literalinclude:: origami.inp
-	:language: scale
 	:emphasize-lines: 6-8
 	:linenos:
 
