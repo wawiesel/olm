@@ -32,7 +32,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9",
-    install_requires=["matplotlib", "scipy", "numpy", "pytest"],
+    install_requires=["matplotlib", "scipy", "numpy", "pytest", "click", "pydantic"],
     extras_require={
         "dev": ["check-manifest"],
         # 'test': ['coverage'],

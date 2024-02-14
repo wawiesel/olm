@@ -36,12 +36,12 @@ $ pip install virtualenv
 After enabling the virtual environment, run this command to install dependencies.
 
 ```console
-$ pip install -r requirements-dev.txt
+$ pip install -r requirements.txt
 ```
 
 NOTE: if you need to regenerate the requirements file after adding dependencies.
 ```console
-$ pip freeze | grep -v '^\-e'>requirements-dev.txt
+$ pip freeze | grep -v '^\-e'>requirements.txt
 ```
 
 ### Enable a local install for testing
