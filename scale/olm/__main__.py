@@ -169,7 +169,7 @@ First create and install a reactor library to $HOME/.olm
 In a SCALE input file, use a shell to link the library before the origami input. 
 This will work with SCALE 6.2 and later:
 
-.. code:: scale
+.. code::
 
   \b
   =shell

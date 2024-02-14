@@ -38,7 +38,7 @@ The :code:`model.jt.inp` file created contains
 template directives. This SCALE input template is "expanded" into a proper SCALE
 input file using data contained in the :ref:`config.olm.json`.
 
-.. code:: scale
+.. code::
 
     =t-depl parm=(bonami,addnux={{static.addnux}})
     pincell model
