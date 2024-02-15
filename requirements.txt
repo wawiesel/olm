@@ -145,7 +145,7 @@ sphinx-jsonschema==1.19.1
 sphinx-notfound-page==1.0.0
 sphinx-prompt==1.8.0
 sphinx-rtd-theme==2.0.0
-sphinx-tabs==3.4.4
+sphinx-tabs==3.4.5
 sphinx-term==0.1
 sphinx-toolbox==3.5.0
 sphinxcontrib-applehelp==1.0.8
