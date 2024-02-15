@@ -1562,7 +1562,7 @@ class ScaleRunner:
             else:
                 if not self.data_dir.exists():
                     raise ValueError(
-                        f"Path to SCALE Data was not found! Either 1) set the environment variable DATA or 2) symlink the data directory to {data_dir}."
+                        f"Path to SCALE Data was not found! Either 1) set the environment variable DATA or 2) symlink the data directory to {self.data_dir}."
                     )
                 returncode = ScaleRunner._run_kernel(command_line, input_file)
 

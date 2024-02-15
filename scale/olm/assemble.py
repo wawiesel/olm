@@ -203,12 +203,17 @@ def _get_files(work_dir, suffix, perms):
 def _get_burnup_list(file_list):
     """Extract a burnup list from the output file and make sure they are all the same."""
     burnup_list = list()
+    previous_output_file = ""
     for i in range(len(file_list)):
-        bu = core.ScaleOutfile.parse_burnups_from_triton_output(file_list[i]["output"])
+        output_file = file_list[i]["output"]
+        bu = core.ScaleOutfile.parse_burnups_from_triton_output(output_file)
 
         if len(burnup_list) > 0 and not np.array_equal(burnup_list, bu):
-            raise ValueError(f"library file={lib} burnups deviated from previous list!")
+            raise ValueError(
+                f"Output file={output_file} burnups deviated from previous {previous_output_file}!"
+            )
         burnup_list = bu
+        previous_output_file = output_file
 
     return burnup_list
 
