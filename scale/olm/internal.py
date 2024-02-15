@@ -598,7 +598,7 @@ def _infer_schema(_type: str, _exclude: Set[str] = set(), with_state: bool = Fal
             # v.__args__[0] is the inner Literal[] because we allow the functions
             # to be called without _type so it is technically optional, but in
             # terms of JSON schema we want it required.
-            t["olm_redirect_type"] = (v.__args__[0], ...)
+            t["olm_redirect_type"] = (v, ...)
             continue
         elif k.startswith("_") or (k in _exclude):
             continue
@@ -608,8 +608,6 @@ def _infer_schema(_type: str, _exclude: Set[str] = set(), with_state: bool = Fal
             t[k] = (v, None)
 
     # Create a model using the arguments to get a JSON schema.
-    print(_type)
-    print(t)
     Model = pydantic.create_model(
         _type.split(":")[1],
         **t,
