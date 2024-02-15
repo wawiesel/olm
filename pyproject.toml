@@ -1,6 +1,6 @@
 [project]
 name = "scale-olm"
-version = "0.11.1"
+version = "0.12.0"
 description = "ORIGEN Library Manager: A tool for building and managing ORIGEN reactor data libraries"
 authors = [
     { name = "William Wieselquist", email = "ww5@ornl.gov" },
