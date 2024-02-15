@@ -608,6 +608,8 @@ def _infer_schema(_type: str, _exclude: Set[str] = set(), with_state: bool = Fal
             t[k] = (v, None)
 
     # Create a model using the arguments to get a JSON schema.
+    print(_type)
+    print(t)
     Model = pydantic.create_model(
         _type.split(":")[1],
         **t,
