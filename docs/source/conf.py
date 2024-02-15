@@ -4,14 +4,13 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 import os
 import sys
+from pathlib import Path
 
 # For autodoc.
 import scale.olm
 
-# For local modules.
-sys.path.append(os.path.abspath("."))
-
 # Rebuilds schema files.
+sys.path.insert(0, os.path.abspath("."))
 import create.schema.regen
 
 create.schema.regen.go()
@@ -20,7 +19,6 @@ create.schema.regen.go()
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import tomli
-from pathlib import Path
 
 with open(Path(__file__).parent.parent.parent / "pyproject.toml", "rb") as f:
     toml = tomli.load(f)
@@ -32,9 +30,6 @@ release = toml["project"]["version"]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-
-# Add additional style.
-sys.path.append(os.path.abspath("_ext"))
 
 extensions = [
     "sphinx.ext.autodoc",
