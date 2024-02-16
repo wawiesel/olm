@@ -1,4 +1,4 @@
-# ORIGEN Library Manager (OLM)
+## ORIGEN Library Manager (OLM)
 
 [![Documentation Status](https://readthedocs.org/projects/scale-olm/badge/?version=latest)](https://scale-olm.readthedocs.io/en/stable/?badge=latest)
 
@@ -20,7 +20,6 @@ with a read-only mirror on the ORNL-hosted [GitLab](https://code.ornl.gov/scale/
 
 ## Developing
 
-The remainder of this README is for developers
 The script `dev.sh` is provided to initialize the development environment.
 
 ```console
@@ -28,6 +27,9 @@ $ git clone https://github.com/wawiesel/olm
 $ cd olm
 $ source dev.sh
 ```
+
+This is all you should need to do. The following sections explain in more detail 
+what happens when you run `dev.sh`.
 
 ## Developer details
 
