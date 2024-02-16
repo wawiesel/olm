@@ -1,16 +1,17 @@
 # ORIGEN Library Manager (OLM)
 
+[![Documentation Status](https://readthedocs.org/projects/scale-olm/badge/?version=latest)](https://scale-olm.readthedocs.io/en/stable/?badge=latest)
+
+The latest stable version is [v0.12.0](https://scale-olm.readthedocs.io/en/stable).
+
 OLM is a command-line utility that streamlines aspects of using the 
 [SCALE/ORIGEN](https://scale.ornl.gov) library to solve nuclide inventory generation problems.
 
-To install, use `pip`:
+To install, use `pip`.
 
 ```console
 pip install scale-olm
 ```
-
-and for user guidance, read the [docs](https://scale-olm.readthedocs.io/).
-
 
 ## Locations
 
