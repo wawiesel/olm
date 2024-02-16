@@ -2,7 +2,7 @@
 
 [![Documentation Status](https://readthedocs.org/projects/scale-olm/badge/?version=latest)](https://scale-olm.readthedocs.io/en/stable/?badge=latest)
 
-The latest stable version is [v0.12.1](https://scale-olm.readthedocs.io/en/stable).
+The latest stable version is [v0.12.2](https://scale-olm.readthedocs.io/en/stable).
 
 OLM is a command-line utility that streamlines aspects of using the 
 [SCALE/ORIGEN](https://scale.ornl.gov) library to solve nuclide inventory generation problems.
