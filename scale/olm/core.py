@@ -409,8 +409,9 @@ class CompositionManager:
 
         # Renormalize.
         norm = sum / sum0 if sum0 > 0.0 else 0.0
-        for k in wtpt:
-            wtpt[k] /= norm
+        if norm>0.0:
+          for k in wtpt:
+              wtpt[k] /= norm
         return wtpt, norm
 
     @staticmethod
@@ -510,9 +511,16 @@ class CompositionManager:
             comp["hmo2"]["iso"], 1.0, key_filter="pu"
         )
         pu_frac += am241
-        pu239_frac = 100 * pu239 / (pu_frac + am_frac)
-        am241_frac = 100 * am241 / (pu_frac + am_frac)
-        fiss_pu_frac = 100 * (pu239 + pu241) / (pu_frac + am_frac)
+        norm = (pu_frac + am_frac)
+        if norm > 0.0:
+            pu239_frac = 100 * pu239 / norm
+            am241_frac = 100 * am241 / norm
+            fiss_pu_frac = 100 * (pu239 + pu241) / norm
+        else:
+            pu239_frac = 0
+            am241_frac = 0
+            fiss_pu_frac = 0
+          
 
         return {
             "am241_frac": am241_frac,
