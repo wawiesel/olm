@@ -1,10 +1,14 @@
 {
     "model": {
-        "name": "w17x17"
+        "name": "w17x17",
+        "description": "Library Westinghouse 17x17 design",
+        "sources":{},
+        "revision": ["1.0"],
+        "notes":[]
     },
     "generate": {
         "_type": "scale.olm.generate.root:jt_expander",
-        "template": "model.inp",
+        "template": "model.jt.inp",
         "comp": {
             "_type": "scale.olm.generate.comp:uo2_simple",
             "density": 10.4
@@ -81,7 +85,9 @@
     },
     "assemble": {
         "_type": "scale.olm.assemble:arpdata_txt",
-        "fuel_type": "UOX"
+        "fuel_type": "UOX",
+		"dim_map": {"mod_dens": "coolant_density", "enrichment": "enrichment"},
+		"keep_every": 1
     },
     "check": {
         "_type": "scale.olm.check:sequencer",
@@ -94,6 +100,6 @@
     },
     "report": {
         "_type": "scale.olm.report:rst2pdf",
-        "template": "report.rst"
+        "template": "report.jt.rst"
     }
 }
