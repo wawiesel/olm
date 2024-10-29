@@ -1954,6 +1954,10 @@ class ArpInfo:
 
     def create_temp_archive(self, arpdata_txt, temp_arc):
         """Create a temporary HDF5 archive file from an arpdata.txt."""
+        # Remove the existing archive if it exists
+        if os.path.exists(temp_arc):
+            os.remove(temp_arc)
+
         h5arc = None
         arpdir = arpdata_txt.parent / "arplibs"
         for i in range(self.num_libs()):
