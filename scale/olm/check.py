@@ -93,21 +93,21 @@ def sequencer(
             this_class = internal._fn_redirect(**s, _env=_env, _model=_model)
             run_list.append(this_class)
 
-        # Read the archive.
+        # Read the reactor_library.
         work_dir = Path(_env["work_dir"])
         arpdata_txt = work_dir / "arpdata.txt"
         name = _model["name"]
         if arpdata_txt.exists():
-            archive = core.ReactorLibrary(arpdata_txt, name)
+            reactor_library = core.ReactorLibrary(arpdata_txt, name)
         else:
-            archive = core.ReactorLibrary(Path(f"{name}.arc.h5"))
+            reactor_library = core.ReactorLibrary(Path(f"{name}.arc.h5"))
 
         # Execute in sequence.
         i = 0
         for r in run_list:
             internal.logger.info("Running checking sequence={}".format(i))
 
-            info = r.run(archive)
+            info = r.run(reactor_library)
             output.append(info.__dict__)
             i += 1
 
@@ -209,7 +209,7 @@ class GridGradient:
         self.target_q2 = target_q2
         self.nprocs = _env.get("nprocs", 3)
 
-    def run(self, archive):
+    def run(self, reactor_library):
         """Run the calculation and return post-processed results"""
 
         internal.logger.info(
@@ -217,7 +217,7 @@ class GridGradient:
             + self.__class__.__name__
             + " check with params={}".format(json.dumps(self.__dict__))
         )
-        self.__calc(archive)
+        self.__calc(reactor_library)
 
         # After calc the self.ahist, rhist, khist, and rel_axes variables are ready to
         # compute metrics.
@@ -255,11 +255,11 @@ class GridGradient:
 
         return info
 
-    def __calc(self, archive):
-        """Drives the set up for the kernel with archive as input"""
+    def __calc(self, reactor_library):
+        """Drives the set up for the kernel with reactor_library as input"""
 
         self.rel_axes = list()
-        for x_list in archive.axes_values:
+        for x_list in reactor_library.axes_values:
             dx = x_list[-1] - x_list[0]
             x0 = x_list[0]
             z = list()
@@ -268,7 +268,7 @@ class GridGradient:
             self.rel_axes.append(z)
         internal.logger.info("Finished computing relative values on axes")
 
-        self.yreshape = np.moveaxis(archive.coeff, [-1], [0])
+        self.yreshape = np.moveaxis(reactor_library.coeff, [-1], [0])
         internal.logger.info("Finished reshaping coefficients")
 
         internal.logger.info("Computing grid gradients ...")
@@ -280,7 +280,6 @@ class GridGradient:
     @staticmethod
     def __kernel(rel_axes, yreshape, eps0):
         """Lowest level kernel for the calculation"""
-
         # Number of dimensions.
         n = len(rel_axes)
 
@@ -288,39 +287,53 @@ class GridGradient:
         ncoeff = np.shape(yreshape)[0]
 
         # Initialize histogram variables.
-        rhist = np.zeros(n * n * ncoeff)
-        ahist = np.zeros(n * n * ncoeff)
-        khist = np.zeros(n * n * ncoeff)
+        nd = np.sum([len(a)-1 for a in rel_axes])
+        rhist = np.zeros(n * nd * ncoeff)
+        ahist = np.zeros(n * nd * ncoeff)
+        khist = np.zeros(n * nd * ncoeff)
 
         # For each coefficient in the transition matrix.
         for k in tqdm(range(ncoeff)):
             # Get just the grid of values for this coefficient.
             y = yreshape[k, ...]
 
-            # Compute the maximum value at any point in the grid.
-            max_y = np.amax(y)
+            # Compute the min/max magnitude at any point in the grid.
+            max_y = np.amax(np.absolute(y))
             if max_y <= 0:
                 max_y = eps0
+            min_y = np.amin(np.absolute(y))
+            if min_y <= 0:
+                min_y = eps0
+            mid_y = 0.5*(min_y+max_y)
 
-            # Compute the gradient dy/dx for all axes.
-            yp = np.asarray(np.gradient(y, *rel_axes))
-
-            # Iterate through every combination of two dimensions.
-            # TODO: generalize to all dimensions
             for i in range(n):
-                ypi = yp[i, ...]
+                # First and second derivatives.
+                yp = np.asarray( np.gradient(y, rel_axes[i], axis=i) )
+                ypp = np.asarray( np.gradient(yp, rel_axes[i], axis=i) )
 
-                for j in range(n):
-                    # Calculate the flat index.
-                    iu = k * n * n + i * n + j
+                # Move the axis `i` to the last dimension so we can use ... below.
+                # Go ahead and take absolute value to simplify too.
+                ypp_abs = np.absolute(np.moveaxis(ypp, i, -1))
 
-                    # Calculate the difference between gradients.
-                    yda = np.absolute(np.diff(ypi, axis=j))
-                    ahist[iu] = np.amax(yda)
+                # Evaluate Rolle's theorem for each interval along axis=i
+                # March through each interval explicitly
+                dx_list = np.diff(rel_axes[i])
+                for j in range(len(dx_list)):
+                    dx = dx_list[j]
 
-                    # Calculate relative difference using max_y calculated earlier.
-                    ydr = yda / max_y
-                    rhist[iu] = np.amax(ydr)
+                    # Take max of left and right ypp for this interval.
+                    max_ypp = max(np.amax(ypp_abs[..., j]), np.amax(ypp_abs[..., j+1]) )
+
+                    # Compute error for this interval
+                    error = (dx ** 2) * max_ypp / 8.0
+                    #print(i,j,dx,max_ypp,error)
+
+                    # Flat index.
+                    iu = k * n * nd + i * nd + j
+
+                    # Update absolute and relative versions.
+                    ahist[iu] = error
+                    rhist[iu] = error/(mid_y*mid_y)
 
                     # Remember the coefficient index of this particular gradient difference.
                     khist[iu] = k
@@ -747,9 +760,13 @@ class LowOrderConsistency:
                         f"HIGH fidelity nuclide vector hash {hi_vector} is not the same as LOWER fidelity vector hash {lo_vector}, meaning the two nuclide sets are somehow inconsistent, which should not be possible."
                     )
 
-    def run(self, archive):
+    def run(self, reactor_library):
         """Run a consistent set of LOWER fidelity calculations which also produce an
         f71--typically ORIGAMI."""
+
+        # TODO: The reactor_library is not explicitly used because it was already expanded
+        # into the Low Order/ORIGAMI input file. We may need to force some kind of
+        # consistency here.
 
         # TODO: Allow input to change this or other smart way to determine if the data
         # does not need to be regenerated. Here, this is just for development iterations
