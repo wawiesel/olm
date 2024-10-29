@@ -520,7 +520,7 @@ class CompositionManager:
             pu239_frac = 0
             am241_frac = 0
             fiss_pu_frac = 0
-          
+
 
         return {
             "am241_frac": am241_frac,
@@ -614,25 +614,22 @@ class BurnupHistory:
         eoc_cooling = 0.0
         shutdown = initial_shutdown
         for j in range(len(self.interval_power)):
-            # print(j)
+
             # We are at power now.
             if self.interval_power[j] > min_shutdown_power:
-                # print("at power")
+
                 # But we were shutdown, so this is new cycle.
                 if shutdown:
-                    # print("new cycle")
                     shutdown = False
                     cycle_intervals.append([j, None])
                     eoc_cooling = 0.0
                 # Update the end of cycle.
-                # print("update EOC")
                 cycle_intervals[-1][1] = j + 1
             # Otherwise, we are cooling but not yet sure if shutdown.
             else:
                 # We exceeded the cooling limit so this is now shutdown.
                 eoc_cooling += self.interval_time[j]
                 if eoc_cooling > min_shutdown_time:
-                    # print("shutdown")
                     shutdown = True
 
         return cycle_intervals
@@ -1982,17 +1979,54 @@ class ReactorLibrary:
     interpolatable space of Libraries.
     """
 
+    @staticmethod
+    def _extract_transitions(h5_data):
+        """Extract nuclide and transition identifiers.
+
+        SIZZZAAA is an 8-digit nuclide identifier
+            S   - single digit sublib (light nuclide LT, actinide AC, fission product FP)
+            I   - isomeric state (0 ground, 1 first metastable)
+            ZZZ - atomic number
+            AAA - mass number
+
+        It is possible that S=0 in a data set without sublibs.
+
+        Here's a conversion from SIZZZAAA to TYP:EAm
+        21092235 <-> AC:U235
+
+        """
+        nuclide_ids = [int(id) for id in h5_data["decay"]["nuclide_list"]]
+
+        ts = h5_data["incident"]["neutron"]["TransitionStructure"]
+        num_parents = ts["num_parents"][:]
+        num_decay_parents = ts["num_decay_parents"][:]
+        parent_positions = ts["parent_positions"][:]
+        transition_ids = ts["transition_ids"][:]
+
+        transitions = []
+        tind = -1
+
+        for i, did in enumerate(nuclide_ids):
+            # Initialize parent to reaction map
+            for count in range(num_parents[i]):
+                tind += 1
+                pid = nuclide_ids[parent_positions[tind] - 1]
+                transitions.append( (did,transition_ids[tind],pid) )
+
+        return nuclide_ids, transitions
+
     def __init__(self, file, name="", progress_bar=True):
         self.file_name = file
 
         # Initialize in-memory data structure.
         if file.name == "arpdata.txt":
             blocks = ArpInfo.parse_arpdata(file)
-            arpinfo = ArpInfo()
             if name=="":
                 raise ValueError(f"The `name` argument must be provided with arpdata.txt file formats, e.g. 'w17x17'.")
             temp_arc = file.with_suffix(".arc.h5")
             self.name = name
+            arpinfo = ArpInfo()
+            arpinfo.init_block(name, blocks[name])
             self.h5 = arpinfo.create_temp_archive(file, temp_arc)
         else:
             self.h5 = h5py.File(file, "r")
@@ -2005,6 +2039,9 @@ class ReactorLibrary:
             self.ncoeff,
             self.nvec,
         ) = ReactorLibrary.extract_axes(self.h5)
+
+        # Get nuclides and coefficient names.
+        self.nuclide_ids, self.transitions = ReactorLibrary._extract_transitions(self.h5)
 
         # Populate coefficient data.
         self.coeff = np.zeros((*self.axes_shape, self.ncoeff))
@@ -2106,39 +2143,43 @@ class RelAbsHistogram:
         x, image="", xlabel=r"$\log \tilde{h}_{ijk}$", ylabel=r"$\log h_{ijk}$"
     ):
         """Plot histograms from relative and absolute histogram data (rhist,ahist)."""
+        from matplotlib.ticker import MaxNLocator,MultipleLocator
+
         plt.figure()
-        eps = 1e-20
-        nbins = 100
+        eps = 1e-10
+        vmin = 0
+        cmin = 1e-5
 
-        max_lim = 1 + int(np.amax([np.log10(eps + x.rhist), np.log10(eps + x.ahist)]))
+        min_lim = int(np.log10(eps))
+        max_lim = max(
+            int(np.amax([np.log10(eps + x.rhist), np.log10(eps + x.ahist)])),
+            -min_lim
+        )
+        nbins = max_lim-min_lim+1
+        bins = np.linspace(min_lim, max_lim, nbins)
 
-        plt.hist2d(
+        h = plt.hist2d(
             np.log10(eps + x.rhist),
             np.log10(eps + x.ahist),
-            bins=np.linspace(np.log10(eps), max_lim, nbins),
-            cmin=1,
-            alpha=0.2,
-        )
-        ind1 = (x.rhist > x.epsr) & (x.ahist > x.epsa)
-        h = plt.hist2d(
-            np.log10(eps + x.rhist[ind1]),
-            np.log10(eps + x.ahist[ind1]),
-            bins=np.linspace(np.log10(eps), max_lim, nbins),
-            cmin=1,
+            bins=bins,
             alpha=1.0,
-        )
-        ind2 = x.rhist > x.epsr
-        plt.hist2d(
-            np.log10(eps + x.rhist[ind2]),
-            np.log10(eps + x.ahist[ind2]),
-            bins=np.linspace(np.log10(eps), max_lim, nbins),
-            cmin=1,
-            alpha=0.6,
+            cmin=cmin,
+            vmin=vmin,
+            density=True,
         )
         plt.colorbar(h[3])
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
-        plt.grid()
+        plt.gca().set_xticks(bins)  # Set x-axis ticks to match bin edges
+        plt.gca().set_yticks(bins)  # Set y-axis ticks to match bin edges
+
+        # Limit the number of tick labels to at most 5 without removing gridlines
+        plt.gca().xaxis.set_major_locator(MultipleLocator(1))  # Ensure integer grid lines
+        plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda val, pos: f"{int(val)}" if int(val) % 5 == 0 else ""))
+        plt.gca().yaxis.set_major_locator(MultipleLocator(1))  # Ensure integer grid lines
+        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda val, pos: f"{int(val)}" if int(val) % 5 == 0 else ""))
+        plt.grid(True)
+
         if image == "":
             plt.show()
         else:
