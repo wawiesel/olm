@@ -1989,7 +1989,8 @@ class ReactorLibrary:
         if file.name == "arpdata.txt":
             blocks = ArpInfo.parse_arpdata(file)
             arpinfo = ArpInfo()
-            arpinfo.init_block(name, blocks[name])
+            if name=="":
+                raise ValueError(f"The `name` argument must be provided with arpdata.txt file formats, e.g. 'w17x17'.")
             temp_arc = file.with_suffix(".arc.h5")
             self.name = name
             self.h5 = arpinfo.create_temp_archive(file, temp_arc)
