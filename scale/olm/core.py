@@ -2148,6 +2148,7 @@ class RelAbsHistogram:
         plt.figure()
         eps = 1e-10
         vmin = 0
+        vmax = 1
         cmin = 1e-5
 
         min_lim = int(np.log10(eps))
@@ -2165,6 +2166,7 @@ class RelAbsHistogram:
             alpha=1.0,
             cmin=cmin,
             vmin=vmin,
+            vmax=vmax,
             density=True,
         )
         plt.colorbar(h[3])
