@@ -1876,6 +1876,63 @@ class ArpInfo:
                 "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
             )
 
+    @staticmethod
+    def _find_closest(old_list, new_list):
+        # Find closest indices in `old_list` for each value in `new_list`
+        indices = [np.abs(np.asarray(old_list) - val).argmin() for val in new_list]
+        return sorted(list(set(indices)))
+
+    def restrict(self, axis_name, keep_values):
+        """Restrict values on the axis.
+
+        Returns a new arpinfo object.
+
+        Note that it does not modify the libraries themselves!
+        So burnups must be modified in place on the libraries outside this function.
+        """
+        # Initialize new arpinfo with restricted data.
+        arpinfo = ArpInfo()
+
+        # UOX option
+        if self.fuel_type=="UOX":
+            (ne,nm) = self.get_dims()
+            nb = len(self.burnup_list)
+            ie_list = range(ne)
+            im_list = range(nm)
+            ib_list = range(nb)
+            if axis_name=="enrichment":
+                ie_list = ArpInfo._find_closest(self.enrichment_list,keep_values)
+            elif axis_name=="mod_dens":
+                im_list = ArpInfo._find_closest(self.mod_dens_list,keep_values)
+            elif axis_name=="times" or axis_name=="burnup":
+                ib_list = ArpInfo._find_closest(self.burnup_list,keep_values)
+            else:
+                raise ValueError(f"Restriction can only be called on enrichment, mod_dens, times, burnup axes. Not {axis_name}.")
+
+            new_lib_list = []
+            new_burnup_list = []
+            new_enrichment_list = []
+            new_mod_dens_list = []
+            for im in im_list:
+                for ie in ie_list:
+                    i = self.get_index_by_dim((ie,im))
+                    new_lib_list.append( self.get_lib_by_index(i) )
+                    new_mod_dens_list.append( self.mod_dens_list[im] )
+                    new_enrichment_list.append( self.enrichment_list[ie] )
+            for ib in ib_list:
+                new_burnup_list.append( self.burnup_list[ib] )
+
+            # Update with restricted data.
+            arpinfo.init_uox(self.name,new_lib_list,new_enrichment_list,new_mod_dens_list)
+            arpinfo.burnup_list = new_burnup_list
+
+        elif self.fuel_type=="MOX":
+            raise ValueError(f"MOX restrict not yet implemented.")
+        else:
+            raise ValueError(f"fuel_type must be MOX or UOX, found: {self.fuel_type}")
+        return arpinfo
+
+
     def num_libs(self):
         """Get the total number of libraries."""
         return np.prod(self.get_dims())
@@ -1959,14 +2016,16 @@ class ArpInfo:
         arpdir = arpdata_txt.parent / "arplibs"
         for i in range(self.num_libs()):
             lib = Path(self.lib_list[i])
+            # Create an archive and delete the library dataset so we can use
+            # links.
             if not h5arc:
                 shutil.copyfile(arpdir / lib, temp_arc)
                 h5arc = h5py.File(temp_arc, "a")
-            else:
-                j = i + 1
-                h5arc["incident"]["neutron"][f"lib{j}"] = h5py.ExternalLink(
-                    arpdir / lib, "/incident/neutron/lib1"
-                )
+                del h5arc["incident"]["neutron"]["lib1"]
+
+            h5arc["incident"]["neutron"][f"lib{i+1}"] = h5py.ExternalLink(
+                str(arpdir / lib), "/incident/neutron/lib1"
+            )
 
         return h5arc
 
@@ -2016,20 +2075,23 @@ class ReactorLibrary:
         return nuclide_ids, transitions
 
     def __init__(self, file, name="", progress_bar=True):
-        self.file_name = file
+        self.file = file
 
         # Initialize in-memory data structure.
-        if file.name == "arpdata.txt":
+        self.arpinfo = None
+        self.arc = None
+        if self.file.name == "arpdata.txt":
             blocks = ArpInfo.parse_arpdata(file)
             if name=="":
                 raise ValueError(f"The `name` argument must be provided with arpdata.txt file formats, e.g. 'w17x17'.")
-            temp_arc = file.with_suffix(".arc.h5")
+            self.arc = file.with_suffix(".arc.h5")
             self.name = name
-            arpinfo = ArpInfo()
-            arpinfo.init_block(name, blocks[name])
-            self.h5 = arpinfo.create_temp_archive(file, temp_arc)
+            self.arpinfo = ArpInfo()
+            self.arpinfo.init_block(name, blocks[name])
+            h5 = self.arpinfo.create_temp_archive(file, self.arc)
         else:
-            self.h5 = h5py.File(file, "r")
+            h5 = h5py.File(self.file, "r")
+            self.arc = self.file
 
         # Get important axis variables.
         (
@@ -2038,36 +2100,87 @@ class ReactorLibrary:
             self.axes_shape,
             self.ncoeff,
             self.nvec,
-        ) = ReactorLibrary.extract_axes(self.h5)
-
+        ) = ReactorLibrary.extract_axes(h5)
+        
         # Get nuclides and coefficient names.
-        self.nuclide_ids, self.transitions = ReactorLibrary._extract_transitions(self.h5)
+        self.nuclide_ids, self.transitions = ReactorLibrary._extract_transitions(h5)
 
         # Populate coefficient data.
         self.coeff = np.zeros((*self.axes_shape, self.ncoeff))
-        data = self.h5["incident"]["neutron"]
+        data = h5["incident"]["neutron"]
         for i in tqdm(data.keys(), disable=not progress_bar):
             if i != "TransitionStructure":
                 d = ReactorLibrary.get_indices(
                     self.axes_names, self.axes_values, data[i]["tags"]["continuous"]
                 )
-                dn = (*d, slice(None), slice(None))
+                dn = (*d, slice(None), slice(None)) #state,time,transition
                 self.coeff[dn] = data[i]["matrix"]
 
-        # Add another point if the dimension only has one so that we can make it easier
-        # to do operations like gradients.
-        n = len(self.axes_shape)
-        for i in range(n):
-            if self.axes_shape[i] == 1:
-                self.axes_shape[i] = 2
-                x0 = self.axes_values[i][0]
-                if x0 == 0.0:
-                    x1 = 0.05
-                else:
-                    x1 = 1.05 * x0
-                self.axes_values[i] = np.append(self.axes_values[i], x1)
-                coeff = np.copy(self.coeff)
-                self.coeff = np.repeat(self.coeff, 2, axis=i)
+#         # Add another point if the dimension only has one so that we can make it easier
+#         # to do operations like gradients.
+#         n = len(self.axes_shape)
+#         for i in range(n):
+#             if self.axes_shape[i] == 1:
+#                 self.axes_shape[i] = 2
+#                 x0 = self.axes_values[i][0]
+#                 if x0 == 0.0:
+#                     x1 = 0.05
+#                 else:
+#                     x1 = 1.05 * x0
+#                 self.axes_values[i] = np.append(self.axes_values[i], x1)
+#                 coeff = np.copy(self.coeff)
+#                 self.coeff = np.repeat(self.coeff, 2, axis=i)
+
+    def restrict(self, axis_name, keep_values):
+        """Restrict the data set returning a new one."""
+        import copy
+        new = copy.deepcopy(self)
+
+        # Get the axis index.
+        if axis_name not in self.axes_names:
+            raise ValueError(f"Axis '{axis_name}' not found in axes_names.")
+        axis_idx = list(self.axes_names).index(axis_name)
+
+        # Restrict `self.axes_values` to the specified indices along the `axis_idx`
+        axis_values = self.axes_values[axis_idx]
+        keep_indices = ArpInfo._find_closest(axis_values,keep_values)
+
+        new.axes_values[axis_idx] = axis_values[keep_indices]
+        new.axes_shape[axis_idx] = len(new.axes_values[axis_idx])
+
+        # Restrict `self.coeff` data along the specified axis
+        # Always keep last index for coefficients, hence the +1.
+        slicer = [slice(None)] * (len(self.axes_shape)+1)
+        slicer[axis_idx] = keep_indices  # Apply restriction along `axis_idx`
+        new.coeff = self.coeff[tuple(slicer)]
+
+        # Restrict arpinfo.
+        if new.arpinfo is not None:
+            new.arpinfo = self.arpinfo.restrict(axis_name, keep_values)
+
+        return new
+
+    def save(self):
+
+        # Write new arpdata.txt.
+        if self.arpinfo!=None:
+            self.arpinfo.get_arpdata
+            with open(self.file, "w") as f:
+                f.write(self.arpinfo.get_arpdata())
+
+        # Write new data.
+        with h5py.File(self.arc, "r+") as h5:
+            data = h5["incident"]["neutron"]
+            old_burnups = data["lib1"]["burnups"]
+            new_burnups = self.axes_values[-1] # time is always last
+            keep_burnup_indices = ArpInfo._find_closest(old_burnups,new_burnups)
+
+            for i in data.keys():
+                if i.startswith("lib"):
+                    for s in ["burnups","fission_xs","flux","kappa_capture","kappa_fission","loss_xs","matrix","neutron_yields"]:
+                        filtered = data[i][s][keep_burnup_indices]
+                        del data[i][s]
+                        data[i].create_dataset(s, data=filtered)
 
     @staticmethod
     def get_indices(axes_names, axes_values, point_data):
