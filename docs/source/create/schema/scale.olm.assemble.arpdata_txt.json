@@ -19,7 +19,11 @@
         },
         "_type": {
             "const": "scale.olm.assemble:arpdata_txt",
-            "title": "Olm Redirect Type"
+            "enum": [
+                "scale.olm.assemble:arpdata_txt"
+            ],
+            "title": "Olm Redirect Type",
+            "type": "string"
         }
     },
     "required": [

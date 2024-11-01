@@ -32,16 +32,16 @@
             "type": "array"
         },
         "method": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/ScipyInterpMethod"
-                }
-            ],
+            "$ref": "#/$defs/ScipyInterpMethod",
             "default": null
         },
         "_type": {
             "const": "scale.olm.generate.dynamic:scipy_interp",
-            "title": "Olm Redirect Type"
+            "enum": [
+                "scale.olm.generate.dynamic:scipy_interp"
+            ],
+            "title": "Olm Redirect Type",
+            "type": "string"
         }
     },
     "required": [

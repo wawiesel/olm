@@ -7,7 +7,11 @@
         },
         "_type": {
             "const": "scale.olm.generate.comp:uo2_vera",
-            "title": "Olm Redirect Type"
+            "enum": [
+                "scale.olm.generate.comp:uo2_vera"
+            ],
+            "title": "Olm Redirect Type",
+            "type": "string"
         }
     },
     "required": [

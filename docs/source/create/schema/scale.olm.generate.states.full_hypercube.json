@@ -2,7 +2,11 @@
     "properties": {
         "_type": {
             "const": "scale.olm.generate.states:full_hypercube",
-            "title": "Olm Redirect Type"
+            "enum": [
+                "scale.olm.generate.states:full_hypercube"
+            ],
+            "title": "Olm Redirect Type",
+            "type": "string"
         }
     },
     "required": [
