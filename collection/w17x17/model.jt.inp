@@ -80,13 +80,13 @@ read model
   PWR Westinghouse 17x17
 '
 read parm
-  cmfd=1
+  cmfd=0
   drawit=yes
   echo=yes
   epsinner=-1e-4
   fillmix=3
   run=yes
-  xycmfd=4
+  xycmfd=2
   sn=8
   cell_tol=1e-8
 end parm
