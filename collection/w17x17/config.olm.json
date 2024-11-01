@@ -86,8 +86,8 @@
     "assemble": {
         "_type": "scale.olm.assemble:arpdata_txt",
         "fuel_type": "UOX",
-		"dim_map": {"mod_dens": "coolant_density", "enrichment": "enrichment"},
-		"keep_every": 1
+        "dim_map": {"mod_dens": "coolant_density", "enrichment": "enrichment"},
+        "keep_every": 1
     },
     "check": {
         "_type": "scale.olm.check:sequencer",
