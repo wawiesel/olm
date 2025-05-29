@@ -11,23 +11,61 @@
 
 ## ⚡ Quick Start
 
-Get up and running in 60 seconds:
+Get up and running in 5-10 minutes, starting with a clean slate and ending with a simple UOX ORIGEN reactor library:
 
 ```bash
-# Install OLM
-pip install scale-olm
-
-# Initialize a reactor library project
+# Initialize a configuration file for the uox_quick variant
 olm init --variant uox_quick
 
-# Build your library
+# Create an ORIGEN library with parallel processing
 olm create -j6 uox_quick/config.olm.json
 
-# Check library quality
-olm check data/w17x17.arc.h5
+# Open the generated report
+open uox_quick/_work/uox_quick.pdf
+```
+
+### 🎯 **Using Your New Library in SCALE**
+
+Once created, you can use your library in ORIGAMI calculations:
+
+```bash
+# Allow the local library to be found by olm link
+export SCALE_OLM_PATH=$PWD/uox_quick/_work
+```
+
+Create an ORIGAMI input file (`origami.inp`):
+```
+=shell
+olm link uox_quick
+end
+
+=origami
+libs=[ uox_quick ]
+
+fuelcomp{
+    uox(fuel){ enrich=4.95 }
+    mix(1){ comps[fuel=100] }
+}
+
+modz = [ 0.74 ]
+pz = [ 1.0 ]
+
+hist[
+  cycle{ power=40 burn=1000 nlib=10 }
+]
+end
+```
+
+Then run your calculation:
+```bash
+$SCALE_DIR/bin/scalerte -m origami.inp
 ```
 
 That's it! You now have a validated ORIGEN library ready for reactor simulations. ✨
+
+> **📋 Requirements**: Generating ORIGEN libraries requires SCALE 6.3.2+. Using UOX libraries requires SCALE 6.2.4+. MOX libraries require SCALE 7.0+.
+
+> **💡 Tip**: Set `SCALE_LOG_LEVEL=30` to show only warnings and errors during library creation.
 
 ## 🎯 What OLM Does
 
