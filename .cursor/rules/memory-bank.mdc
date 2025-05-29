@@ -5,6 +5,44 @@ alwaysApply: true
 ---
 # OLM Memory Bank - Recent Development Patterns
 
+## v0.14.2 Release Success - May 29, 2025
+
+### Successful Release Deployment
+- **Version**: v0.14.2 successfully released and deployed
+- **Release URL**: https://github.com/wawiesel/olm/releases/tag/v0.14.2
+- **GitHub Actions**: Test workflow #43 completed in 2m 31s (major improvement from 9+ min failures)
+- **Automated PyPI Publishing**: Release workflow triggered automatic publication to PyPI
+- **All fixes validated**: Degenerate axis handling, syntax fixes, and comprehensive testing working
+
+### Release Process Workflow
+1. **Code fixes and improvements** committed with descriptive messages
+2. **Version bump**: `bumpversion patch` (0.14.1 → 0.14.2)
+3. **Push with tags**: `git push --tags` and `git push`
+4. **GitHub CLI release**: `gh release create v0.14.2 --title "..." --notes-file release_notes.md`
+5. **Automatic PyPI deployment**: Triggered by GitHub release creation
+
+### Tools and Setup Used
+- **GitHub CLI**: `brew install gh` and `gh auth login --web` for release creation
+- **Bumpversion**: Automatic version management with git tagging
+- **GitHub Actions**: CI/CD with automatic PyPI publishing on release
+- **Release notes**: Comprehensive markdown documentation of improvements
+
+### Performance Validation
+- **Test suite speed**: 9+ minutes (failing) → 2m 31s (passing) 
+- **Degenerate axis handling**: Successfully processes w17x17.arc.h5 with mod_dens=[0.723]
+- **Quality scores**: GridGradient produces expected q1≈0.779, q2≈0.98
+- **Multi-Python support**: Tested on Python 3.9, 3.10, 3.11
+
+### Key Success Metrics
+- ✅ All GitHub Actions tests passing
+- ✅ Fast test execution time indicates fixes working
+- ✅ Automated release and PyPI deployment successful
+- ✅ Comprehensive release notes with user-friendly explanations
+- ✅ Version management and tagging working correctly
+
+### Documentation Note
+- **Always verify dates**: Use `git log --date=short --pretty=format:"%h %ad %s"` to get accurate commit dates for documentation
+
 ## Recent Technical Solutions
 
 ### Degenerate Axis Handling - Major Fix
