@@ -236,7 +236,7 @@ def _write_init_variant(variant, config_dir):
 
 
 def init(config_dir: str, variant: str, list_: bool):
-    """Initialize a new ORIGEN reactor library configuration.
+    r"""Initialize a new ORIGEN reactor library configuration.
     \f
     Args:
         config_dir: Directory where configuration files should be written.
@@ -951,7 +951,7 @@ def check(archive_file: str, output_file: str, text_sequence: list[str], nprocs:
                 archive_file=archive_file,
             )
             return
-        name = re.sub("\.arc\.h5$", "", archive_file)
+        name = re.sub(r"\.arc\.h5$", "", archive_file)
         work_dir = Path(archive_file).parent
 
     output = scale.olm.check.sequencer(

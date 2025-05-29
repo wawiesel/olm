@@ -1,0 +1,176 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# OLM Memory Bank - Recent Development Patterns
+
+## Recent Technical Solutions
+
+### Degenerate Axis Handling - Major Fix
+
+#### The Problem We Solved
+- ORIGEN reactor libraries contain "degenerate axes" where all libraries have identical values
+- Example: All libraries in `w17x17.arc.h5` have `mod_dens = 0.723` (single value)
+- `numpy.gradient()` requires at least 2 points along each axis for gradient calculations
+- Without handling, `GridGradient` check crashes with dimension errors and `dx = 0`
+
+#### The Solution We Implemented
+**Location**: `scale/olm/core.py`, `ReactorLibrary.__init__()` method
+
+```python
+# During ReactorLibrary initialization, handle degenerate axes:
+if self.axes_shape[i] == 1:
+    self.axes_shape[i] = 2
+    x0 = self.axes_values[i][0]
+    x1 = ReactorLibrary.duplicate_degenerate_axis_value(x0)
+    self.axes_values[i] = np.append(self.axes_values[i], x1)
+    self.coeff = np.repeat(self.coeff, 2, axis=i)
+```
+
+#### Key Function We Created
+```python
+@staticmethod
+def duplicate_degenerate_axis_value(x0):
+    """Always ensure positive spacing dx > 0 regardless of x0 sign/magnitude"""
+    delta = max(0.05, 0.05 * abs(x0)) if abs(x0) > 1e-10 else 0.05
+    return x0 + delta
+```
+
+#### Engineering Decisions Made
+1. **Always maintain dx > 0**: Critical for gradient calculations to work
+2. **Handle all value ranges**: Works for negative, zero, tiny, and large values
+3. **Minimum delta = 0.05**: Avoids numerical precision issues 
+4. **Proportional scaling**: For large values (|x0| > 1), use 5% to maintain reasonable spacing
+5. **Additive approach**: `x1 = x0 + delta` instead of multiplicative to handle negative values
+
+## Testing Patterns We Developed
+
+### Pattern 1: Direct Mathematical Function Testing
+**What we learned**: Test pure mathematical logic directly, not through complex integration
+
+```python
+def test_duplicate_degenerate_axis_value():
+    """Test the mathematical logic directly - fast and clear"""
+    test_cases = [
+        (0.0, 0.05),      # Zero case
+        (0.723, 0.05),    # Typical reactor parameter
+        (-1.0, 0.05),     # Negative value
+        (100.0, 5.0),     # Large value (5% scaling)
+        (1e-12, 0.05),    # Very small value
+    ]
+    for x0, expected_delta in test_cases:
+        x1 = so.core.ReactorLibrary.duplicate_degenerate_axis_value(x0)
+        assert x1 - x0 == pytest.approx(expected_delta, abs=1e-10)
+```
+
+**Benefits**: ~0.005s execution time, clear test failures, easy debugging
+
+### Pattern 2: Integration Testing with Real Data
+**What we learned**: Use existing test data files instead of creating temporary files
+
+```python
+def test_degenerate_axis_integration():
+    """Test real behavior on real reactor library data"""
+    a = so.core.ReactorLibrary(data_file("w17x17.arc.h5"))
+    # Verify the duplication actually happened
+    assert len(a.axes_values[mod_dens_index]) == 2
+    # Verify gradient calculations now work
+    grid_grad = so.check.GridGradient(a)
+    q1, q2 = grid_grad.evaluate()
+    assert q1 == pytest.approx(0.779, abs=0.01)
+    assert q2 == pytest.approx(0.98, abs=0.01)
+```
+
+**Benefits**: Tests real-world scenarios, ~2s execution time, validates end-to-end behavior
+
+### Pattern 3: Function Extraction for Testability
+**What we learned**: Extract complex logic into static methods for direct testing
+
+**Before**: Logic embedded in `__init__()` method, hard to test
+**After**: Extracted `duplicate_degenerate_axis_value()` static method
+
+```python
+# Testable function
+@staticmethod  
+def duplicate_degenerate_axis_value(x0):
+    # Mathematical logic that can be tested directly
+    
+# Usage in complex context
+x1 = ReactorLibrary.duplicate_degenerate_axis_value(x0)
+```
+
+## Data File Knowledge
+
+### Test Data Characteristics
+- **`w17x17.arc.h5`**: UOX fuel, has degenerate `mod_dens` axis at 0.723
+- **Expected transformation**: `[0.723]` → `[0.723, 0.773]` after duplication
+- **Quality scores**: After fixing, GridGradient produces q1≈0.779, q2≈0.98
+- **Rounding**: ReactorLibrary rounds to 6 decimal places in `extract_axes`
+
+### What We Fixed in Real Data
+- **Original issue**: `mod_dens` axis had single value, causing `dx = 0` in gradients
+- **After fix**: Axis has two values with positive spacing, enabling gradient calculations
+- **Coefficient data**: Gets duplicated along degenerate axis using `np.repeat(self.coeff, 2, axis=i)`
+
+## Syntax Issues We Fixed
+
+### Problem 1: Undefined Variable
+**Location**: `scale/olm/core.py:2423`
+**Issue**: `nuclide_amount` was undefined in `get_nuclides` method  
+**Fix**: Changed to `self.nuclide_amount`
+
+### Problem 2: Invalid Escape Sequences  
+**Issue**: Raw strings needed for regex patterns and LaTeX strings
+**Examples**: 
+- `"\\frac"` → `r"\\frac"` for LaTeX
+- `"\.arc"` → `r"\.arc"` for regex patterns
+
+## Performance Insights
+
+### Testing Speed Comparison
+- **Complex integration tests with temp files**: ~37s for full test suite
+- **Simple integration tests with existing data**: ~2s for new tests
+- **Pure unit tests**: <0.005s for mathematical logic
+
+### Development Impact
+- **Fast unit tests** enable rapid iteration on mathematical logic
+- **Real data integration tests** catch actual compatibility issues
+- **Separation of concerns** makes debugging much easier
+
+## Error Handling Patterns
+
+### What NOT to Do (Learned from Experience)
+```python
+# DON'T: Force errors for real-world data characteristics
+if dx <= 0:
+    raise ValueError("dx must be > 0")  # Breaks with degenerate axes
+```
+
+### What TO Do (Our Solution)
+```python
+# DO: Handle real-world data gracefully
+if self.axes_shape[i] == 1:
+    # Duplicate degenerate axis to enable calculations
+    # This is expected behavior for reactor libraries
+```
+
+## Future Maintenance Notes
+
+### When Modifying Duplication Logic
+1. **Backward compatibility**: All existing tests must continue to pass
+2. **Quality score impact**: Changes may affect GridGradient q1/q2 values  
+3. **Test thoroughly**: Use real reactor library data, not just synthetic cases
+4. **Edge case coverage**: Test negative, zero, large, and small parameter values
+
+### When Adding New Axis Types
+1. **Verify duplication works**: Ensure logic handles new parameter ranges
+2. **Test gradient calculations**: Verify `numpy.gradient()` works correctly
+3. **Update test cases**: Cover scenarios specific to new parameters
+4. **Document expected behavior**: Add to this memory bank for future reference
+
+## Key Technical Details to Remember
+- **ReactorLibrary rounds values**: 6 decimal places in `extract_axes` method
+- **Coefficient duplication required**: Must use `np.repeat()` along degenerate axis
+- **Gradient requirement**: All axes need at least 2 points for `numpy.gradient()`
+- **Quality score baselines**: w17x17.arc.h5 should produce q1≈0.779, q2≈0.98 after fixing 

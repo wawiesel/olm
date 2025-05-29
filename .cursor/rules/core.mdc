@@ -1,0 +1,184 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# OLM Project Core Rules
+
+## Project Overview
+- **Purpose**: ORIGEN Library Manager (OLM) - command-line utility for SCALE/ORIGEN library management
+- **Main Repository**: https://github.com/wawiesel/olm
+- **Documentation**: https://scale-olm.readthedocs.io
+
+## Development Environment Setup
+
+### Initial Setup
+```bash
+$ git clone https://github.com/wawiesel/olm
+$ cd olm
+$ source dev.sh
+```
+
+### Virtual Environment
+```bash
+$ virtualenv venv
+$ . venv/bin/activate
+$ pip install -r requirements.txt
+$ pip install --editable .
+```
+
+### Notebooks Setup
+```bash
+$ ipython kernel install --name "venv" --user
+```
+Use the "venv" kernel in Jupyter to ensure local package versions.
+
+## Code Standards
+
+### Command Line Interface
+- **Framework**: Use [Click python library](mdc:https:/click.palletsprojects.com/en/8.1.x) for CLI
+- **Pattern**: Follow Click conventions for command structure and options
+
+### Code Formatting
+- **Tool**: Black formatter with pre-commit hooks
+- **Setup**: Run `pre-commit install` on first clone
+- **Automatic**: Formatting runs automatically on commits
+
+### Commit Messages
+- **Guidelines**: Follow [conventional commit guidelines](mdc:https:/cbea.ms/git-commit)
+- **Format**: Clear, descriptive commit messages
+- **Scope**: One logical change per commit
+
+## Testing Standards
+
+### Testing Framework
+- **Tool**: pytest framework under `testing/` directory
+- **Parallel**: Use `pytest-xdist` for parallel testing
+- **Command**: `pytest -n 6 .` from root directory
+
+### Docstrings and Doctests
+- **Requirement**: Each function, module, and class should have standard docstrings
+- **Include**: A few doctests per function
+- **Testing**: Run `pytest -v scale/olm/core.py` for verbose module tests
+
+### Documentation
+- **Primary**: HTML docs are the main documentation format
+- **Build**: From `docs/` directory, run `make html`
+- **Live**: Use `sphinx-autobuild docs/source/ docs/build/html/` for iterative development
+- **PDF**: Available via `make latexpdf` but HTML is preferred
+
+## Version Management
+
+### Semantic Versioning
+- **Standard**: Follow [semantic versioning](mdc:https:/semver.org)
+- **Process**: 
+  1. Commit code changes with descriptive message
+  2. Run appropriate bumpversion command
+  3. Push with tags
+
+### Bumpversion Commands
+- **Bug fixes**: `bumpversion patch`
+- **New features**: `bumpversion minor` 
+- **Breaking changes**: `bumpversion major`
+
+### Bumpversion Configuration
+- **File**: `.bumpversion.cfg`
+- **Auto-commit**: `commit = True`
+- **Auto-tag**: `tag = True`
+- **Updates**: Automatically updates `pyproject.toml` and `README.md`
+
+### Git Tag Pushing
+```bash
+$ git push --tags
+```
+Or configure automatic tag pushing:
+```git
+#.git/config
+[remote "origin"]
+    push = +refs/heads/*:refs/heads/*
+    push = +refs/tags/*:refs/tags/*
+```
+
+## Project Structure
+
+### Key Dependencies
+- **CLI**: click
+- **Scientific**: matplotlib, scipy, numpy
+- **Testing**: pytest
+- **Validation**: pydantic
+
+### Python Requirements
+- **Minimum**: Python 3.9+
+- **Target**: Cross-platform compatibility
+
+### Entry Points
+- **Main CLI**: `olm` command via `scale.olm.__main__:olm`
+
+## Repository Management
+
+### Main Locations
+- **Primary**: GitHub (wawiesel/olm)
+- **Mirror**: ORNL GitLab (read-only)
+- **Issues**: GitHub issue tracker
+
+### Documentation Hosting
+- **Live docs**: ReadTheDocs integration
+- **Stable**: Always points to latest stable version
+- **Development**: Branch-specific documentation builds
+
+## Testing and Refactoring Best Practices
+
+### Testing Philosophy
+- **Prefer Unit Tests Over Integration Tests for Logic**: Factor out testable functions for direct testing
+- **Use Existing Test Data When Possible**: Leverage real data files like `w17x17.arc.h5`
+- **Separate Concerns**: Unit tests for pure functions, integration tests for workflows
+- **Fast Tests Enable Better Development**: Target milliseconds, not seconds for unit tests
+
+### Code Organization
+- **Make Functions Pure When Possible**: Static methods for stateless functions
+- **Add Doctests for Simple Examples**: Self-documenting with 3-4 representative examples
+- **Single Responsibility**: Each function should do one thing well
+
+### Performance Guidelines
+- **Comprehensive Edge Case Coverage**: Test zero, positive, negative, large, small, boundary values
+- **Use Parameterized Tests**: Test multiple cases efficiently
+- **Avoid Complex Setup**: No temporary files, network calls, or complex setup in unit tests
+
+### Testing Red Flags
+- ❌ Tests that take more than a few seconds to run
+- ❌ Complex temporary file creation for simple logic testing
+- ❌ Tests that duplicate the implementation logic
+- ❌ Integration tests masquerading as unit tests
+
+### Testing Green Flags
+- ✅ Fast, focused unit tests for mathematical logic
+- ✅ Integration tests using existing test data
+- ✅ Clear separation between unit and integration testing
+- ✅ Comprehensive edge case coverage
+- ✅ Self-documenting test names and failure messages
+
+## Examples from This Codebase
+
+### Good: Direct Function Testing
+```python
+def test_duplicate_degenerate_axis_value():
+    test_cases = [(0.0, 0.05), (0.723, 0.05), (-1.0, 0.05), (100.0, 5.0)]
+    for x0, expected_delta in test_cases:
+        x1 = so.core.ReactorLibrary.duplicate_degenerate_axis_value(x0)
+        assert x1 - x0 == pytest.approx(expected_delta)
+```
+
+### Good: Using Existing Test Data
+```python
+def test_degenerate_axis_integration():
+    a = so.core.ReactorLibrary(data_file("w17x17.arc.h5"))
+    # Test the real behavior on real data
+```
+
+### Avoid: Complex Test Setup for Simple Logic
+```python
+# Don't do this for testing pure mathematical functions
+def test_math_logic():
+    # 50 lines of HDF5 file creation...
+    # Just to test: x1 = x0 + delta
+``` 

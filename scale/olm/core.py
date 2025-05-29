@@ -2074,6 +2074,34 @@ class ReactorLibrary:
 
         return nuclide_ids, transitions
 
+    @staticmethod
+    def duplicate_degenerate_axis_value(x0):
+        """Create a second axis value for degenerate axes to enable gradient calculations.
+        
+        When an axis has only one value, numpy.gradient cannot compute gradients.
+        This function creates a second value with positive spacing from the original.
+        
+        Args:
+            x0: The original axis value
+            
+        Returns:
+            The second axis value (x1) such that x1 > x0
+            
+        Examples:
+            >>> ReactorLibrary.duplicate_degenerate_axis_value(0.723)
+            0.773
+            >>> ReactorLibrary.duplicate_degenerate_axis_value(-1.0)
+            -0.95
+            >>> ReactorLibrary.duplicate_degenerate_axis_value(0.0)
+            0.05
+            >>> ReactorLibrary.duplicate_degenerate_axis_value(100.0)
+            105.0
+        """
+        # Always add a small positive offset to ensure dx > 0
+        # regardless of the sign or magnitude of x0
+        delta = max(0.05, 0.05 * abs(x0)) if abs(x0) > 1e-10 else 0.05
+        return x0 + delta
+
     def __init__(self, file, name="", progress_bar=True):
         self.file = file
 
@@ -2116,20 +2144,19 @@ class ReactorLibrary:
                 dn = (*d, slice(None), slice(None)) #state,time,transition
                 self.coeff[dn] = data[i]["matrix"]
 
-#         # Add another point if the dimension only has one so that we can make it easier
-#         # to do operations like gradients.
-#         n = len(self.axes_shape)
-#         for i in range(n):
-#             if self.axes_shape[i] == 1:
-#                 self.axes_shape[i] = 2
-#                 x0 = self.axes_values[i][0]
-#                 if x0 == 0.0:
-#                     x1 = 0.05
-#                 else:
-#                     x1 = 1.05 * x0
-#                 self.axes_values[i] = np.append(self.axes_values[i], x1)
-#                 coeff = np.copy(self.coeff)
-#                 self.coeff = np.repeat(self.coeff, 2, axis=i)
+        # Add another point if the dimension only has one so that we can make it easier
+        # to do operations like gradients.
+        # This handles "degenerate axes" where all libraries have the same value for a
+        # particular interpolation parameter. Without this, gradient calculations would
+        # fail because numpy.gradient requires at least 2 points along each axis.
+        n = len(self.axes_shape)
+        for i in range(n):
+            if self.axes_shape[i] == 1:
+                self.axes_shape[i] = 2
+                x0 = self.axes_values[i][0]
+                x1 = ReactorLibrary.duplicate_degenerate_axis_value(x0)
+                self.axes_values[i] = np.append(self.axes_values[i], x1)
+                self.coeff = np.repeat(self.coeff, 2, axis=i)
 
     def restrict(self, axis_name, keep_values):
         """Restrict the data set returning a new one."""
@@ -2376,7 +2403,7 @@ class NuclideInventory:
             m = "m"
         else:
             m = "m" + str(i)
-        return r"${^{" + str(a) + "\mathrm{" + m + "}}}\mathrm{" + Ee + "}$"
+        return r"${^{" + str(a) + r"\mathrm{" + m + r"}}}\mathrm{" + Ee + "}$"
 
     def _nice_label(self, id):
         return NuclideInventory._nice_label0(self.composition_manager, id)
@@ -2413,6 +2440,13 @@ class NuclideInventory:
         assert units.upper() in time_conv
         c = time_conv[units.upper()]
         return self.time * c
+
+    def get_nuclides(self,nice_label=False):
+        """Return the nuclides in this system"""
+        nuclides = list(self.nuclide_amount.keys())
+        if nice_label:
+            nuclides = [self._nice_label(id) for id in nuclides]
+        return nuclides
 
     def wrel_diff(self, nuclide, other_self, units="GRAMS"):
         """Create a weighted relative difference."""
