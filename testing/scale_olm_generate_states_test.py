@@ -1,4 +1,4 @@
-"""Comprehensive tests for scale.olm.generate.states module achieving 100% coverage."""
+"""Comprehensive tests for scale.olm.generate.states module."""
 
 import pytest
 import numpy as np
