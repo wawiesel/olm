@@ -260,9 +260,8 @@ class TestIntegrationWithMocks:
         model = {"name": "test_reactor"}
         env = {"work_dir": "/tmp/test"}
         
-        with patch('pathlib.Path') as mock_path:
-            mock_path.return_value.exists.return_value = False
-            
+        # Mock Path.exists to avoid Path instantiation issues
+        with patch('pathlib.Path.exists', return_value=False):
             result = check.sequencer(
                 sequence=sequence,
                 _model=model,

@@ -211,11 +211,16 @@ class TestArchiveFunction:
         
         with patch('builtins.open', mock_open_json()), \
              patch('subprocess.run') as mock_subprocess, \
-             patch('pathlib.Path') as mock_path:
+             patch('pathlib.Path') as mock_path_class:
             
             mock_subprocess.return_value = Mock()
-            mock_path.return_value.parent = Path("/tmp")
-            mock_path.return_value.stem = "case1"
+            
+            # Create a proper mock Path instance for Python 3.9 compatibility
+            mock_path_instance = Mock()
+            mock_path_instance.parent = Mock()
+            mock_path_instance.parent.__str__ = Mock(return_value="/tmp")
+            mock_path_instance.stem = "case1"
+            mock_path_class.return_value = mock_path_instance
             
             try:
                 result = assemble.archive(model)
