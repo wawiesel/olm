@@ -13,13 +13,17 @@ import sys
 from pathlib import Path
 import pytest
 
+# Get the directory containing this test file for relative path resolution
+TEST_DIR = Path(__file__).parent
+PROJECT_ROOT = TEST_DIR.parent
+
 
 def get_current_test_functions_with_hashes():
     """Extract all current test function names and their content hashes from test files."""
     test_functions = {}
     
-    # Get all test files in this directory
-    test_files = glob.glob('testing/scale_olm_*.py')
+    # Get all test files in the testing directory
+    test_files = list(TEST_DIR.glob('scale_olm_*.py'))
     
     for file_path in test_files:
         try:
@@ -52,7 +56,7 @@ def get_current_test_functions_with_hashes():
                     
                     test_functions[node.name] = {
                         'hash': function_hash,
-                        'file': file_path
+                        'file': str(file_path)
                     }
                     
         except Exception as e:
@@ -70,7 +74,7 @@ def get_current_test_functions():
 
 def load_manifest():
     """Load the test function manifest file."""
-    manifest_path = Path('testing/test_functions_manifest.txt')
+    manifest_path = TEST_DIR / 'test_functions_manifest.txt'
     
     if not manifest_path.exists():
         pytest.fail(
@@ -148,9 +152,9 @@ class TestSuiteIntegrity:
         current_functions = get_current_test_functions_with_hashes()
         
         # Read manifest
-        manifest_path = Path('testing/test_functions_manifest.txt')
+        manifest_path = TEST_DIR / 'test_functions_manifest.txt'
         if not manifest_path.exists():
-            pytest.fail("Manifest file testing/test_functions_manifest.txt does not exist. Run python scripts/regenerate_manifest.py")
+            pytest.fail(f"Manifest file {manifest_path} does not exist. Run python scripts/regenerate_manifest.py")
         
         manifest_functions = {}
         with open(manifest_path, 'r') as f:
@@ -242,7 +246,7 @@ class TestSuiteIntegrity:
         current_functions = get_current_test_functions_with_hashes()
         
         # Read manifest to check for unexpected changes
-        manifest_path = Path('testing/test_functions_manifest.txt')
+        manifest_path = TEST_DIR / 'test_functions_manifest.txt'
         if not manifest_path.exists():
             pytest.skip("Manifest file does not exist")
         
@@ -282,7 +286,7 @@ def regenerate_manifest():
         manifest_lines.append(f"{function_hash}:{name}")
     
     # Write manifest
-    manifest_path = Path('testing/test_functions_manifest.txt')
+    manifest_path = TEST_DIR / 'test_functions_manifest.txt'
     with open(manifest_path, 'w') as f:
         f.write('\n'.join(manifest_lines) + '\n')
     
