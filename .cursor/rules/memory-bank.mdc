@@ -5,6 +5,50 @@ alwaysApply: true
 ---
 # OLM Memory Bank - Recent Development Patterns
 
+## Commit Message Standards - Updated January 2025
+
+### Clean Imperative Style (No Prefixes)
+The project uses clean, imperative commit messages **without conventional commit prefixes**:
+
+#### ✅ **Correct Style**
+```
+Add codecov coverage badge to README
+Fix degenerate axis handling in ReactorLibrary  
+Update quickstart with official documentation
+Remove unused import statements
+Refactor duplicate axis detection logic
+```
+
+#### ❌ **Avoid These Styles**
+```
+feat: add codecov coverage badge to README
+fix: degenerate axis handling in ReactorLibrary
+docs: update quickstart with official documentation
+```
+
+#### **Guidelines**
+- **Subject Line**: ≤50 characters, capitalized, no period
+- **Imperative Mood**: Start with action verb (Add, Fix, Update, Remove, etc.)
+- **No Prefixes**: No "feat:", "fix:", "docs:", etc.
+- **Body**: Explain "what" and "why", not "how" (wrap at 72 chars)
+- **Structure**: Subject line, blank line, body (if needed)
+- **One Change**: Each commit represents one logical change
+
+#### **Commit Message Template**
+```
+<Verb> <what was changed>
+
+Optional body explaining why this change was made and any
+important context that helps reviewers understand the change.
+Focus on the motivation and impact, not implementation details.
+```
+
+### **Rationale**
+- **Cleaner**: No clutter from prefixes
+- **Readable**: Natural language that flows well
+- **Focused**: Emphasizes the actual change, not categorization
+- **Collaborative**: Easier for team members to read and understand
+
 ## v0.14.2 Release Success - May 29, 2025
 
 ### Successful Release Deployment
