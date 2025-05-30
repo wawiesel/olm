@@ -108,11 +108,7 @@
         },
         "_type": {
             "const": "scale.olm.generate.comp:mox_multizone_2023",
-            "enum": [
-                "scale.olm.generate.comp:mox_multizone_2023"
-            ],
-            "title": "Olm Redirect Type",
-            "type": "string"
+            "title": "Olm Redirect Type"
         }
     },
     "required": [

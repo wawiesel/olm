@@ -14,11 +14,7 @@
         },
         "_type": {
             "const": "scale.olm.check:sequencer",
-            "enum": [
-                "scale.olm.check:sequencer"
-            ],
-            "title": "Olm Redirect Type",
-            "type": "string"
+            "title": "Olm Redirect Type"
         }
     },
     "required": [

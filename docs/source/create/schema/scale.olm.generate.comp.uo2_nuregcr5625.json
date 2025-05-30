@@ -14,11 +14,7 @@
         },
         "_type": {
             "const": "scale.olm.generate.comp:uo2_nuregcr5625",
-            "enum": [
-                "scale.olm.generate.comp:uo2_nuregcr5625"
-            ],
-            "title": "Olm Redirect Type",
-            "type": "string"
+            "title": "Olm Redirect Type"
         }
     },
     "required": [

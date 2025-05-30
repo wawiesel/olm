@@ -45,11 +45,7 @@
         },
         "_type": {
             "const": "scale.olm.check:LowOrderConsistency",
-            "enum": [
-                "scale.olm.check:LowOrderConsistency"
-            ],
-            "title": "Olm Redirect Type",
-            "type": "string"
+            "title": "Olm Redirect Type"
         }
     },
     "required": [

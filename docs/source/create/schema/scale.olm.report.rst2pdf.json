@@ -12,11 +12,7 @@
         },
         "_type": {
             "const": "scale.olm.report:rst2pdf",
-            "enum": [
-                "scale.olm.report:rst2pdf"
-            ],
-            "title": "Olm Redirect Type",
-            "type": "string"
+            "title": "Olm Redirect Type"
         }
     },
     "required": [

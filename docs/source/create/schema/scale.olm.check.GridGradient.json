@@ -27,11 +27,7 @@
         },
         "_type": {
             "const": "scale.olm.check:GridGradient",
-            "enum": [
-                "scale.olm.check:GridGradient"
-            ],
-            "title": "Olm Redirect Type",
-            "type": "string"
+            "title": "Olm Redirect Type"
         }
     },
     "required": [

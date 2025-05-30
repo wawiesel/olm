@@ -144,11 +144,24 @@ When you push you need to `git push --tags` or configure your repo to always pus
 ### Pytest for unit tests
 
 Locally for unit tests we use the pytest framework under the `testing` directory.
-All tests can be run simply like this from the root directory. Not we are using the
+All tests can be run simply like this from the root directory. Note we are using the
 `pytest-xdist` extension which allows parallel testing.
 
 ```console
 $ pytest -n 6 .
+```
+
+To run tests with coverage reporting:
+
+```console
+$ pytest --cov=scale --cov-report=term-missing -n 6 .
+```
+
+To generate an HTML coverage report:
+
+```console
+$ pytest --cov=scale --cov-report=html --cov-report=term-missing -n 6 .
+$ open htmlcov/index.html
 ```
 
 ### Black for commit formatting

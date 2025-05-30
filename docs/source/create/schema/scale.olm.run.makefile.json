@@ -7,11 +7,7 @@
         },
         "_type": {
             "const": "scale.olm.run:makefile",
-            "enum": [
-                "scale.olm.run:makefile"
-            ],
-            "title": "Olm Redirect Type",
-            "type": "string"
+            "title": "Olm Redirect Type"
         }
     },
     "required": [

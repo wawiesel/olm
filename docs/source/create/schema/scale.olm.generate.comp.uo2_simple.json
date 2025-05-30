@@ -14,11 +14,7 @@
         },
         "_type": {
             "const": "scale.olm.generate.comp:uo2_simple",
-            "enum": [
-                "scale.olm.generate.comp:uo2_simple"
-            ],
-            "title": "Olm Redirect Type",
-            "type": "string"
+            "title": "Olm Redirect Type"
         }
     },
     "required": [

@@ -55,11 +55,7 @@
         },
         "_type": {
             "const": "scale.olm.generate.comp:mox_ornltm2003_2",
-            "enum": [
-                "scale.olm.generate.comp:mox_ornltm2003_2"
-            ],
-            "title": "Olm Redirect Type",
-            "type": "string"
+            "title": "Olm Redirect Type"
         }
     },
     "required": [

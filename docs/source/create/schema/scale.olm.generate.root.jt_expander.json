@@ -47,11 +47,7 @@
         },
         "_type": {
             "const": "scale.olm.generate.root:jt_expander",
-            "enum": [
-                "scale.olm.generate.root:jt_expander"
-            ],
-            "title": "Olm Redirect Type",
-            "type": "string"
+            "title": "Olm Redirect Type"
         }
     },
     "required": [

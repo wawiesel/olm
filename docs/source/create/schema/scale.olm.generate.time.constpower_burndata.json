@@ -9,11 +9,7 @@
         },
         "_type": {
             "const": "scale.olm.generate.time:constpower_burndata",
-            "enum": [
-                "scale.olm.generate.time:constpower_burndata"
-            ],
-            "title": "Olm Redirect Type",
-            "type": "string"
+            "title": "Olm Redirect Type"
         }
     },
     "required": [

@@ -2,11 +2,7 @@
     "properties": {
         "_type": {
             "const": "scale.olm.generate.static:pass_through",
-            "enum": [
-                "scale.olm.generate.static:pass_through"
-            ],
-            "title": "Olm Redirect Type",
-            "type": "string"
+            "title": "Olm Redirect Type"
         }
     },
     "required": [
