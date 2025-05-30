@@ -1,0 +1,193 @@
+---
+description: When developing testing
+globs: 
+alwaysApply: false
+---
+# Testing Philosophy
+
+## Testing Framework
+- **Tool**: pytest framework under `testing/` directory
+- **Parallel**: Use `pytest-xdist` for parallel testing
+- **Command**: `pytest -n 6 .` from root directory
+
+## Core Testing Principles
+
+### Testing Philosophy
+- **Prefer Unit Tests Over Integration Tests for Logic**: Factor out testable functions for direct testing
+- **Use Existing Test Data When Possible**: Leverage real data files like `w17x17.arc.h5`
+- **Separate Concerns**: Unit tests for pure functions, integration tests for workflows
+- **Fast Tests Enable Better Development**: Target milliseconds, not seconds for unit tests
+
+### Code Organization for Testing
+- **Make Functions Pure When Possible**: Static methods for stateless functions
+- **Add Doctests for Simple Examples**: Self-documenting with 3-4 representative examples
+- **Single Responsibility**: Each function should do one thing well
+
+### Performance Guidelines
+- **Comprehensive Edge Case Coverage**: Test zero, positive, negative, large, small, boundary values
+- **Use Parameterized Tests**: Test multiple cases efficiently
+- **Avoid Complex Setup**: No temporary files, network calls, or complex setup in unit tests
+
+### Testing Red Flags
+- ❌ Tests that take more than a few seconds to run
+- ❌ Complex temporary file creation for simple logic testing
+- ❌ Tests that duplicate the implementation logic
+- ❌ Integration tests masquerading as unit tests
+
+### Testing Green Flags
+- ✅ Fast, focused unit tests for mathematical logic
+- ✅ Integration tests using existing test data
+- ✅ Clear separation between unit and integration testing
+- ✅ Comprehensive edge case coverage
+- ✅ Self-documenting test names and failure messages
+
+## Examples from This Codebase
+
+### Good: Direct Function Testing
+```python
+def test_duplicate_degenerate_axis_value():
+    test_cases = [(0.0, 0.05), (0.723, 0.05), (-1.0, 0.05), (100.0, 5.0)]
+    for x0, expected_delta in test_cases:
+        x1 = so.core.ReactorLibrary.duplicate_degenerate_axis_value(x0)
+        assert x1 - x0 == pytest.approx(expected_delta)
+```
+
+### Good: Using Existing Test Data
+```python
+def test_degenerate_axis_integration():
+    a = so.core.ReactorLibrary(data_file("w17x17.arc.h5"))
+    # Test the real behavior on real data
+```
+
+### Avoid: Complex Test Setup for Simple Logic
+```python
+# Don't do this for testing pure mathematical functions
+def test_math_logic():
+    # 50 lines of HDF5 file creation...
+    # Just to test: x1 = x0 + delta
+```
+
+## Fuzzy Testing with Hypothesis
+
+### Property-Based Testing Framework
+- **Library**: Use [Hypothesis](mdc:https:/hypothesis.readthedocs.io) for property-based fuzzy testing
+- **Philosophy**: Test mathematical properties, not implementation details
+- **Integration**: Configure in `pytest.ini` with appropriate settings
+- **Execution**: Fast (~1-2s) addition to test suite for broad edge case coverage
+
+### Fuzzy Testing Best Practices
+
+#### DO: Focus on Mathematical Correctness
+```python
+from hypothesis import given, strategies as st
+
+@given(x0=st.floats(min_value=-1e6, max_value=1e6, allow_nan=False, allow_infinity=False))
+def test_axis_creates_valid_increasing_sequence(self, x0):
+    """Property: Function should create valid increasing sequence."""
+    x1 = some_function(x0)
+    
+    # Test essential mathematical properties
+    assert x1 > x0, "Second value must be greater than first"
+    assert x1 != x0, "Values must be distinct"
+    assert np.isfinite(x1), "Result must be finite"
+    
+    # Test that it enables downstream operations
+    axis = np.array([x0, x1])
+    gradient = np.gradient(axis)  # Should not raise exception
+    assert np.all(gradient > 0), "Gradient should be positive"
+```
+
+#### DON'T: Test Implementation Constants
+```python
+# AVOID: Testing specific implementation details
+def test_specific_implementation():
+    x1 = some_function(0.723)
+    assert x1 - 0.723 == pytest.approx(0.05)  # Too specific to current implementation!
+```
+
+#### Property Categories to Test
+
+1. **Mathematical Properties**
+   - Monotonicity: `x1 > x0` for increasing functions
+   - Distinctness: `x1 != x0` for value generation
+   - Finiteness: `np.isfinite(result)` for numerical stability
+   - Sign preservation: Where appropriate for domain
+
+2. **Numerical Stability**
+   - Results remain finite across input ranges
+   - No overflow/underflow for reasonable inputs
+   - Gradient calculations succeed
+   - Rounding operations are idempotent
+
+3. **Data Structure Integrity**
+   - Array shapes preserved appropriately
+   - Transformations maintain essential structure
+   - Coefficient expansion preserves data relationships
+
+4. **Domain-Specific Properties**
+   - Reactor parameters remain non-negative
+   - Physical constraints satisfied
+   - Interpolation axes properly structured
+
+### Input Range Guidelines
+
+#### Realistic Ranges for Reactor Physics
+```python
+# Good: Domain-appropriate ranges
+@given(mod_dens=st.floats(min_value=0.1, max_value=2.0))     # Realistic moderator density
+@given(burnup=st.floats(min_value=0.0, max_value=100.0))     # Realistic burnup range
+@given(enrichment=st.floats(min_value=0.01, max_value=20.0)) # Realistic enrichment
+```
+
+#### Edge Case Testing
+```python
+# Good: Test edge cases that matter
+@given(st.one_of(st.just(0.0), 
+                st.floats(min_value=-1e-10, max_value=1e-10)))  # Near-zero values
+@given(st.floats(min_value=1e6, max_value=1e9))               # Large but finite values
+```
+
+#### Avoid Unrealistic Extremes
+```python
+# Avoid: Ranges that don't represent real usage
+@given(x=st.floats(min_value=-1e50, max_value=1e50))  # Too extreme for physics
+```
+
+### Hypothesis Configuration
+Configure in `pytest.ini`:
+```ini
+[tool:hypothesis]
+max_examples = 100
+deadline = 5000
+stateful_step_count = 50
+suppress_health_check = too_slow
+```
+
+### Example Test Structure
+```python
+class TestMathematicalPropertiesFuzzy:
+    """Fuzzy tests focusing on mathematical correctness."""
+    
+    @given(input_val=st.floats(min_value=-100, max_value=100, allow_nan=False))
+    @settings(max_examples=200)
+    def test_essential_property(self, input_val):
+        """Property: Function should satisfy essential mathematical constraint."""
+        assume(abs(input_val) > 1e-15)  # Skip problematic inputs
+        
+        result = function_under_test(input_val)
+        
+        # Test properties that MUST hold
+        assert essential_property_holds(result), "Essential property violated"
+        assert downstream_operations_work(result), "Result not usable"
+```
+
+### Integration with Existing Tests
+- **Complement, don't replace**: Fuzzy tests enhance unit/integration tests
+- **Fast execution**: Target ~1-2s total for fuzzy test suite
+- **CI integration**: Include in standard test pipeline
+- **Regression detection**: Catch edge cases missed by manual testing
+
+## Docstrings and Documentation Testing
+- **Requirement**: Each function, module, and class should have standard docstrings
+- **Include**: A few doctests per function
+- **Testing**: Run `pytest -v scale/olm/core.py` for verbose module tests

@@ -1,0 +1,175 @@
+---
+description: When doing development
+globs: 
+alwaysApply: false
+---
+# Development Workflow
+
+## Branch Protection Rules
+- **Pull Requests Required**: Cannot push directly to main branch (even repository admins)
+- **Status Checks Required**: "test" GitHub Actions workflow must pass before merge
+- **Review Required**: 1 approving review needed from team member
+- **Conversation Resolution**: All PR discussions must be resolved before merge
+- **Squash Merge Only**: Maintains clean commit history, other merge types disabled
+- **Force Push Disabled**: Protects against history rewriting on protected branches
+- **Branch Deletion Disabled**: Prevents accidental deletion of main branch
+
+## Development Workflow Process
+All development must follow this process:
+
+1. **Create Feature Branch**
+   ```bash
+   $ git checkout -b feature/description-of-change
+   ```
+
+2. **Develop and Test Locally**
+   ```bash
+   $ # Make changes, commit frequently with good messages
+   $ pytest -n 6 .  # Ensure all tests pass
+   $ pytest testing/fuzzy_test.py  # Run fuzzy tests
+   ```
+
+3. **Push Feature Branch**
+   ```bash
+   $ git push origin feature/description-of-change
+   ```
+
+4. **Create Pull Request**
+   ```bash
+   $ gh pr create --title "Descriptive Title" --body-file description.md
+   $ # Or use GitHub web interface
+   ```
+
+5. **Wait for CI Validation**
+   - GitHub Actions "test" workflow must pass
+   - All tests including fuzzy tests must succeed
+   - Coverage reports are generated automatically
+
+6. **Code Review Process**
+   - Request review from team member
+   - Address any feedback through additional commits
+   - Resolve all conversations before merge
+
+7. **Squash Merge**
+   - Use GitHub's squash merge button once approved
+   - This maintains clean commit history on main
+   - Feature branch is automatically deleted
+
+## Commit Message Standards
+
+### Style Guidelines
+- **Style**: Use clean, imperative mood without prefixes
+- **Subject Line**: 50 characters or less, capitalized, no period
+- **Format**: "Add feature X" not "feat: add feature X"
+- **Imperative Verbs**: Add, Fix, Update, Remove, Refactor, etc.
+- **Body**: Explain "what" and "why", not "how" (wrap at 72 chars)
+- **Structure**: Subject line, blank line, body (if needed)
+- **Scope**: One logical change per commit
+
+### Examples of Good Commit Messages
+```
+Add codecov coverage badge to README
+Fix degenerate axis handling in ReactorLibrary
+Update quickstart with official documentation
+Remove unused import statements
+Refactor duplicate axis detection logic
+```
+
+### Commit Message Template
+```
+<Verb> <what was changed>
+
+Optional body explaining why this change was made and any
+important context that helps reviewers understand the change.
+Focus on the motivation and impact, not implementation details.
+```
+
+## Version Management
+
+### Semantic Versioning
+- **Standard**: Follow [semantic versioning](mdc:https:/semver.org)
+- **Process**: 
+  1. Commit code changes with descriptive message
+  2. Run appropriate bumpversion command
+  3. Push with tags
+
+### Bumpversion Commands
+- **Bug fixes**: `bumpversion patch`
+- **New features**: `bumpversion minor` 
+- **Breaking changes**: `bumpversion major`
+
+### Bumpversion Configuration
+- **File**: `.bumpversion.cfg`
+- **Auto-commit**: `commit = True`
+- **Auto-tag**: `tag = True`
+- **Updates**: Automatically updates `pyproject.toml` and `README.md`
+
+### Git Tag Pushing
+```bash
+$ git push --tags
+```
+Or configure automatic tag pushing:
+```git
+#.git/config
+[remote "origin"]
+    push = +refs/heads/*:refs/heads/*
+    push = +refs/tags/*:refs/tags/*
+```
+
+## Pull Request Formatting
+
+### PR Title Guidelines
+- **Descriptive titles**: Clearly state what the PR accomplishes
+- **Use imperative mood**: "Add feature X" not "Added feature X"
+- **50 characters or less**: Keep titles concise
+
+### PR Description Best Practices
+- **NO duplicate headers**: Avoid repeating the title as a # header in description
+- **Start with content directly**: Description should begin with the summary/overview
+- **Comprehensive descriptions**: Explain the "what" and "why", include examples
+- **Use file-based approach**: For complex content, use `--body-file description.md`
+
+#### Good PR Description Format:
+```markdown
+Summary of changes and motivation for this PR.
+
+## Changes Made
+- Bullet point of change 1
+- Bullet point of change 2
+
+## Testing
+- How the changes were tested
+- Coverage improvements
+
+## Impact
+- What this enables or fixes
+```
+
+#### Bad PR Description Format:
+```markdown
+# Add comprehensive test coverage   ← DON'T repeat title as header
+
+Summary of changes...
+```
+
+### PR Content Guidelines
+- **Small focused changes**: Easier to review and less likely to introduce bugs
+- **Include tests**: New functionality should include appropriate test coverage
+- **Update documentation**: Include relevant documentation updates
+- **Use file-based commands**: For complex PR descriptions, write to file first then use `--body-file`
+
+### Command Line Best Practices
+- **File-based strategy**: Write complex content to temporary files first
+- **Avoid long command args**: Use `--body-file` instead of `--body` for multi-line content
+- **Clean up temp files**: Remove temporary files after command execution
+
+#### Example File-Based Approach:
+```bash
+# Instead of complex inline content:
+gh pr create --title "Title" --body "Complex multi-line content..."  # FAILS
+
+# Use file-based approach:
+echo "Complex content..." > pr_description.md
+gh pr create --title "Title" --body-file pr_description.md  # WORKS
+rm pr_description.md
+```
