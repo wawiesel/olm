@@ -10,6 +10,25 @@ alwaysApply: false
 - **Parallel**: Use `pytest-xdist` for parallel testing
 - **Command**: `pytest -n 6 .` from root directory
 
+## Test File Naming Conventions
+
+### Naming Scheme
+- **Heavy Classes**: `scale_olm_<package>_<ClassName>_test.py` for specific heavy classes with significant functionality
+- **General Module**: `scale_olm_<package>_test.py` for free functions and small classes
+
+### Examples
+```
+testing/scale_olm_core_CompositionManager_test.py    # Heavy class with many methods
+testing/scale_olm_core_ScaleRunner_test.py           # Heavy class with complex setup
+testing/scale_olm_core_test.py                       # Free functions and utilities
+testing/scale_olm_assemble_test.py                   # Module-level functions
+```
+
+### Benefits
+- **Clear organization**: Easy to locate tests for specific classes vs general functionality
+- **Focused testing**: Heavy classes get dedicated test files for comprehensive coverage
+- **Maintainability**: Separate concerns between class-specific and module-level tests
+
 ## Core Testing Principles
 
 ### Testing Philosophy
