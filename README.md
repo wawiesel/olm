@@ -1,172 +1,124 @@
-## ORIGEN Library Manager (OLM)
+# 🚀 ORIGEN Library Manager (OLM)
+
+> **Build, manage, and validate ORIGEN reactor libraries with ease**
 
 [![Documentation Status](https://readthedocs.org/projects/scale-olm/badge/?version=v0.14.2)](https://scale-olm.readthedocs.io/en/v0.14.2)
+[![PyPI version](https://badge.fury.io/py/scale-olm.svg)](https://badge.fury.io/py/scale-olm)
+[![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-BSD-green.svg)](LICENSE)
 [![codecov](https://codecov.io/gh/wawiesel/olm/branch/main/graph/badge.svg)](https://codecov.io/gh/wawiesel/olm)
 
-The latest stable version is [v0.14.2](https://scale-olm.readthedocs.io/en/stable).
+**OLM** streamlines the complex process of creating, validating, and managing [SCALE/ORIGEN](https://scale.ornl.gov) reactor libraries for nuclide inventory calculations. Say goodbye to manual library management! 🎯
 
-OLM is a command-line utility that streamlines aspects of using the 
-[SCALE/ORIGEN](https://scale.ornl.gov) library to solve nuclide inventory generation problems.
+## ⚡ Quick Start
 
-To install, use `pip`.
+Get up and running in 5-10 minutes, starting with a clean slate and ending with a simple UOX ORIGEN reactor library:
 
-```console
+```bash
+# Initialize a configuration file for the uox_quick variant
+olm init --variant uox_quick
+
+# Create an ORIGEN library with parallel processing
+olm create -j6 uox_quick/config.olm.json
+
+# Open the generated report
+open uox_quick/_work/uox_quick.pdf
+```
+
+### 🎯 **Using Your New Library in SCALE**
+
+Once created, you can use your library in ORIGAMI calculations:
+
+```bash
+# Allow the local library to be found by olm link
+export SCALE_OLM_PATH=$PWD/uox_quick/_work
+```
+
+Create an ORIGAMI input file (`origami.inp`):
+```
+=shell
+olm link uox_quick
+end
+
+=origami
+libs=[ uox_quick ]
+
+fuelcomp{
+    uox(fuel){ enrich=4.95 }
+    mix(1){ comps[fuel=100] }
+}
+
+modz = [ 0.74 ]
+pz = [ 1.0 ]
+
+hist[
+  cycle{ power=40 burn=1000 nlib=10 }
+]
+end
+```
+
+Then run your calculation:
+```bash
+$SCALE_DIR/bin/scalerte -m origami.inp
+```
+
+That's it! You now have a verified ORIGEN library ready for spent fuel inventory generation. ✨
+
+> **📋 Requirements**: Generating ORIGEN libraries requires SCALE 6.3.2+. Using UOX libraries requires SCALE 6.2.4+. MOX libraries require SCALE 7.0+.
+
+> **💡 Tip**: Set `SCALE_LOG_LEVEL=30` to show only warnings and errors during library creation.
+
+## 🎯 What OLM Does
+
+| Challenge | OLM Solution |
+|-----------|--------------|
+| 📊 **Complex Library Creation** | One-command library generation from reactor parameters |
+| 🔍 **Quality Validation** | Automated quality checks with numerical scoring |
+| 📦 **Library Management** | Install, link, and organize libraries effortlessly |
+| 🔧 **Workflow Automation** | Parallel processing and dependency management |
+| 📈 **Reproducibility** | JSON-based configuration for version control |
+
+
+## 🚀 Installation Options
+
+### 📦 PyPI (Recommended)
+```bash
 pip install scale-olm
 ```
 
-## Locations
-
-The main development repository is hosted on [GitHub](https://github.com/wawiesel/olm) 
-with a read-only mirror on the ORNL-hosted [GitLab](https://code.ornl.gov/scale/code/olm).
-
-## Developing
-
-The script `dev.sh` is provided to initialize the development environment.
-
-```console
-$ git clone https://github.com/wawiesel/olm
-$ cd olm
-$ source dev.sh
+### Quick Development Setup
+```bash
+git clone https://github.com/wawiesel/olm
+cd olm
+source dev.sh          # Automatic environment setup
+pre-commit install     # Enable code formatting
+pytest -n 6 .          # Run tests in parallel
 ```
 
-This is all you should need to do. The following sections explain in more detail 
-what happens when you run `dev.sh`.
+## 📚 Documentation & Resources
 
-## Developer details
+- 📖 **[Official Documentation](https://scale-olm.readthedocs.io/en/stable)** - Complete user guide
+- 🐙 **[GitHub Repository](https://github.com/wawiesel/olm)** - Source code and issues
+- 🧪 **[Examples](examples/)** - Ready-to-run reactor configurations
+- 📓 **[Notebooks](notebooks/)** - Interactive tutorials and debugging guides
 
-This section contains additional details on developing OLM.
+## What We Use
+- 🐍 **Python 3.9+** with modern async/await patterns
+- 🖱️ **[Click](https://click.palletsprojects.com/)** for beautiful CLI interfaces  
+- ⚫ **[Black](https://black.readthedocs.io/)** for consistent code formatting
+- 🧪 **[Pytest](https://pytest.org/)** with parallel test execution
+- 📝 **[Sphinx](https://www.sphinx-doc.org/)** for documentation
 
-### Enable virtual environment
+### Development Guidelines
+- 📝 Follow [conventional commit messages](https://cbea.ms/git-commit/)
+- 🔖 Use [semantic versioning](https://semver.org/) (`bumpversion patch|minor|major`)
+- 🧪 Write tests for new features
+- 📚 Document public APIs with docstrings
 
-```console
-$ virtualenv venv
-$ . venv/bin/activate
-$ which python
-```
+---
 
-If you get an error about missing `virtualenv`, you may need to install it.
+## 🏢 Repository Locations
 
-```console
-$ pip install virtualenv
-```
+- **Primary**: [GitHub](https://github.com/wawiesel/olm) (main development)
+- **Mirror**: [ORNL GitLab](https://code.ornl.gov/scale/code/olm) (read-only)
 
-### Install requirements
-
-After enabling the virtual environment, run this command to install dependencies.
-
-```console
-$ pip install -r requirements.txt
-```
-
-NOTE: if you need to regenerate the requirements file after adding dependencies.
-```console
-$ pip freeze | grep -v '^\-e'>requirements.txt
-```
-
-### Enable a local install for testing
-
-This command will enable any changes you make to instantly propagate to the executable
-you can run just with `olm`.
-
-```console
-$ pip install --editable .
-$ olm
-$ which olm
-```
-
-### Creating docs
-
-With the development environment installed, the docs may be created within the
-`docs` directory. With the following commands.
-
-```console
-$ cd docs
-$ make html
-$ open build/html/index.html
-```
-
-Alternatively the PDF docs may be generated using the `make latexpdf` command. Note
-that the HTML docs are intended as the main documentation.
-
-The following greatly simplifies iterating on documentation. Run this command
-and open your browser to http://localhost:8000.
-
-```console
-sphinx-autobuild docs/source/ docs/build/html/
-```
-
-
-
-### Notebooks
-
-There are notebooks contained in `notebooks` which may be helpful for debugging or
-understanding how something is working. You may need to install your virtual environment
-kernel for the notebooks to work. You should use the local `venv` kernel instead of
-your default Python kernel so you have all the local packages at the correct versions.
-
-```console
-$ ipython kernel install --name "venv" --user
-```
-
-Now, you can select the created kernel "venv" when you start Jupyter notebook or lab.
-
-## Notes about development
-
-### Click for CLI
-
-We use the [Click python library](https://click.palletsprojects.com/en/8.1.x)
-for command line. Here's a nice [video about click](https://www.youtube.com/watch?v=kNke39OZ2k0).
-
-### Commit messages
-
-Follow these [guidelines](https://cbea.ms/git-commit/) for commit messages.
-
-### Version updates
-
-OLM uses [semantic versioning](https://semver.org/). You should commit the 
-relevant code with the usual description commit message. 
-
-Then run 
-
-- `bumpversion patch` if you are fixing a bug
-- `bumpversion minor` if you are adding a new feature
-- `bumpversion major` if you are breaking backwards compatibility
-
-When you push you need to `git push --tags` or configure your repo to always push tags:
-
-```
-#.git/config
-[remote "origin"]
-    push = +refs/heads/*:refs/heads/*
-    push = +refs/tags/*:refs/tags/*
-```
-
-### Pytest for unit tests
-
-Locally for unit tests we use the pytest framework under the `testing` directory.
-All tests can be run simply like this from the root directory. Not we are using the
-`pytest-xdist` extension which allows parallel testing.
-
-```console
-$ pytest -n 6 .
-```
-
-### Black for commit formatting
-
-The first time you do work on a clone, do this.
-
-```console
-$ pre-commit install
-```
-
-This will use the [Black formatter](https://medium.com/gousto-engineering-techbrunch/automate-python-code-formatting-with-black-and-pre-commit-ebc69dcc5e03).
-
-
-### Docstrings and Doctest
-
-Our goal is to have each function, module, and class with standard docstrings and
-a few doctests. You can run verbose tests on a specific module as follows.
-
-```console
-$ pytest -v scale/olm/core.py
-```
