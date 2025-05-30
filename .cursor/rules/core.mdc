@@ -45,9 +45,31 @@ Use the "venv" kernel in Jupyter to ensure local package versions.
 - **Automatic**: Formatting runs automatically on commits
 
 ### Commit Messages
-- **Guidelines**: Follow [conventional commit guidelines](mdc:https:/cbea.ms/git-commit)
-- **Format**: Clear, descriptive commit messages
+- **Style**: Use clean, imperative mood without prefixes
+- **Subject Line**: 50 characters or less, capitalized, no period
+- **Format**: "Add feature X" not "feat: add feature X"
+- **Imperative Verbs**: Add, Fix, Update, Remove, Refactor, etc.
+- **Body**: Explain "what" and "why", not "how" (wrap at 72 chars)
+- **Structure**: Subject line, blank line, body (if needed)
 - **Scope**: One logical change per commit
+
+#### Examples of Good Commit Messages
+```
+Add codecov coverage badge to README
+Fix degenerate axis handling in ReactorLibrary
+Update quickstart with official documentation
+Remove unused import statements
+Refactor duplicate axis detection logic
+```
+
+#### Commit Message Template
+```
+<Verb> <what was changed>
+
+Optional body explaining why this change was made and any
+important context that helps reviewers understand the change.
+Focus on the motivation and impact, not implementation details.
+```
 
 ## Testing Standards
 
