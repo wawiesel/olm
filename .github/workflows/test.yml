@@ -50,3 +50,18 @@ jobs:
           fail_ci_if_error: false
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    if: always()
+    steps:
+      - name: Check build status
+        run: |
+          if [[ "${{ needs.build.result }}" == "success" ]]; then
+            echo "All tests passed successfully"
+            exit 0
+          else
+            echo "Tests failed"
+            exit 1
+          fi
