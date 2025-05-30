@@ -428,3 +428,174 @@ def test_specific_delta_values():
 - **Edge case discovery**: Hypothesis finds edge cases human testers might miss
 - **Regression prevention**: Catches numerical instabilities early in development
 - **Documentation value**: Properties serve as executable specifications for mathematical behavior 
+
+## Command Line Best Practices - January 2025
+
+### **File-Based Strategy for Complex Commands**
+**Issue**: Direct command line arguments with newlines, special characters, or long strings often fail
+**Solution**: Write content to temporary files first, then reference the files in commands
+
+#### **✅ Successful Pattern**
+```bash
+# Instead of trying to pass complex strings directly:
+gh pr create --title "Title" --body "Very long multi-line description..."  # FAILS
+
+# Use file-based approach:
+echo "Complex content..." > temp_file.md
+gh pr create --title "Title" --body-file temp_file.md  # WORKS
+rm temp_file.md
+```
+
+#### **Commands That Benefit from File Strategy**
+- **`gh pr create`**: Use `--body-file` instead of `--body` for complex descriptions
+- **`git commit`**: Use `git commit -F message_file.txt` for multi-line messages
+- **`curl`**: Use `curl --data @payload.json` for complex JSON payloads
+- **Long SQL queries**: Write to `.sql` file first, then execute
+- **Complex configuration**: Write to config file, then reference
+
+#### **Implementation Pattern**
+1. **Write content to temporary file** (descriptive name: `pr_description.md`, `commit_message.txt`)
+2. **Execute command with file reference**
+3. **Clean up temporary file** if desired
+
+#### **Benefits**
+- ✅ **Reliable**: Avoids shell escaping issues
+- ✅ **Readable**: Content is easier to review in files
+- ✅ **Debuggable**: Can inspect file contents when commands fail
+- ✅ **Reusable**: Can reuse file content for multiple commands
+
+### **Memory Bank Integration**
+This pattern should be the **default approach** for any command involving:
+- Multi-line text content
+- Special characters (quotes, backticks, newlines)
+- Long argument strings (>100 characters)
+- JSON/markup content
+- Template/structured content
+
+## Bot Account Development Workflow - January 2025
+
+### **olm-bot Account Successfully Implemented**
+**Established**: Complete AI-assisted development workflow with security boundaries
+
+#### **✅ Account Setup Process**
+1. **Created olm-bot GitHub account** using Gmail alias (`yourname+olm-bot@gmail.com`)
+2. **Added as collaborator** with write permissions (not admin)
+3. **Configured git locally**: `user.name="olm-bot"`, `user.email="olm-bot@users.noreply.github.com"`
+4. **Authentication**: `gh auth login --web` with olm-bot account
+
+#### **🔒 Security Boundaries Enforced**
+- ✅ **Branch protection**: Cannot push directly to main (even admins)
+- ✅ **PR required**: All changes must go through pull request workflow
+- ✅ **Review required**: 1 approving review needed from human
+- ✅ **Status checks**: "test" workflow must pass before merge
+- ✅ **No self-approval**: Bot cannot approve its own PRs
+- ✅ **Squash merge only**: Maintains clean commit history
+
+#### **🤖 Development Workflow**
+1. **Create feature branch**: `git checkout -b feature/description`
+2. **Develop with olm-bot**: Code, test, commit with clean messages
+3. **Push branch**: `git push origin feature/branch-name`
+4. **Create PR**: `gh pr create --title "Title" --body-file description.md`
+5. **Wait for CI**: All tests must pass (Python 3.9, 3.10, 3.11, 3.12)
+6. **Human review**: User reviews and approves PR
+7. **Auto-merge**: Automatic squash merge when conditions met
+
+### **Test Coverage Achievement - January 2025**
+
+#### **📊 Coverage Improvement: 55% → 58%** (+3%)
+- **47 new comprehensive tests** added across critical modules
+- **173 total tests** now passing in ~2m19s
+- **Focus**: Mathematical correctness over implementation details
+
+#### **Modules Enhanced**
+- **scale/olm/check.py**: 40% → 51% coverage (GridGradient, quality scores, schema functions)
+- **scale/olm/assemble.py**: 12% → 33% coverage (burnup thinning, data processing, utilities)
+
+#### **Testing Strategy Applied**
+- ✅ **Fast execution**: ~1s for new test suite
+- ✅ **Pure function testing**: Direct mathematical validation
+- ✅ **Mock dependencies**: External tools properly isolated
+- ✅ **Parameterized tests**: Efficient multi-scenario coverage
+- ✅ **Edge case coverage**: Boundary values, error conditions
+
+#### **Test Categories Implemented**
+1. **Mathematical validation**: Gradient calculations, quality score algorithms
+2. **Algorithm correctness**: Burnup thinning, monotonic preservation
+3. **Interface testing**: Schema generation, dry-run scenarios
+4. **Integration mocking**: External dependencies isolated
+5. **Error handling**: Invalid inputs, boundary conditions
+
+### **Security Management - January 2025**
+
+#### **Vulnerability Resolution**
+**Issue**: GitHub reported moderate vulnerability
+**Solution**: Updated security-critical packages
+- ✅ **pycparser**: 2.21 → 2.22 (security fix)
+- ✅ **MarkupSafe**: 2.1.3 → 3.0.2 (security fix)
+- ✅ **pip**: 24.2 → 25.1.1 (latest version)
+- ✅ **wheel**: Updated to 0.45.1
+
+#### **Dependency Management Process**
+1. **Scan vulnerabilities**: `pip-audit --desc --fix`
+2. **Update critical packages**: Focus on security-relevant libraries
+3. **Regenerate requirements**: `pip freeze | grep -v '^-e' > requirements.txt`
+4. **Test compatibility**: Ensure all tests still pass
+5. **Commit changes**: Document security updates in commit message
+
+### **Auto-Merge Workflow Implementation**
+
+#### **GitHub Actions Auto-Merge** (.github/workflows/auto-merge.yml)
+**Purpose**: Automatically merge PRs when all conditions are satisfied
+
+#### **Auto-Merge Conditions** (All must be ✅)
+1. **At least one approved review** (prevents self-approval)
+2. **All status checks passing** (tests, linting, security)
+3. **No changes requested** (no blocking reviews)
+4. **Not a draft PR** (ready for production)
+
+#### **Features Implemented**
+- 🔄 **Squash merge**: Maintains clean commit history
+- 💬 **Informative comments**: Explains when auto-merge is enabled
+- 🛡️ **Security checks**: Prevents authors from approving own PRs
+- 📊 **Detailed logging**: Shows condition status in workflow logs
+- ⚡ **Multi-trigger**: Responds to PR events, reviews, check completions
+
+#### **Workflow Benefits**
+- **Streamlined process**: Reduces manual merge overhead
+- **Security maintained**: All approval requirements still enforced  
+- **Consistent merging**: Always uses squash merge for clean history
+- **Transparency**: Clear communication about merge status
+
+### **CI/CD Enhancements**
+
+#### **Python Version Matrix Expansion**
+- **Before**: Testing Python 3.9, 3.10, 3.11
+- **After**: Testing Python 3.9, 3.10, 3.11, **3.12**
+- **Benefit**: CI now matches local development environment (Python 3.12)
+
+#### **GitHub Actions Configuration**
+```yaml
+matrix:
+  python-version: ["3.9", "3.10", "3.11", "3.12"]
+```
+
+### **Technical Debugging Patterns**
+
+#### **Mock Object Compatibility**
+**Issue**: Complex mock creation failing across Python versions
+**Solution**: Use simple Mock() objects instead of dynamic type creation
+
+```python
+# AVOID: Complex type creation
+mock_info = type('MockInfo', (), {'test_pass': True})()
+
+# USE: Simple Mock object
+mock_info = Mock()
+mock_info.test_pass = True
+mock_info.__dict__ = {'result': 'success'}
+```
+
+#### **Cross-Version Testing**
+- **Local testing**: Python 3.12 with all features
+- **CI validation**: Python 3.9-3.12 for compatibility
+- **Mock patterns**: Use standard library patterns for reliability

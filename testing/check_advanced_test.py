@@ -244,12 +244,13 @@ class TestIntegrationWithMocks:
     @patch('scale.olm.core.ReactorLibrary')
     def test_sequencer_execution_flow(self, mock_reactor_lib, mock_fn_redirect):
         """Test sequencer execution flow with mocked dependencies."""
-        # Simplified mock setup - create a simple mock info object
+        # Simplified mock setup using direct Mock creation (Python 3.12 compatible)
         mock_check_instance = Mock()
         mock_info = Mock()
         mock_info.test_pass = True
-        mock_info.__dict__ = {'result': 'success', 'test_pass': True}
-        mock_check_instance.run.return_value = mock_info
+        
+        # Use configure_mock instead of direct assignment for better compatibility
+        mock_check_instance.configure_mock(**{'run.return_value': mock_info})
         mock_fn_redirect.return_value = mock_check_instance
         
         mock_reactor_lib.return_value = Mock()
