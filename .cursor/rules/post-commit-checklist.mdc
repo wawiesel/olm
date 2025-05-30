@@ -1,5 +1,51 @@
 ---
-description:
-globs:
+description: Whenever you make a git commit
+globs: 
 alwaysApply: false
 ---
+# Post-Commit Checklist for AI
+
+## 🤖 AI Rule Compliance Checklist
+
+This checklist appears after every commit to remind the AI to follow project rules for subsequent actions.
+
+### ✅ Before Next Commit:
+- [ ] **Fetch development-workflow rules**: `fetch_rules(["development-workflow"])`
+- [ ] **Use clean imperative format**: "Add feature X" not "feat: add feature X"  
+- [ ] **No prefixes**: Avoid "docs:", "feat:", "fix:", etc.
+- [ ] **Keep under 50 characters**: Concise, capitalized, no period
+- [ ] **Use imperative verbs**: Add, Fix, Update, Remove, Refactor, etc.
+
+### ✅ Before Creating PR:
+- [ ] **Fetch development-workflow rules**: `fetch_rules(["development-workflow"])`
+- [ ] **NO duplicate headers**: Don't repeat title as # header in description
+- [ ] **Start with content**: Description begins with summary, not title repetition
+- [ ] **Use imperative mood**: "Add feature X" not "Added feature X"
+- [ ] **Consider file-based approach**: Use `--body-file description.md` for complex content
+
+### ✅ Before Test Work:
+- [ ] **Fetch testing-philosophy rules**: `fetch_rules(["testing-philosophy"])`
+- [ ] **Follow established patterns**: Property-based testing with Hypothesis
+- [ ] **Focus on fast tests**: Unit tests for logic, integration for workflows
+- [ ] **Target high coverage**: Meaningful tests, not just line coverage
+
+### ✅ General Rule Compliance:
+- [ ] **Consult rules proactively**: Fetch relevant rules before rule-governed actions
+- [ ] **State rule being followed**: Explicitly mention which rule guides the action
+- [ ] **Ask when uncertain**: Better to ask than violate established patterns
+- [ ] **Use git log for dates**: Get actual dates from `git log --date=format:'%B %d, %Y'`
+
+### 🎯 Quick Rule Reference:
+```bash
+# Common rule fetches:
+fetch_rules(["development-workflow"])  # Commits, PRs, versioning
+fetch_rules(["testing-philosophy"])    # Testing approaches  
+fetch_rules(["project-overview"])      # Project setup, dependencies
+fetch_rules(["last-session"])         # Session continuity
+```
+
+### 📋 Remember:
+- **Rules exist for consistency** - Follow them even for small changes
+- **Documentation is code** - Session updates and rule compliance matter
+- **Git log is truth** - Use actual git history for dates and context
+- **Proactive > Reactive** - Check rules before acting, not after violations
