@@ -7,42 +7,19 @@ alwaysApply: false
 
 ## 🤖 AI Rule Compliance Checklist
 
-This checklist appears after every commit to remind the AI to follow project rules for subsequent actions.
-
 ### ✅ Before Next Commit:
-- [ ] **Check commit standards**: See @development-workflow
-- [ ] **Use clean imperative format**: "Add feature X" not "feat: add feature X"  
-- [ ] **No prefixes**: Avoid "docs:", "feat:", "fix:", etc.
-- [ ] **Keep under 50 characters**: Concise, capitalized, no period
-- [ ] **Use imperative verbs**: Add, Fix, Update, Remove, Refactor, etc.
+- [ ] **Check @development-workflow** - Clean imperative format, no prefixes, under 50 chars
 
 ### ✅ Before Creating PR:
-- [ ] **Check PR formatting**: See @development-workflow
-- [ ] **NO duplicate headers**: Don't repeat title as # header in description
-- [ ] **Start with content**: Description begins with summary, not title repetition
-- [ ] **Use imperative mood**: "Add feature X" not "Added feature X"
-- [ ] **Consider file-based approach**: Use `--body-file description.md` for complex content
+- [ ] **Check @development-workflow** - No duplicate headers, start with content
 
 ### ✅ Before Test Work:
-- [ ] **Check testing principles**: See @testing-philosophy
-- [ ] **Follow established patterns**: Property-based testing with Hypothesis
-- [ ] **Focus on fast tests**: Unit tests for logic, integration for workflows
-- [ ] **Target high coverage**: Meaningful tests, not just line coverage
+- [ ] **Check @testing-philosophy** - Property-based testing, fast focused tests
 
-### ✅ General Rule Compliance:
-- [ ] **Consult rules proactively**: Reference @ rules before rule-governed actions
-- [ ] **State rule being followed**: Explicitly mention which rule guides the action
-- [ ] **Ask when uncertain**: Better to ask than violate established patterns
-- [ ] **Use git log for dates**: Get actual dates from `git log --date=format:'%B %d, %Y'`
-
-### 🎯 Quick Rule Reference:
-- **@development-workflow** - Commits, PRs, versioning
-- **@testing-philosophy** - Testing approaches and patterns
-- **@project-overview** - Project setup and dependencies  
-- **@last-session** - Session continuity and context
+### ✅ Session Management:
+- [ ] **Update @last-session.mdc** - Use `git log --date=format:'%B %d, %Y'` for actual dates
+- [ ] **Document accomplishments** - Record what was built, learned, decided
 
 ### 📋 Remember:
-- **Rules exist for consistency** - Follow them even for small changes
-- **Documentation is code** - Session updates and rule compliance matter
+- **Proactive > Reactive** - Check @ rules before acting, not after violations
 - **Git log is truth** - Use actual git history for dates and context
-- **Proactive > Reactive** - Check rules before acting, not after violations
