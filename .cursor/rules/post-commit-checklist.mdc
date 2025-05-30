@@ -10,39 +10,36 @@ alwaysApply: false
 This checklist appears after every commit to remind the AI to follow project rules for subsequent actions.
 
 ### ✅ Before Next Commit:
-- [ ] **Fetch development-workflow rules**: `fetch_rules(["development-workflow"])`
+- [ ] **Check commit standards**: See @development-workflow
 - [ ] **Use clean imperative format**: "Add feature X" not "feat: add feature X"  
 - [ ] **No prefixes**: Avoid "docs:", "feat:", "fix:", etc.
 - [ ] **Keep under 50 characters**: Concise, capitalized, no period
 - [ ] **Use imperative verbs**: Add, Fix, Update, Remove, Refactor, etc.
 
 ### ✅ Before Creating PR:
-- [ ] **Fetch development-workflow rules**: `fetch_rules(["development-workflow"])`
+- [ ] **Check PR formatting**: See @development-workflow
 - [ ] **NO duplicate headers**: Don't repeat title as # header in description
 - [ ] **Start with content**: Description begins with summary, not title repetition
 - [ ] **Use imperative mood**: "Add feature X" not "Added feature X"
 - [ ] **Consider file-based approach**: Use `--body-file description.md` for complex content
 
 ### ✅ Before Test Work:
-- [ ] **Fetch testing-philosophy rules**: `fetch_rules(["testing-philosophy"])`
+- [ ] **Check testing principles**: See @testing-philosophy
 - [ ] **Follow established patterns**: Property-based testing with Hypothesis
 - [ ] **Focus on fast tests**: Unit tests for logic, integration for workflows
 - [ ] **Target high coverage**: Meaningful tests, not just line coverage
 
 ### ✅ General Rule Compliance:
-- [ ] **Consult rules proactively**: Fetch relevant rules before rule-governed actions
+- [ ] **Consult rules proactively**: Reference @ rules before rule-governed actions
 - [ ] **State rule being followed**: Explicitly mention which rule guides the action
 - [ ] **Ask when uncertain**: Better to ask than violate established patterns
 - [ ] **Use git log for dates**: Get actual dates from `git log --date=format:'%B %d, %Y'`
 
 ### 🎯 Quick Rule Reference:
-```bash
-# Common rule fetches:
-fetch_rules(["development-workflow"])  # Commits, PRs, versioning
-fetch_rules(["testing-philosophy"])    # Testing approaches  
-fetch_rules(["project-overview"])      # Project setup, dependencies
-fetch_rules(["last-session"])         # Session continuity
-```
+- **@development-workflow** - Commits, PRs, versioning
+- **@testing-philosophy** - Testing approaches and patterns
+- **@project-overview** - Project setup and dependencies  
+- **@last-session** - Session continuity and context
 
 ### 📋 Remember:
 - **Rules exist for consistency** - Follow them even for small changes
