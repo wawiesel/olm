@@ -255,4 +255,176 @@ if self.axes_shape[i] == 1:
 - **ReactorLibrary rounds values**: 6 decimal places in `extract_axes` method
 - **Coefficient duplication required**: Must use `np.repeat()` along degenerate axis
 - **Gradient requirement**: All axes need at least 2 points for `numpy.gradient()`
-- **Quality score baselines**: w17x17.arc.h5 should produce q1≈0.779, q2≈0.98 after fixing 
+- **Quality score baselines**: w17x17.arc.h5 should produce q1≈0.779, q2≈0.98 after fixing
+
+## Fuzzy Testing Implementation - January 2025
+
+### Hypothesis Property-Based Testing Framework
+
+#### What We Added
+- **Hypothesis library**: For property-based fuzzy testing with automatic edge case generation
+- **11 comprehensive test classes**: Covering mathematical correctness over implementation details  
+- **~3,000 test examples**: Generated automatically per test run across wide input ranges
+- **Fast execution**: ~1.5 seconds for complete fuzzy test suite
+- **Pytest integration**: Configuration in `pytest.ini` for fuzzy test settings
+
+#### Testing Philosophy Shift
+
+**❌ OLD APPROACH: Testing Implementation Details**
+```python
+# DON'T: Test specific implementation constants
+def test_duplicate_value_specific_delta():
+    x1 = duplicate_degenerate_axis_value(0.723)
+    assert x1 - 0.723 == pytest.approx(0.05, abs=1e-10)  # Too specific!
+```
+
+**✅ NEW APPROACH: Testing Mathematical Properties**
+```python
+# DO: Test essential mathematical correctness
+@given(x0=st.floats(min_value=-1e10, max_value=1e10))
+def test_degenerate_axis_creates_valid_increasing_sequence(self, x0):
+    x1 = ReactorLibrary.duplicate_degenerate_axis_value(x0)
+    
+    # Essential properties only
+    assert x1 > x0, "Second value must be greater than first"
+    assert x1 != x0, "Values must be distinct"  
+    assert np.isfinite(x1), "Result must be finite"
+    
+    # Verify axis works for gradient calculations
+    axis = np.array([x0, x1])
+    assert np.all(np.diff(axis) > 0), "Axis must be strictly increasing"
+```
+
+#### Key Properties We Test
+
+1. **Axis Validity**: `x1 > x0`, distinct values, finite results
+2. **Gradient Compatibility**: `numpy.gradient()` works without errors
+3. **Numerical Stability**: Results remain finite and reasonable across input ranges
+4. **Monotonicity**: Axes are strictly increasing for interpolation
+5. **Shape Consistency**: Transformations preserve data structure integrity
+
+#### Fuzzy Test Categories
+
+**TestAxisHandlingFuzzy**
+- Valid increasing sequences from degenerate axis handling
+- Gradient calculation compatibility across wide input ranges
+- Reasonable spacing for numerical work (not too small/large)
+
+**TestNumericalPropertiesFuzzy**  
+- Rounding stability and idempotency (6 decimal places)
+- Monotonic axis gradient calculations without numerical issues
+
+**TestAxisTransformationFuzzy**
+- Shape transformation consistency (1 → 2 for degenerate axes)
+- Coefficient expansion validity using `np.repeat()`
+
+**TestRealWorldScenariosFuzzy**
+- Reactor parameter validation (mod_dens, burnup, enrichment)
+- Multiple parameter axis consistency in reactor libraries
+
+**TestEdgeCaseRobustnessFuzzy**
+- Near-zero value handling (-1e-10 to 1e-10)
+- Large value handling (1e6 to 1e9) without overflow
+
+#### Input Ranges Tested
+- **Reactor parameters**: 0.1 to 100.0 (typical physics values)
+- **Edge cases**: Near-zero (-1e-10 to 1e-10) 
+- **Large values**: 1e6 to 1e9 (extreme but possible)
+- **Arrays**: Various shapes (1-50 elements) and value distributions
+- **Negative values**: Full range testing including negative parameters
+
+#### Benefits of Fuzzy Testing Approach
+
+1. **Catch regressions**: Automatic detection of edge case failures before production
+2. **Document behavior**: Properties serve as executable specifications  
+3. **Future-proof**: Tests remain valid even if implementation details change
+4. **Broad coverage**: Explores thousands of edge cases automatically
+5. **Mathematical focus**: Validates essential correctness, not implementation artifacts
+
+#### Example Property vs Implementation Test
+
+**Property-Based (Good)**:
+```python
+# Tests WHAT should happen (mathematical correctness)
+assert np.all(np.diff(axis) > 0), "Axis must be strictly increasing"
+assert len(np.unique(axis)) == 2, "Axis must have distinct values"  
+assert np.all(np.isfinite(axis)), "Axis values must be finite"
+```
+
+**Implementation-Based (Avoid)**:
+```python
+# Tests HOW it happens (implementation details)  
+assert delta == 0.05, "Delta must be exactly 0.05"
+assert delta == 0.05 * abs(x0), "Delta must be 5% of magnitude"
+```
+
+### New Development Workflow with Branch Protection
+
+#### Branch Protection Rules Applied
+- **Pull Request Required**: Cannot push directly to main (even admins)
+- **Status Check Required**: "test" workflow must pass before merge  
+- **Review Required**: 1 approving review needed
+- **Conversation Resolution**: All discussions must be resolved
+- **Squash Merge Only**: Maintains clean commit history
+- **Force Push Disabled**: Protects against history rewriting
+- **Branch Deletion Disabled**: Prevents accidental main branch removal
+
+#### New Development Process
+1. **Create feature branch**: `git checkout -b feature/description`
+2. **Develop and test**: Code, commit, test locally
+3. **Push branch**: `git push origin feature/description`  
+4. **Create PR**: `gh pr create --title "Title" --body "Description"`
+5. **CI validation**: GitHub Actions "test" workflow must pass
+6. **Code review**: Get 1 approving review from team member
+7. **Resolve discussions**: Address any review feedback
+8. **Squash merge**: Use GitHub's squash merge button for clean history
+
+#### Fuzzy Testing Integration
+- **Added to CI**: Fuzzy tests run as part of standard test suite
+- **Fast execution**: ~1.5s addition to total test time  
+- **Regression detection**: Catches edge cases that unit tests might miss
+- **Mathematical validation**: Ensures numerical algorithms remain correct
+
+### Fuzzy Testing Best Practices
+
+#### DO: Focus on Mathematical Properties
+```python
+@given(reactor_param=st.floats(min_value=0.1, max_value=10.0))
+def test_reactor_parameter_axis_handling(self, reactor_param):
+    """Property: Reactor parameters should create valid interpolation axes."""
+    x1 = ReactorLibrary.duplicate_degenerate_axis_value(reactor_param)
+    param_axis = np.array([reactor_param, x1])
+    
+    # Test essential properties for reactor physics
+    assert np.all(param_axis >= 0), "Reactor parameters should be non-negative"
+    assert np.all(np.diff(param_axis) > 0), "Parameter axis should be increasing"
+    assert len(np.unique(param_axis)) == 2, "Parameter values should be distinct"
+```
+
+#### DON'T: Test Implementation Constants  
+```python
+# AVOID: Testing specific implementation details
+def test_specific_delta_values():
+    assert delta == 0.05  # Too specific to implementation
+    assert delta == 0.05 * abs(x0)  # Ties test to current algorithm
+```
+
+#### DO: Use Appropriate Input Ranges
+```python
+# Good: Test realistic ranges for the domain
+@given(mod_dens=st.floats(min_value=0.1, max_value=2.0))  # Realistic reactor values
+@given(burnup=st.floats(min_value=0.0, max_value=100.0))  # Realistic burnup range
+```
+
+#### DON'T: Use Unrealistic Ranges
+```python
+# Avoid: Extreme ranges that don't represent real usage
+@given(x=st.floats(min_value=-1e50, max_value=1e50))  # Too extreme for reactor physics
+```
+
+### Memory Bank Integration Notes
+- **Fuzzy tests complement unit tests**: Don't replace, but enhance existing coverage
+- **Property-based approach**: Focus on mathematical correctness over implementation  
+- **Edge case discovery**: Hypothesis finds edge cases human testers might miss
+- **Regression prevention**: Catches numerical instabilities early in development
+- **Documentation value**: Properties serve as executable specifications for mathematical behavior 
