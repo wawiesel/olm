@@ -1,0 +1,78 @@
+---
+description: When reminding oneself about the project itself
+globs: 
+alwaysApply: false
+---
+# OLM Project Overview
+
+## Project Information
+- **Purpose**: ORIGEN Library Manager (OLM) - command-line utility for SCALE/ORIGEN library management
+- **Main Repository**: https://github.com/wawiesel/olm
+- **Documentation**: https://scale-olm.readthedocs.io
+
+## Development Environment Setup
+
+### Initial Setup
+```bash
+$ git clone https://github.com/wawiesel/olm
+$ cd olm
+$ source dev.sh
+```
+
+### Virtual Environment
+```bash
+$ virtualenv venv
+$ . venv/bin/activate
+$ pip install -r requirements.txt
+$ pip install --editable .
+```
+
+### Notebooks Setup
+```bash
+$ ipython kernel install --name "venv" --user
+```
+Use the "venv" kernel in Jupyter to ensure local package versions.
+
+## Code Standards
+
+### Command Line Interface
+- **Framework**: Use [Click python library](mdc:https:/click.palletsprojects.com/en/8.1.x) for CLI
+- **Pattern**: Follow Click conventions for command structure and options
+
+### Code Formatting
+- **Tool**: Black formatter with pre-commit hooks
+- **Setup**: Run `pre-commit install` on first clone
+- **Automatic**: Formatting runs automatically on commits
+
+## Project Structure
+
+### Key Dependencies
+- **CLI**: click
+- **Scientific**: matplotlib, scipy, numpy
+- **Testing**: pytest
+- **Validation**: pydantic
+
+### Python Requirements
+- **Minimum**: Python 3.9+
+- **Target**: Cross-platform compatibility
+
+### Entry Points
+- **Main CLI**: `olm` command via `scale.olm.__main__:olm`
+
+## Repository Management
+
+### Main Locations
+- **Primary**: GitHub (wawiesel/olm)
+- **Mirror**: ORNL GitLab (read-only)
+- **Issues**: GitHub issue tracker
+
+### Documentation Hosting
+- **Live docs**: ReadTheDocs integration
+- **Stable**: Always points to latest stable version
+- **Development**: Branch-specific documentation builds
+
+### Documentation Build
+- **Primary**: HTML docs are the main documentation format
+- **Build**: From `docs/` directory, run `make html`
+- **Live**: Use `sphinx-autobuild docs/source/ docs/build/html/` for iterative development
+- **PDF**: Available via `make latexpdf` but HTML is preferred

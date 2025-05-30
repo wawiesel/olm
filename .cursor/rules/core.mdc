@@ -5,381 +5,73 @@ alwaysApply: true
 ---
 # OLM Project Core Rules
 
-## Project Overview
-- **Purpose**: ORIGEN Library Manager (OLM) - command-line utility for SCALE/ORIGEN library management
-- **Main Repository**: https://github.com/wawiesel/olm
-- **Documentation**: https://scale-olm.readthedocs.io
+## Focused Rule Sets
+This project uses modular rule documentation. See these focused rule sets for detailed guidance:
 
-## Development Environment Setup
+- **@project-overview.mdc** - Project setup, dependencies, and basic information
+- **@development-workflow.mdc** - Branch protection, PR workflow, commit standards, and formatting guidelines  
+- **@testing-philosophy.mdc** - Testing principles, fuzzy testing with Hypothesis
+- **@last-session.mdc** - Summary of current/last session for continuity
 
-### Initial Setup
+## Quick Reference
+
+### Essential Commands
 ```bash
-$ git clone https://github.com/wawiesel/olm
-$ cd olm
-$ source dev.sh
+# Setup
+git checkout -b feature/description
+pytest -n 6 .
+
+# Commit & PR
+git commit -F message.txt
+gh pr create --title "Title" --body-file description.md
 ```
 
-### Virtual Environment
-```bash
-$ virtualenv venv
-$ . venv/bin/activate
-$ pip install -r requirements.txt
-$ pip install --editable .
-```
-
-### Notebooks Setup
-```bash
-$ ipython kernel install --name "venv" --user
-```
-Use the "venv" kernel in Jupyter to ensure local package versions.
-
-## Code Standards
-
-### Command Line Interface
-- **Framework**: Use [Click python library](mdc:https:/click.palletsprojects.com/en/8.1.x) for CLI
-- **Pattern**: Follow Click conventions for command structure and options
-
-### Code Formatting
-- **Tool**: Black formatter with pre-commit hooks
-- **Setup**: Run `pre-commit install` on first clone
-- **Automatic**: Formatting runs automatically on commits
-
-### Commit Messages
-- **Style**: Use clean, imperative mood without prefixes
-- **Subject Line**: 50 characters or less, capitalized, no period
-- **Format**: "Add feature X" not "feat: add feature X"
-- **Imperative Verbs**: Add, Fix, Update, Remove, Refactor, etc.
-- **Body**: Explain "what" and "why", not "how" (wrap at 72 chars)
-- **Structure**: Subject line, blank line, body (if needed)
-- **Scope**: One logical change per commit
-
-#### Examples of Good Commit Messages
-```
-Add codecov coverage badge to README
-Fix degenerate axis handling in ReactorLibrary
-Update quickstart with official documentation
-Remove unused import statements
-Refactor duplicate axis detection logic
-```
-
-#### Commit Message Template
-```
-<Verb> <what was changed>
-
-Optional body explaining why this change was made and any
-important context that helps reviewers understand the change.
-Focus on the motivation and impact, not implementation details.
-```
-
-## Testing Standards
+### Key Rules
+- **No duplicate headers in PR descriptions** - Start descriptions with content, not title repetition
+- **Clean imperative commits** - "Add feature X" not "feat: add feature X" 
+- **Branch protection enforced** - All changes via PR, 1 review required
+- **Fast focused tests** - Unit tests for logic, integration for workflows
+- **Property-based fuzzy testing** - Mathematical correctness over implementation details
 
 ### Testing Framework
-- **Tool**: pytest framework under `testing/` directory
-- **Parallel**: Use `pytest-xdist` for parallel testing
-- **Command**: `pytest -n 6 .` from root directory
+- **Framework**: pytest with pytest-xdist for parallel execution
+- **Coverage**: Target high coverage with meaningful tests
+- **Speed**: Fast unit tests (~milliseconds), reasonable integration tests
+- **Fuzzy**: Hypothesis for property-based testing
 
-### Docstrings and Doctests
-- **Requirement**: Each function, module, and class should have standard docstrings
-- **Include**: A few doctests per function
-- **Testing**: Run `pytest -v scale/olm/core.py` for verbose module tests
+### Project Structure
+- **CLI**: Click framework
+- **Testing**: `testing/` directory with comprehensive test suites
+- **Coverage**: Aim for 100% on focused modules
+- **Dependencies**: Python 3.9+, scientific stack (numpy, scipy, matplotlib)
 
-### Documentation
-- **Primary**: HTML docs are the main documentation format
-- **Build**: From `docs/` directory, run `make html`
-- **Live**: Use `sphinx-autobuild docs/source/ docs/build/html/` for iterative development
-- **PDF**: Available via `make latexpdf` but HTML is preferred
+## Project Memory via Git Log
 
-## Version Management
+### Git Log as Living Memory
+Instead of maintaining separate memory files, we rely on git log with good commit messages:
 
-### Semantic Versioning
-- **Standard**: Follow [semantic versioning](mdc:https:/semver.org)
-- **Process**: 
-  1. Commit code changes with descriptive message
-  2. Run appropriate bumpversion command
-  3. Push with tags
-
-### Bumpversion Commands
-- **Bug fixes**: `bumpversion patch`
-- **New features**: `bumpversion minor` 
-- **Breaking changes**: `bumpversion major`
-
-### Bumpversion Configuration
-- **File**: `.bumpversion.cfg`
-- **Auto-commit**: `commit = True`
-- **Auto-tag**: `tag = True`
-- **Updates**: Automatically updates `pyproject.toml` and `README.md`
-
-### Git Tag Pushing
 ```bash
-$ git push --tags
-```
-Or configure automatic tag pushing:
-```git
-#.git/config
-[remote "origin"]
-    push = +refs/heads/*:refs/heads/*
-    push = +refs/tags/*:refs/tags/*
-```
+# Find specific patterns
+git log --grep="coverage" --oneline
+git log --grep="test" --since="2024-01-01"
 
-## Branch Protection and PR Workflow
+# See full context of changes  
+git show <commit-hash>
 
-### Branch Protection Rules
-- **Pull Requests Required**: Cannot push directly to main branch (even repository admins)
-- **Status Checks Required**: "test" GitHub Actions workflow must pass before merge
-- **Review Required**: 1 approving review needed from team member
-- **Conversation Resolution**: All PR discussions must be resolved before merge
-- **Squash Merge Only**: Maintains clean commit history, other merge types disabled
-- **Force Push Disabled**: Protects against history rewriting on protected branches
-- **Branch Deletion Disabled**: Prevents accidental deletion of main branch
+# Find when/why code changed
+git blame <file>
+git log -p <file>  # Full history of a file
 
-### Development Workflow
-All development must follow this process:
-
-1. **Create Feature Branch**
-   ```bash
-   $ git checkout -b feature/description-of-change
-   ```
-
-2. **Develop and Test Locally**
-   ```bash
-   $ # Make changes, commit frequently with good messages
-   $ pytest -n 6 .  # Ensure all tests pass
-   $ pytest testing/fuzzy_test.py  # Run fuzzy tests
-   ```
-
-3. **Push Feature Branch**
-   ```bash
-   $ git push origin feature/description-of-change
-   ```
-
-4. **Create Pull Request**
-   ```bash
-   $ gh pr create --title "Descriptive Title" --body-file description.md
-   $ # Or use GitHub web interface
-   ```
-
-5. **Wait for CI Validation**
-   - GitHub Actions "test" workflow must pass
-   - All tests including fuzzy tests must succeed
-   - Coverage reports are generated automatically
-
-6. **Code Review Process**
-   - Request review from team member
-   - Address any feedback through additional commits
-   - Resolve all conversations before merge
-
-7. **Squash Merge**
-   - Use GitHub's squash merge button once approved
-   - This maintains clean commit history on main
-   - Feature branch is automatically deleted
-
-### PR Best Practices
-- **Descriptive titles**: Clearly state what the PR accomplishes
-- **Comprehensive descriptions**: Explain the "what" and "why", include examples
-- **Small focused changes**: Easier to review and less likely to introduce bugs
-- **Include tests**: New functionality should include appropriate test coverage
-- **Update documentation**: Include relevant documentation updates
-
-## Project Structure
-
-### Key Dependencies
-- **CLI**: click
-- **Scientific**: matplotlib, scipy, numpy
-- **Testing**: pytest
-- **Validation**: pydantic
-
-### Python Requirements
-- **Minimum**: Python 3.9+
-- **Target**: Cross-platform compatibility
-
-### Entry Points
-- **Main CLI**: `olm` command via `scale.olm.__main__:olm`
-
-## Repository Management
-
-### Main Locations
-- **Primary**: GitHub (wawiesel/olm)
-- **Mirror**: ORNL GitLab (read-only)
-- **Issues**: GitHub issue tracker
-
-### Documentation Hosting
-- **Live docs**: ReadTheDocs integration
-- **Stable**: Always points to latest stable version
-- **Development**: Branch-specific documentation builds
-
-## Testing and Refactoring Best Practices
-
-### Testing Philosophy
-- **Prefer Unit Tests Over Integration Tests for Logic**: Factor out testable functions for direct testing
-- **Use Existing Test Data When Possible**: Leverage real data files like `w17x17.arc.h5`
-- **Separate Concerns**: Unit tests for pure functions, integration tests for workflows
-- **Fast Tests Enable Better Development**: Target milliseconds, not seconds for unit tests
-
-### Code Organization
-- **Make Functions Pure When Possible**: Static methods for stateless functions
-- **Add Doctests for Simple Examples**: Self-documenting with 3-4 representative examples
-- **Single Responsibility**: Each function should do one thing well
-
-### Performance Guidelines
-- **Comprehensive Edge Case Coverage**: Test zero, positive, negative, large, small, boundary values
-- **Use Parameterized Tests**: Test multiple cases efficiently
-- **Avoid Complex Setup**: No temporary files, network calls, or complex setup in unit tests
-
-### Testing Red Flags
-- ❌ Tests that take more than a few seconds to run
-- ❌ Complex temporary file creation for simple logic testing
-- ❌ Tests that duplicate the implementation logic
-- ❌ Integration tests masquerading as unit tests
-
-### Testing Green Flags
-- ✅ Fast, focused unit tests for mathematical logic
-- ✅ Integration tests using existing test data
-- ✅ Clear separation between unit and integration testing
-- ✅ Comprehensive edge case coverage
-- ✅ Self-documenting test names and failure messages
-
-## Examples from This Codebase
-
-### Good: Direct Function Testing
-```python
-def test_duplicate_degenerate_axis_value():
-    test_cases = [(0.0, 0.05), (0.723, 0.05), (-1.0, 0.05), (100.0, 5.0)]
-    for x0, expected_delta in test_cases:
-        x1 = so.core.ReactorLibrary.duplicate_degenerate_axis_value(x0)
-        assert x1 - x0 == pytest.approx(expected_delta)
+# Search by author or time period
+git log --author="bot" --oneline
+git log --since="1 month ago" --until="1 week ago"
 ```
 
-### Good: Using Existing Test Data
-```python
-def test_degenerate_axis_integration():
-    a = so.core.ReactorLibrary(data_file("w17x17.arc.h5"))
-    # Test the real behavior on real data
-```
+### Benefits of Git Log Memory
+- **Always current**: No manual maintenance required
+- **Rich context**: Full diff and reasoning in each commit
+- **Searchable**: Powerful query capabilities
+- **Authoritative**: Single source of truth
+- **Integrated**: Part of normal development workflow
 
-### Avoid: Complex Test Setup for Simple Logic
-```python
-# Don't do this for testing pure mathematical functions
-def test_math_logic():
-    # 50 lines of HDF5 file creation...
-    # Just to test: x1 = x0 + delta
-```
-
-## Fuzzy Testing with Hypothesis
-
-### Property-Based Testing Framework
-- **Library**: Use [Hypothesis](mdc:https:/hypothesis.readthedocs.io) for property-based fuzzy testing
-- **Philosophy**: Test mathematical properties, not implementation details
-- **Integration**: Configure in `pytest.ini` with appropriate settings
-- **Execution**: Fast (~1-2s) addition to test suite for broad edge case coverage
-
-### Fuzzy Testing Best Practices
-
-#### DO: Focus on Mathematical Correctness
-```python
-from hypothesis import given, strategies as st
-
-@given(x0=st.floats(min_value=-1e6, max_value=1e6, allow_nan=False, allow_infinity=False))
-def test_axis_creates_valid_increasing_sequence(self, x0):
-    """Property: Function should create valid increasing sequence."""
-    x1 = some_function(x0)
-    
-    # Test essential mathematical properties
-    assert x1 > x0, "Second value must be greater than first"
-    assert x1 != x0, "Values must be distinct"
-    assert np.isfinite(x1), "Result must be finite"
-    
-    # Test that it enables downstream operations
-    axis = np.array([x0, x1])
-    gradient = np.gradient(axis)  # Should not raise exception
-    assert np.all(gradient > 0), "Gradient should be positive"
-```
-
-#### DON'T: Test Implementation Constants
-```python
-# AVOID: Testing specific implementation details
-def test_specific_implementation():
-    x1 = some_function(0.723)
-    assert x1 - 0.723 == pytest.approx(0.05)  # Too specific to current implementation!
-```
-
-#### Property Categories to Test
-
-1. **Mathematical Properties**
-   - Monotonicity: `x1 > x0` for increasing functions
-   - Distinctness: `x1 != x0` for value generation
-   - Finiteness: `np.isfinite(result)` for numerical stability
-   - Sign preservation: Where appropriate for domain
-
-2. **Numerical Stability**
-   - Results remain finite across input ranges
-   - No overflow/underflow for reasonable inputs
-   - Gradient calculations succeed
-   - Rounding operations are idempotent
-
-3. **Data Structure Integrity**
-   - Array shapes preserved appropriately
-   - Transformations maintain essential structure
-   - Coefficient expansion preserves data relationships
-
-4. **Domain-Specific Properties**
-   - Reactor parameters remain non-negative
-   - Physical constraints satisfied
-   - Interpolation axes properly structured
-
-### Input Range Guidelines
-
-#### Realistic Ranges for Reactor Physics
-```python
-# Good: Domain-appropriate ranges
-@given(mod_dens=st.floats(min_value=0.1, max_value=2.0))     # Realistic moderator density
-@given(burnup=st.floats(min_value=0.0, max_value=100.0))     # Realistic burnup range
-@given(enrichment=st.floats(min_value=0.01, max_value=20.0)) # Realistic enrichment
-```
-
-#### Edge Case Testing
-```python
-# Good: Test edge cases that matter
-@given(st.one_of(st.just(0.0), 
-                st.floats(min_value=-1e-10, max_value=1e-10)))  # Near-zero values
-@given(st.floats(min_value=1e6, max_value=1e9))               # Large but finite values
-```
-
-#### Avoid Unrealistic Extremes
-```python
-# Avoid: Ranges that don't represent real usage
-@given(x=st.floats(min_value=-1e50, max_value=1e50))  # Too extreme for physics
-```
-
-### Hypothesis Configuration
-Configure in `pytest.ini`:
-```ini
-[tool:hypothesis]
-max_examples = 100
-deadline = 5000
-stateful_step_count = 50
-suppress_health_check = too_slow
-```
-
-### Example Test Structure
-```python
-class TestMathematicalPropertiesFuzzy:
-    """Fuzzy tests focusing on mathematical correctness."""
-    
-    @given(input_val=st.floats(min_value=-100, max_value=100, allow_nan=False))
-    @settings(max_examples=200)
-    def test_essential_property(self, input_val):
-        """Property: Function should satisfy essential mathematical constraint."""
-        assume(abs(input_val) > 1e-15)  # Skip problematic inputs
-        
-        result = function_under_test(input_val)
-        
-        # Test properties that MUST hold
-        assert essential_property_holds(result), "Essential property violated"
-        assert downstream_operations_work(result), "Result not usable"
-```
-
-### Integration with Existing Tests
-- **Complement, don't replace**: Fuzzy tests enhance unit/integration tests
-- **Fast execution**: Target ~1-2s total for fuzzy test suite
-- **CI integration**: Include in standard test pipeline
-- **Regression detection**: Catch edge cases missed by manual testing 
+This modular approach keeps rules focused and reusable. Reference specific rule files when you need detailed guidance on particular aspects of development. 

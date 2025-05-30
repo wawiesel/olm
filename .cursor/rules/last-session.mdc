@@ -1,0 +1,125 @@
+---
+description: When you need to remind yourself what we worked on last
+globs: 
+alwaysApply: false
+---
+# Last Session Summary
+
+## Session Overview
+**Date**: May 30, 2025  
+**Focus**: Modular rule organization and 100% test coverage achievement  
+**Status**: In progress - ready to commit rule reorganization  
+
+## Major Accomplishments This Session
+
+### ✅ **100% Test Coverage Achievement**
+- **Target**: `scale.olm.generate.states` module
+- **Result**: 86% → **100%** coverage (complete)
+- **Method**: Comprehensive test suite with 18 test methods
+- **File**: `testing/states_100_percent_test.py` (279 lines)
+- **Coverage**: All functions tested - `full_hypercube`, `_schema_full_hypercube`, `_test_args_full_hypercube`
+
+### ✅ **Rule Architecture Modernization**
+- **Previous**: Large monolithic `core.mdc` + redundant `memory-bank.mdc` (1000+ lines)
+- **Current**: 4 focused, modular rules (515 lines total - 50% reduction)
+- **Structure**:
+  - `core.mdc` - Overview + git log memory strategy
+  - `project-overview.mdc` - Setup and project structure
+  - `development-workflow.mdc` - Complete workflow + commit standards + PR formatting
+  - `testing-philosophy.mdc` - Testing principles + fuzzy testing
+  - `last-session.mdc` - This file for session continuity
+
+### ✅ **PR Formatting Guidelines**
+- **Problem**: Previous PR had duplicate header (title repeated in description)
+- **Solution**: Clear guidelines in `development-workflow.mdc` about:
+  - NO duplicate headers in PR descriptions
+  - Start descriptions with content directly
+  - Use `--body-file` approach for complex content
+
+### ✅ **Git Log as Project Memory**
+- **Eliminated**: 776-line memory-bank.mdc
+- **Replaced with**: Git log querying strategies
+- **Benefits**: Always current, searchable, authoritative, no maintenance
+
+## Current State
+
+### ✅ **Ready to Commit**
+- Rule reorganization complete and tested
+- 100% coverage achievement documented
+- All files properly structured
+
+### 🔄 **Current PR Status**
+- **Branch**: `feature/enhanced-test-coverage`
+- **Previous commits**: 
+  - Comprehensive test coverage improvements
+  - Codecov v5 integration fix
+  - 100% states module coverage
+- **Ready to add**: Rule reorganization changes
+
+### 📝 **Files Modified This Session**
+- **Created**: `testing/states_100_percent_test.py` ✅ committed
+- **Reorganized**: `.cursor/rules/*` - ready to commit
+- **Deleted**: `memory-bank.mdc`, `commit-standards.mdc` 
+- **Enhanced**: All rule files with focused content
+
+## Key Learnings This Session
+
+### **Rule Organization Principles**
+1. **Modular beats monolithic** - Easier to find and maintain specific guidance
+2. **Merge related concepts** - Commit standards belong in development workflow
+3. **Git log > manual memory** - Leverages existing developer tools
+4. **Session continuity matters** - This file bridges session gaps
+
+### **100% Coverage Strategy**
+- **Target small modules first** - `states.py` was perfect (29 lines)
+- **Cover all functions** - Including private/helper functions
+- **Mathematical validation** - Test properties, not just execution
+- **Integration testing** - Verify functions work together
+
+### **PR Best Practices Reinforced**
+- **No duplicate headers** - Major formatting issue to avoid
+- **File-based descriptions** - Use `--body-file` for complex content
+- **Imperative commits** - "Add feature X" not "feat: add feature X"
+
+## Next Session Priorities
+
+### 🎯 **Immediate Actions**
+1. **Commit rule reorganization** - Clean up the modular rule structure
+2. **Update PR description** - Document rule improvements
+3. **Merge current PR** - Complete the enhanced test coverage work
+
+### 🎯 **Future Development Options**
+1. **More 100% coverage targets**: 
+   - `scale/olm/generate/time.py` (28 lines, 71% coverage)
+   - `scale/olm/generate/static.py` (11 lines, 73% coverage)
+   - `scale/olm/generate/dynamic.py` (33 lines, 76% coverage)
+
+2. **Performance optimization**: Continue the 22x speed improvement pattern
+
+3. **Testing patterns**: Apply lessons learned to other modules
+
+## Context for Next Developer
+
+### **Current Environment**
+- **Working directory**: `/Users/ww5/olm`
+- **Branch**: `feature/enhanced-test-coverage` 
+- **Virtual env**: `venv` activated
+- **Dependencies**: All installed and working
+
+### **Rule Usage**
+- **For PR formatting**: Reference `@development-workflow.mdc`
+- **For testing guidance**: Reference `@testing-philosophy.mdc`
+- **For project setup**: Reference `@project-overview.mdc`
+- **For overview**: Reference `@core.mdc`
+
+### **Command Reminders**
+```bash
+# Test the 100% coverage
+pytest testing/states_100_percent_test.py --cov=scale.olm.generate.states --cov-report=term-missing
+
+# Check rule structure
+ls -la .cursor/rules/
+
+# Prepare for PR updates
+git status
+```
