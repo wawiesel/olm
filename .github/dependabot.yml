@@ -1,0 +1,10 @@
+version: 2
+updates:
+  # Disable automatic pull requests for pip dependencies
+  # We prefer manual dependency management via pip-audit and direct updates
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "never"
+    # Keep security alerts enabled but disable pull requests
+    open-pull-requests-limit: 0 
