@@ -7,16 +7,9 @@ alwaysApply: false
 
 ## 🤖 Rule Compliance Questions
 
-### ✅ Before Next Commit:
 - [ ] Does the commit message follow @development-workflow? (Clean imperative, no prefixes, under 50 chars)
-
-### ✅ Before Creating PR:
 - [ ] Does the PR title follow @development-workflow? (Imperative mood, under 50 chars)
 - [ ] Does the PR description follow @development-workflow? (No duplicate headers, starts with content)
-
-### ✅ Before Test Work:
 - [ ] Are you following @testing-philosophy? (Property-based testing, fast focused tests)
-
-### ✅ Session Management:
 - [ ] Did you update @last-session.mdc with actual git log dates?
 - [ ] Did you document what was built, learned, and decided?
