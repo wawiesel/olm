@@ -5,3 +5,9 @@ venv
 **/__pycache__
 .DS_Store
 **/_work
+
+# Coverage files
+htmlcov/
+.coverage
+coverage.xml
+.pytest_cache/

@@ -1,6 +1,7 @@
 ## ORIGEN Library Manager (OLM)
 
 [![Documentation Status](https://readthedocs.org/projects/scale-olm/badge/?version=v0.14.2)](https://scale-olm.readthedocs.io/en/v0.14.2)
+[![codecov](https://codecov.io/gh/wawiesel/olm/branch/main/graph/badge.svg)](https://codecov.io/gh/wawiesel/olm)
 
 The latest stable version is [v0.14.2](https://scale-olm.readthedocs.io/en/stable).
 
