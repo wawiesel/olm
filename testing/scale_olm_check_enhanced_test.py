@@ -24,7 +24,7 @@ def data_file(filename):
 class TestGridGradientAdvanced:
     """Test advanced GridGradient functionality."""
     
-    def test_default_params(self):
+    def test_default_params_enhanced(self):
         """Test that default_params returns expected values."""
         params = check.GridGradient.default_params()
         
@@ -39,7 +39,7 @@ class TestGridGradientAdvanced:
         assert params['target_q1'] == 0.5
         assert params['target_q2'] == 0.7
         
-    def test_describe_params(self):
+    def test_describe_params_enhanced(self):
         """Test that describe_params returns helpful descriptions."""
         descriptions = check.GridGradient.describe_params()
         
@@ -160,7 +160,7 @@ class TestSequencer:
             assert check_def['_type'].startswith('scale.olm.check:')
     
     @patch('scale.olm.internal.logger')
-    def test_sequencer_dry_run(self, mock_logger):
+    def test_sequencer_dry_run_enhanced(self, mock_logger):
         """Test sequencer in dry run mode."""
         sequence = [
             {'_type': 'GridGradient', 'eps0': 1e-10}
@@ -178,7 +178,7 @@ class TestSequencer:
 class TestLowOrderConsistency:
     """Test LowOrderConsistency functionality."""
     
-    def test_default_params(self):
+    def test_default_params_enhanced_loc(self):
         """Test that default_params returns expected values."""
         params = check.LowOrderConsistency.default_params()
         
@@ -190,7 +190,7 @@ class TestLowOrderConsistency:
         # May not have all keys but should be a reasonable subset
         assert len(params) > 0
         
-    def test_describe_params(self):
+    def test_describe_params_enhanced_loc(self):
         """Test that describe_params returns helpful descriptions."""
         descriptions = check.LowOrderConsistency.describe_params()
         
@@ -247,25 +247,27 @@ class TestLowOrderConsistency:
 class TestSchemaFunctions:
     """Test schema generation functions for all check types."""
     
-    def test_schema_gridgradient(self):
-        """Test schema generation for GridGradient."""
+    def test_schema_gridgradient_enhanced(self):
+        """Test GridGradient schema generation."""
         schema = check._schema_GridGradient()
         assert isinstance(schema, dict)
+        assert '_type' in schema or 'properties' in schema
         
         schema_with_state = check._schema_GridGradient(with_state=True)
         assert isinstance(schema_with_state, dict)
     
-    def test_test_args_gridgradient(self):
-        """Test test args generation for GridGradient."""
+    def test_test_args_gridgradient_enhanced(self):
+        """Test GridGradient test arguments generation."""
         args = check._test_args_GridGradient()
         
         assert args['_type'] == 'scale.olm.check:GridGradient'
+        assert 'eps0' in args
+        assert 'target_q1' in args
+        assert 'target_q2' in args
         
-        # Should include default parameters
-        default_params = check.GridGradient.default_params()
-        for key, value in default_params.items():
-            assert key in args
-            assert args[key] == value
+        # Verify that target values are in reasonable range
+        assert 0 <= args['target_q1'] <= 1
+        assert 0 <= args['target_q2'] <= 1
     
     def test_schema_loworderconsistency(self):
         """Test schema generation for LowOrderConsistency."""

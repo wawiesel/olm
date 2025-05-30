@@ -20,7 +20,7 @@ import scale.olm.internal as internal
 class TestGridGradientMath:
     """Test mathematical calculations in GridGradient class."""
     
-    def test_default_params(self):
+    def test_default_params_advanced(self):
         """Test GridGradient default parameter values."""
         params = check.GridGradient.default_params()
         
@@ -35,7 +35,7 @@ class TestGridGradientMath:
         assert 0 <= params['target_q1'] <= 1
         assert 0 <= params['target_q2'] <= 1
         
-    def test_describe_params(self):
+    def test_describe_params_advanced(self):
         """Test parameter descriptions are provided."""
         descriptions = check.GridGradient.describe_params()
         
@@ -150,7 +150,7 @@ class TestSequencerFunction:
             assert '_type' in seq_item
             assert seq_item['_type'].startswith('scale.olm.check:')
     
-    def test_sequencer_dry_run(self):
+    def test_sequencer_dry_run_advanced(self):
         """Test sequencer with dry_run=True."""
         sequence = [{"_type": "GridGradient", "eps0": 0.0001}]
         model = {"name": "test"}
@@ -199,7 +199,7 @@ class TestCheckInfoClass:
 class TestSchemaFunctions:
     """Test schema generation functions."""
     
-    def test_schema_gridgradient(self):
+    def test_schema_gridgradient_advanced(self):
         """Test GridGradient schema generation."""
         schema = check._schema_GridGradient()
         assert isinstance(schema, dict)
@@ -207,7 +207,7 @@ class TestSchemaFunctions:
         schema_with_state = check._schema_GridGradient(with_state=True)
         assert isinstance(schema_with_state, dict)
     
-    def test_test_args_gridgradient(self):
+    def test_test_args_gridgradient_advanced(self):
         """Test GridGradient test arguments generation."""
         args = check._test_args_GridGradient()
         

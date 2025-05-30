@@ -19,7 +19,7 @@ import scale.olm.core as core
 class TestBurnupThinning:
     """Test the mathematical burnup thinning algorithms."""
     
-    def test_generate_thinned_burnup_list_basic(self):
+    def test_generate_thinned_burnup_list_basic_advanced(self):
         """Test basic burnup list thinning functionality."""
         burnup_list = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
         
@@ -37,7 +37,7 @@ class TestBurnupThinning:
         expected = [0.0, 3.0, 6.0, 9.0, 10.0]  # Always keep ends
         assert result == expected
     
-    def test_generate_thinned_burnup_list_edge_cases(self):
+    def test_generate_thinned_burnup_list_edge_cases_advanced(self):
         """Test burnup thinning with edge cases."""
         # Single point
         result = assemble._generate_thinned_burnup_list(2, [5.0])
@@ -56,7 +56,7 @@ class TestBurnupThinning:
         result = assemble._generate_thinned_burnup_list(100, burnup_list)
         assert result == [0.0, 4.0]  # Only keep ends
     
-    def test_generate_thinned_burnup_list_always_keep_ends(self):
+    def test_generate_thinned_burnup_list_always_keep_ends_advanced(self):
         """Test that ends are always kept regardless of thinning pattern."""
         burnup_list = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
         
@@ -72,7 +72,7 @@ class TestBurnupThinning:
         expected_no_ends = [2.0, 5.0]  # Corrected: follows pattern without forcing ends
         assert result == expected_no_ends
     
-    def test_generate_thinned_burnup_list_invalid_parameters(self):
+    def test_generate_thinned_burnup_list_invalid_parameters_advanced(self):
         """Test error handling for invalid parameters."""
         burnup_list = [0.0, 1.0, 2.0, 3.0, 4.0]
         
@@ -89,7 +89,7 @@ class TestBurnupThinning:
         (5, 100, (20, 22)),    # Roughly 1/5th, accounting for always keeping ends
         (10, 50, (5, 7)),      # Heavy thinning
     ])
-    def test_thinning_ratios(self, keep_every, input_size, expected_size_range):
+    def test_thinning_ratios_advanced(self, keep_every, input_size, expected_size_range):
         """Test that thinning produces expected reduction ratios."""
         burnup_list = list(range(input_size))
         result = assemble._generate_thinned_burnup_list(keep_every, burnup_list)
@@ -104,7 +104,7 @@ class TestBurnupThinning:
 class TestBurnupListProcessing:
     """Test burnup list processing and validation functions."""
     
-    def test_get_burnup_list_consistent(self):
+    def test_get_burnup_list_consistent_advanced(self):
         """Test burnup list extraction with consistent data."""
         # Mock file list with consistent burnup data
         mock_burnup = np.array([0.0, 1.0, 5.0, 10.0, 25.0, 50.0])
@@ -119,7 +119,7 @@ class TestBurnupListProcessing:
             result = assemble._get_burnup_list(file_list)
             np.testing.assert_array_equal(result, mock_burnup)
     
-    def test_get_burnup_list_inconsistent(self):
+    def test_get_burnup_list_inconsistent_advanced(self):
         """Test error handling when burnup lists are inconsistent."""
         burnup1 = np.array([0.0, 1.0, 5.0, 10.0])
         burnup2 = np.array([0.0, 2.0, 6.0, 12.0])  # Different values
@@ -133,7 +133,7 @@ class TestBurnupListProcessing:
             with pytest.raises(ValueError, match="burnups deviated from previous"):
                 assemble._get_burnup_list(file_list)
     
-    def test_get_burnup_list_single_file(self):
+    def test_get_burnup_list_single_file_advanced(self):
         """Test burnup list extraction with single file."""
         mock_burnup = np.array([0.0, 5.0, 15.0, 30.0])
         
@@ -147,7 +147,7 @@ class TestBurnupListProcessing:
 class TestCompositionSystemProcessing:
     """Test composition system data processing functions."""
     
-    def test_get_comp_system_basic(self):
+    def test_get_comp_system_basic_advanced(self):
         """Test basic composition system data extraction."""
         # Mock inventory interface data structure
         mock_ii_data = {
@@ -192,7 +192,7 @@ class TestCompositionSystemProcessing:
             assert call_args["u235"] == 235.0  # 1.0 mol * 235.0 g/mol
             assert call_args["pu239"] == 717.0  # 3.0 mol * 239.0 g/mol
     
-    def test_get_comp_system_with_metastable(self):
+    def test_get_comp_system_with_metastable_advanced(self):
         """Test composition system with metastable isotopes."""
         mock_ii_data = {
             "responses": {
@@ -228,7 +228,7 @@ class TestCompositionSystemProcessing:
             assert "am241" in call_args
             assert "am242m" in call_args  # Should have 'm' suffix for metastable
     
-    def test_get_comp_system_heavy_metals_only(self):
+    def test_get_comp_system_heavy_metals_only_advanced(self):
         """Test that only heavy metals (Z >= 92) are included in composition."""
         mock_ii_data = {
             "responses": {
@@ -272,7 +272,7 @@ class TestCompositionSystemProcessing:
 class TestSchemaGeneration:
     """Test schema generation functions for assemble module."""
     
-    def test_test_args_arpdata_txt_basic(self):
+    def test_test_args_arpdata_txt_basic_advanced(self):
         """Test basic test arguments generation for arpdata_txt."""
         args = assemble._test_args_arpdata_txt()
         
@@ -290,7 +290,7 @@ class TestSchemaGeneration:
         assert "mod_dens" in args["dim_map"]
         assert "enrichment" in args["dim_map"]
     
-    def test_test_args_arpdata_txt_with_state(self):
+    def test_test_args_arpdata_txt_with_state_advanced(self):
         """Test test arguments generation with state information."""
         args_no_state = assemble._test_args_arpdata_txt(with_state=False)
         args_with_state = assemble._test_args_arpdata_txt(with_state=True)
@@ -306,7 +306,7 @@ class TestSchemaGeneration:
 class TestErrorHandling:
     """Test error handling in assemble module functions."""
     
-    def test_arpdata_txt_dry_run(self):
+    def test_arpdata_txt_dry_run_advanced(self):
         """Test arpdata_txt function with dry_run=True."""
         result = assemble.arpdata_txt(
             fuel_type="UOX",
@@ -318,7 +318,7 @@ class TestErrorHandling:
         # Dry run should return empty dict
         assert result == {}
     
-    def test_invalid_fuel_type_handling(self):
+    def test_invalid_fuel_type_handling_advanced(self):
         """Test error handling for invalid fuel types in processing functions."""
         # This would test _get_arpinfo with invalid fuel type
         # We can test this through mocking since the function is internal
@@ -337,7 +337,7 @@ class TestErrorHandling:
 class TestMathematicalProperties:
     """Test mathematical properties and correctness of algorithms."""
     
-    def test_burnup_thinning_preserves_monotonicity(self):
+    def test_burnup_thinning_preserves_monotonicity_advanced(self):
         """Test that burnup thinning preserves monotonic ordering."""
         # Generate monotonic burnup data
         burnup_list = [0.0, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 25.0, 40.0, 60.0, 90.0]
@@ -353,7 +353,7 @@ class TestMathematicalProperties:
             for value in result:
                 assert value in burnup_list, f"Result contains value not in original list"
     
-    def test_burnup_thinning_boundary_preservation(self):
+    def test_burnup_thinning_boundary_preservation_advanced(self):
         """Test that important boundary points are preserved."""
         burnup_list = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]
         
@@ -369,7 +369,7 @@ class TestMathematicalProperties:
         (50, 3), (50, 7),
         (20, 4), (20, 8)
     ])
-    def test_thinning_efficiency(self, original_length, keep_every):
+    def test_thinning_efficiency_advanced(self, original_length, keep_every):
         """Test that thinning provides expected efficiency gains."""
         burnup_list = list(range(original_length))
         result = assemble._generate_thinned_burnup_list(keep_every, burnup_list)
