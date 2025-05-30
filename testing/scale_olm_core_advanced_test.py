@@ -287,6 +287,29 @@ class TestReactorLibraryUtilities:
         expected = (1, 1, 1)  # Middle values
         assert indices == expected
 
+    def test_duplicate_degenerate_axis_value_advanced(self):
+        """Test degenerate axis value duplication (comprehensive mathematical testing)."""
+        test_cases = [
+            # (input, expected_delta)
+            (0.0, 0.05),           # Zero case
+            (0.723, 0.05),         # Typical reactor parameter
+            (-1.0, 0.05),          # Negative value
+            (100.0, 5.0),          # Large value (5% of 100)
+            (1e-12, 0.05),         # Very small value
+            (-50.0, 2.5),          # Large negative (5% of 50)
+            (2.0, 0.1),            # Moderate value (5% of 2)
+        ]
+
+        for x0, expected_delta in test_cases:
+            x1 = core.ReactorLibrary.duplicate_degenerate_axis_value(x0)
+            actual_delta = x1 - x0
+            assert actual_delta == pytest.approx(expected_delta, abs=1e-10)
+
+            # Verify essential properties
+            assert x1 > x0, f"x1 ({x1}) should be greater than x0 ({x0})"
+            assert x1 != x0, f"x1 ({x1}) should be different from x0 ({x0})"
+            assert np.isfinite(x1), f"x1 ({x1}) should be finite"
+
 
 class TestNuclideInventory:
     """Test the NuclideInventory class using real data structures."""

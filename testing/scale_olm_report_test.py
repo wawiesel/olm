@@ -49,12 +49,12 @@ class TestReportModule:
         result = report.rst2pdf(dry_run=True)
         assert result == {}
 
-    def test_module_exports(self):
+    def test_module_exports_report(self):
         """Test that module exports the expected functions."""
         assert "rst2pdf" in report.__all__
         assert hasattr(report, "rst2pdf")
 
-    def test_type_constant(self):
+    def test_type_constant_report(self):
         """Test that the type constant is properly defined."""
         assert report._TYPE_RST2PDF == "scale.olm.report:rst2pdf"
 

@@ -68,7 +68,7 @@ def test_gradient_calculation_with_duplicated_axis():
     assert info.m > 0, "Should have processed some gradient points"
 
 
-def test_duplicate_degenerate_axis_value():
+def test_duplicate_degenerate_axis_value_check():
     """Test the duplicate_degenerate_axis_value function with various edge cases."""
     # Test cases: (input_value, expected_delta)
     test_cases = [

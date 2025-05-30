@@ -44,12 +44,12 @@ class TestRunModule:
         assert isinstance(args, dict)
         assert args["_type"] == run._TYPE_MAKEFILE
 
-    def test_module_exports(self):
+    def test_module_exports_run(self):
         """Test that module exports the expected functions."""
         assert "makefile" in run.__all__
         assert hasattr(run, "makefile")
 
-    def test_type_constant(self):
+    def test_type_constant_run(self):
         """Test that the type constant is properly defined."""
         assert run._TYPE_MAKEFILE == "scale.olm.run:makefile"
 

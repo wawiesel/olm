@@ -192,13 +192,13 @@ class TestTestArgsFunction:
 class TestModuleConstants:
     """Test module-level constants and exports."""
     
-    def test_module_exports(self):
+    def test_module_exports_generate_states(self):
         """Test that __all__ exports are correct."""
         assert hasattr(states, '__all__')
         assert "full_hypercube" in states.__all__
         assert len(states.__all__) == 1
     
-    def test_type_constant(self):
+    def test_type_constant_generate_states(self):
         """Test the module type constant."""
         assert hasattr(states, '_TYPE_FULL_HYPERCUBE')
         assert states._TYPE_FULL_HYPERCUBE == "scale.olm.generate.states:full_hypercube"

@@ -43,7 +43,7 @@ class TestBurnupProcessing:
         expected = [5, 15, 25]  # Based on actual algorithm behavior
         assert result == expected
         
-    def test_generate_thinned_burnup_list_edge_cases(self):
+    def test_generate_thinned_burnup_list_edge_cases_enhanced(self):
         """Test burnup thinning edge cases."""
         # Empty list
         result = assemble._generate_thinned_burnup_list(1, [])
@@ -310,7 +310,7 @@ class TestCompositionSystem:
     
     @patch('scale.olm.core.CompositionManager.calculate_hm_oxide_breakdown')
     @patch('scale.olm.core.CompositionManager.approximate_hm_info')
-    def test_get_comp_system_basic(self, mock_approximate_hm_info, mock_calculate_breakdown):
+    def test_get_comp_system_basic_enhanced(self, mock_approximate_hm_info, mock_calculate_breakdown):
         """Test basic composition system extraction."""
         # Mock the breakdown calculation
         mock_breakdown = {"u235": 100.0, "u238": 900.0}
@@ -391,7 +391,7 @@ class TestCompositionSystem:
 class TestSchemaFunctions:
     """Test schema generation functions."""
     
-    def test_schema_arpdata_txt(self):
+    def test_schema_arpdata_txt_enhanced(self):
         """Test schema generation for arpdata_txt."""
         schema = assemble._schema_arpdata_txt()
         assert isinstance(schema, dict)
@@ -399,7 +399,7 @@ class TestSchemaFunctions:
         schema_with_state = assemble._schema_arpdata_txt(with_state=True)
         assert isinstance(schema_with_state, dict)
     
-    def test_test_args_arpdata_txt(self):
+    def test_test_args_arpdata_txt_enhanced(self):
         """Test test arguments generation for arpdata_txt."""
         args = assemble._test_args_arpdata_txt()
         
