@@ -6,6 +6,7 @@
 [![PyPI version](https://badge.fury.io/py/scale-olm.svg)](https://badge.fury.io/py/scale-olm)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-BSD-green.svg)](LICENSE)
+[![codecov](https://codecov.io/gh/wawiesel/olm/branch/main/graph/badge.svg)](https://codecov.io/gh/wawiesel/olm)
 
 **OLM** streamlines the complex process of creating, validating, and managing [SCALE/ORIGEN](https://scale.ornl.gov) reactor libraries for nuclide inventory calculations. Say goodbye to manual library management! 🎯
 
