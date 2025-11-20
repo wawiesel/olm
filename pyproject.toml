@@ -21,8 +21,13 @@ dependencies = [
     "matplotlib",
     "scipy",
     "numpy",
+    "imohash",
+    "pygments",
     "pytest",
     "pydantic",
+    "h5py",
+    "tqdm",
+    "structlog"
 ]
 requires-python = ">=3.9"
 
