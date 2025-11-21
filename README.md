@@ -1,9 +1,9 @@
 ## ORIGEN Library Manager (OLM)
 
-[![Documentation Status](https://readthedocs.org/projects/scale-olm/badge/?version=v0.14.2)](https://scale-olm.readthedocs.io/en/v0.14.2)
+[![Documentation Status](https://readthedocs.org/projects/scale-olm/badge/?version=v0.14.3)](https://scale-olm.readthedocs.io/en/v0.14.3)
 [![codecov](https://codecov.io/gh/wawiesel/olm/branch/main/graph/badge.svg)](https://codecov.io/gh/wawiesel/olm)
 
-The latest stable version is [v0.14.2](https://scale-olm.readthedocs.io/en/stable).
+The latest stable version is [v0.14.3](https://scale-olm.readthedocs.io/en/stable).
 
 OLM is a command-line utility that streamlines aspects of using the 
 [SCALE/ORIGEN](https://scale.ornl.gov) library to solve nuclide inventory generation problems.

@@ -1,6 +1,6 @@
 [project]
 name = "scale-olm"
-version = "0.14.2"
+version = "0.14.3"
 description = "ORIGEN Library Manager: A tool for building and managing ORIGEN reactor data libraries"
 authors = [
     { name = "William Wieselquist", email = "ww5@ornl.gov" },
@@ -27,7 +27,8 @@ dependencies = [
     "pydantic",
     "h5py",
     "tqdm",
-    "structlog"
+    "structlog",
+    "hypothesis"
 ]
 requires-python = ">=3.9"
 
