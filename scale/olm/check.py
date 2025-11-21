@@ -777,6 +777,8 @@ class LowOrderConsistency:
                 "Runs suppressed by environment variable SCALE_OLM_DO_RUN!"
             )
 
+        # TODO: This needs to be more adaptive; for instance,
+        # Polaris' basis material is not case -2 (can vary).
         # Set the case identifiers for the high and low problems.
         self.hi_case = -2
         self.lo_case = 1

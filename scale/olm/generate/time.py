@@ -8,8 +8,8 @@ any other parameters inside the input :code:`time` section.
 
 """
 
-from pydantic import BaseModel
-from typing import List, Literal
+from pydantic import BaseModel, Field, validate_call
+from typing import List, Literal, Annotated
 import scale.olm.internal as internal
 
 __all__ = ["constpower_burndata"]
@@ -17,7 +17,7 @@ __all__ = ["constpower_burndata"]
 
 # Data model definitions.
 class StateWithSpecificPower(BaseModel):
-    specific_power: float
+    specific_power: Annotated[float, Field(gt=0)]
 
 
 _TYPE_CONSTPOWER_BURNDATA = "scale.olm.generate.time:constpower_burndata"
@@ -39,9 +39,10 @@ def _test_args_constpower_burndata(with_state: bool = False):
     return args
 
 
+@validate_call
 def constpower_burndata(
     state: StateWithSpecificPower,
-    gwd_burnups: List[float],
+    gwd_burnups: Annotated[List[float],Field(min_length=1)],
     _type: Literal[_TYPE_CONSTPOWER_BURNDATA] = None,
 ):
     """Return a list of powers and times assuming constant burnup.
@@ -75,6 +76,7 @@ def constpower_burndata(
     specific_power = state["specific_power"]
 
     # Calculate cumulative time to achieve each burnup.
+    sort(burnups)
     burnups = [float(x) * 1e3 for x in gwd_burnups]
     days = [burnup / float(specific_power) for burnup in burnups]
 
