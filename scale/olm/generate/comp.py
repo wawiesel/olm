@@ -13,7 +13,7 @@ from pathlib import Path
 import json
 import copy
 from pydantic import BaseModel, Field, validate_call
-from typing import Optional, Dict, List, Literal, Annotated
+from typing import Optional, Dict, List, Literal, Annotated, Union
 from typing_extensions import TypedDict
 
 __all__ = [
@@ -34,11 +34,11 @@ class StateWithPuFracs(BaseModel):
     pu_frac: Annotated[float, Field(gt=0.0,lt=100.0)]
     pu239_frac: Annotated[float, Field(gt=0.0,lt=100.0)]
 
+class IsotopicWts(TypedDict,total=False):
+    sym: Dict[str,float]
 
-class IsotopicWts(TypedDict):
-    iso: str
-    wt_fr: Annotated[float, Field(gt=0.0,le=100.0)]
-
+class IsotopicWtDict(TypedDict):
+    iso: IsotopicWts
 
 def _iso_uo2(u234, u235, u236):
     """Tiny helper to pass u234,u235,u238 through to create map and recalc u238."""
@@ -155,7 +155,7 @@ def uo2_nuregcr5625(
         "uo2": {
             "iso": _iso_uo2(
                 u234=0.0089 * state.enrichment,
-                u235=enrichment,
+                u235=state.enrichment,
                 u236=0.0046 * state.enrichment,
             )
         },
@@ -186,7 +186,7 @@ def _test_args_mox_ornltm2003_2(with_state: bool = False):
 def mox_ornltm2003_2(
     state: StateWithPuFracs,
     density: Annotated[float, Field(default=0.0,ge=0.0)],
-    uo2: Optional[IsotopicWts] = None,
+    uo2: Optional[IsotopicWtDict] = None,
     am241: Annotated[float, Field(default=1.e-20,ge=0.0,le=100.0)] = 1.0e-20,
     _type: Literal[_TYPE_MOX_ORNLTM2003_2] = None,
 ):
@@ -198,26 +198,27 @@ def mox_ornltm2003_2(
 
     # Calculate pu vector as per formula. Note that the pu239_frac is by definition:
     # pu239/(pu+am) and the Am comes in from user input.
-    pu239 = float(state["pu239_frac"])
+    pu239 = state.pu239_frac
     pu238 = 0.0045678 * pu239**2 - 0.66370 * pu239 + 24.941
     pu240 = -0.0113290 * pu239**2 + 1.02710 * pu239 + 4.7929
     pu241 = 0.0018630 * pu239**2 - 0.42787 * pu239 + 26.355
     pu242 = 0.0048985 * pu239**2 - 0.93553 * pu239 + 43.911
     x0 = {"pu238": pu238, "pu240": pu240, "pu241": pu241, "pu242": pu242}
-    x, norm_x = core.CompositionManager.renormalize_wtpt(x0, 100.0 - pu239 - am241)
+    x, _ = core.CompositionManager.renormalize_wtpt(x0, 100.0 - pu239 - am241)
     x["pu239"] = pu239
     x["am241"] = am241
 
     # Scale by relative weight percent of Pu+Am and U.
-    pu_plus_am_pct = float(state["pu_frac"])
+    pu_plus_am_pct = state.pu_frac
     for k in x:
         x[k] *= pu_plus_am_pct / 100.0
 
     # Get U isotopes and scale to remaining weight percent.
-    if uo2:
+    if uo2 and uo2['iso']:
         y = copy.deepcopy(uo2["iso"])
     else:
         y = uo2_nuregcr5625(state={"enrichment": 0.24})["uo2"]["iso"]
+
     u_pct = 100.0 - pu_plus_am_pct
     for k in y:
         y[k] *= u_pct / 100.0
@@ -264,10 +265,10 @@ def _test_args_mox_multizone_2023(with_state: bool = False):
 @validate_call
 def mox_multizone_2023(
     state: StateWithPuFracs,
-    zone_names: List[str],
+    zone_names: Union[str, List[str]],
     zone_pins: List[Annotated[int, Field(ge=0)]],
     density: Annotated[float, Field(default=0.0,ge=0.0)],
-    uo2: Optional[IsotopicWts] = None,
+    uo2: Optional[IsotopicWtDict] = None,
     zone_pu_fracs: Optional[List[float]] = None,
     am241: Annotated[float, Field(default=1.e-20,ge=0.0,le=100.0)] = 1.0e-20,
     gd2o3_pins: Annotated[int, Field(default=0,ge=0)] = 0,
@@ -432,7 +433,7 @@ def mox_multizone_2023(
 
     # We want to match the Pu/HM total over the assembly which should be
     # state['pu_frac'] but it will not be.
-    multiplier = state["pu_frac"] / (putotal / hmtotal)
+    multiplier = state.pu_frac / (putotal / hmtotal)
 
     data = {
         "_zone": {
@@ -450,7 +451,7 @@ def mox_multizone_2023(
     for i in range(len(zone_pins)):
         zone_pu_fracs[i] *= multiplier
         state0 = copy.deepcopy(state)
-        state0["pu_frac"] = zone_pu_fracs[i]
+        state0.pu_frac = zone_pu_fracs[i]
         data[zone_names[i]] = mox_ornltm2003_2(state0, density, uo2, am241)
 
     return data

@@ -504,10 +504,10 @@ class CompositionManager:
         pu239 = comp["hmo2"]["iso"].get("pu239", 0.0)
         pu241 = comp["hmo2"]["iso"].get("pu241", 0.0)
         am241 = comp["hmo2"]["iso"].get("am241", 0.0)
-        dummy, am_frac = CompositionManager.renormalize_wtpt(
+        _, am_frac = CompositionManager.renormalize_wtpt(
             comp["hmo2"]["iso"], 1.0, key_filter="am"
         )
-        dummy, pu_frac = CompositionManager.renormalize_wtpt(
+        _, pu_frac = CompositionManager.renormalize_wtpt(
             comp["hmo2"]["iso"], 1.0, key_filter="pu"
         )
         pu_frac += am241
@@ -520,7 +520,6 @@ class CompositionManager:
             pu239_frac = 0
             am241_frac = 0
             fiss_pu_frac = 0
-
 
         return {
             "am241_frac": am241_frac,

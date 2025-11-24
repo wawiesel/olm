@@ -205,9 +205,9 @@ class TestMakefileFunction:
             input_list = call_args[1]["input_list"]
             
             expected_relative_paths = [
-                "subdir/input1.inp",
-                "input2.inp", 
-                "another/deep/input3.inp"
+                str(Path("subdir/input1.inp")),
+                str(Path("input2.inp")), 
+                str(Path("another/deep/input3.inp"))
             ]
             
             assert len(input_list) == len(expected_relative_paths)

@@ -29,8 +29,8 @@ def test_data_env_var():
     """Tests processing the DATA environment variable."""
 
     # Unset this so we do not pick it up in testing the data directory.
-    test_data = "/this/very/specific/data"
-    os.environ["DATA"] = test_data
+    test_data = Path("/this/very/specific/data")
+    os.environ["DATA"] = str(test_data)
 
     # Assert that the initialization is correct.
     scalerte_path = Path("/path/to/bin/scalerte")

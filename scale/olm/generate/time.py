@@ -69,16 +69,14 @@ def constpower_burndata(
         ...     state={"specific_power": 40},
         ...     gwd_burnups=[0,10,20]
         ... )
-        {'burndata': [{'power': 40, 'burn': 250.0}, {'power': 40, 'burn': 250.0}, {'power': 40, 'burn': 250.0}]}
+        {'burndata': [{'power': 40.0, 'burn': 250.0}, {'power': 40.0, 'burn': 250.0}, {'power': 40.0, 'burn': 250.0}]}
 
     """
 
-    specific_power = state["specific_power"]
-
     # Calculate cumulative time to achieve each burnup.
-    sort(burnups)
+    gwd_burnups.sort()
     burnups = [float(x) * 1e3 for x in gwd_burnups]
-    days = [burnup / float(specific_power) for burnup in burnups]
+    days = [burnup / state.specific_power for burnup in burnups]
 
     # Check warnings and errors.
     if burnups[0] > 0:
@@ -88,11 +86,11 @@ def constpower_burndata(
     burndata = []
     if len(days) > 1:
         for i in range(len(days) - 1):
-            burndata.append({"power": specific_power, "burn": (days[i + 1] - days[i])})
+            burndata.append({"power": state.specific_power, "burn": (days[i + 1] - days[i])})
 
         # Add one final step so that we can interpolate to the final requested burnup.
-        burndata.append({"power": specific_power, "burn": (days[-1] - days[-2])})
+        burndata.append({"power": state.specific_power, "burn": (days[-1] - days[-2])})
     else:
-        burndata.append({"power": specific_power, "burn": 0})
+        burndata.append({"power": state.specific_power, "burn": 0})
 
     return {"burndata": burndata}
