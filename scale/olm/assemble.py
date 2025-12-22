@@ -222,6 +222,11 @@ def _get_files(work_dir, suffix, perms):
 
         file_list.append({"lib": lib, "output": output, "f71": f71})
 
+        # Optional: if this was a Polaris run, a t16 file is also generated
+        t16 = output = work_dir / Path(input).with_suffix(".t16")
+        if t16.exists():
+            file_list[-1]["t16"] = t16
+
     return file_list
 
 
@@ -592,14 +597,30 @@ def _process_libraries(
         )
         f71 = (work_dir / perm["input_file"]).with_suffix(".f71")
         text = internal.run_command(
-            f"{obiwan} view -format=ii.json {f71} -cases='[{caseid}]'",
+            f"{obiwan} view -format=ii.json {f71}",
             echo=False,
         )
 
         # Load into data structure and rename.
         ii_json = new_lib.with_suffix(".ii.json")
         internal.logger.debug(f"Converting {f71} to {ii_json}")
+
+        # The case for the "system" in the f71.
+        # If the F71 is from TRITON, the "system" caseid is -2; otherwise, for
+        # Polaris, the "system" caseid is the integrated FUEL material
+        caseid = -2
+        is_polaris = False
+
         ii = json.loads(text)
+        if not f"case({caseid})" in ii["responses"].keys():
+            of = core.ScaleOutfile((work_dir / perm["input_file"]).with_suffix(".out"))
+            prod_name = of.sequence_list[0]["product"]
+            if prod_name != "Polaris":
+                raise ValueError(f"Cannot identify system basis case; case -2 not found in F71 table (for TRITON) and identfied product is {prod_name}")
+            is_polaris = True
+            caseid = of.parse_polaris_state_table(of.outfile) # default to looking for "FUEL"
+
+
         ii["responses"]["system"] = ii["responses"].pop(f"case({caseid})")
         ii = _truncate_ii_system_time(ii, replay_time_count)
         with open(ii_json, "w") as f:

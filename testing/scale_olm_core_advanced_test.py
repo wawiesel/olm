@@ -281,6 +281,7 @@ class TestBurnupHistory:
         assert len(operations) >= 3  # At least some operations
         assert operations[0]["start"] == 0
 
+    # TODO: Add tests for Obiwan.get_history_from_f71
 
 class TestScaleOutfile:
     """Test the ScaleOutfile class for SCALE output parsing."""
@@ -316,6 +317,10 @@ Some footer text...
 
         finally:
             os.unlink(temp_path)
+
+    def test_parse_burnups_from_polaris_t16(self):
+        # TODO: Fill it in
+        pass
 
     def test_get_runtime(self):
         """Test extracting runtime from SCALE output using real file."""
