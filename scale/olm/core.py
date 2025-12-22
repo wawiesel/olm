@@ -620,7 +620,7 @@ class BurnupHistory:
     Args:
         time:  List of cumulative times, monotonically strictly increasing, each time
                must be greater than the last.
-        burnup: list of cumulative burnups, monotonically increasing, each burup must
+        burnup: list of cumulative burnups, monotonically increasing, each burnup must
                 be greater or equal to the last.
         epsilon_dbu: The small value of burnup changes to disregard (default: 0), can be useful for
                      avoiding tiny numerical precision issues when the input burnups
@@ -1218,7 +1218,7 @@ class ScaleOutfile:
             'TRITON'
 
         """
-        products = {"t-depl-1d": "TRITON", "t-depl": "TRITON"}
+        products = {"t-depl-1d": "TRITON", "t-depl": "TRITON", "polaris": "Polaris"}
         return products.get(sequence, "UNKNOWN")
 
     def __init__(self, outfile: str):
@@ -1313,6 +1313,55 @@ class ScaleOutfile:
                         bu = float(line.split()[-1])
                         burnup_list.append(bu)
         return burnup_list
+
+    @staticmethod
+    def parse_burnups_from_polaris_t16(t16_file):
+        """Parse the list of burnups from a Polaris t16 file"""
+
+        burnup_list = []
+        with open(t16_file, "r") as f:
+            for i in range(3):
+               f.readline() # skip first three lines
+
+            n_bu = int(f.readline().split()[0])
+
+            # Skip to the burnup record
+            f.readline()
+            f.readline()
+            line = f.readline()
+            if not "Burnups" in line:
+                raise ValueError("Unexpected file structure to t16; expecting to find burnups record")
+
+            while len(burnup_list) < n_bu:
+                tmp_bu = f.readline().split()
+                burnup_list = [*burnup_list, *tmp_bu]
+
+        # Polaris reports burnups in GWd/MTHM; convert to MWd/MTHM
+        burnup_list = [ float(bu)*1000.0 for bu in burnup_list ]
+
+        return burnup_list
+
+    @staticmethod
+    def parse_polaris_state_table(output, material="FUEL") -> int:
+        """Parse the material state information table to determine the
+          case corresponding to the fuel material (or other requested
+          depletable mixture)"""
+
+        with open(output, "r") as f:
+            found_integral_edit = False
+
+            for line in f.readlines():
+                if "Integrated edits for each material class" in line:
+                    found_integral_edit = True
+                if not found_integral_edit:
+                    continue
+                tokens = line.strip().split("|")
+
+                if len(tokens) > 3 and tokens[3].strip() == material:
+                    return int(tokens[1].strip())
+
+        return -2
+
 
     @staticmethod
     def get_runtime(output):

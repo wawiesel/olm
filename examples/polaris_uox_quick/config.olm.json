@@ -1,0 +1,97 @@
+{
+    "model": {
+        "name": "bwr-7x7-quick",
+        "description": "Generic BWR 7x7 Polaris lattice",
+        "sources":{	
+"Godfrey 2014": "Andrew T. Godfrey, ``VERA core physics benchmark progression problem specifications, Consortium for Advanced Simulation of LWRs'', 2014",
+"Radulescu 2021": "Georgeta Radulescu, Brandon R. Grogan, and Kaushik Banerjee, ``Fuel Assembly Reference Information for SNF Radiation Source Term Calculations,'' ORNL/SPR-2021/2093, Oak Ridge National Laboratory, 2021",
+"OCRWM 1987": "U.S. DOE Office of Civilian Radioactive Waste Management, ``Characteristics of spent fuel, high-level waste, and other radioactive wastes which may require long-term isolation: Appendix 2A, Physical descriptions of LWR (Light-Water Reactor) fuel assemblies,'' DOI: 10.2172/5258301, 1987"
+},
+        "revision": ["1.0"],
+        "notes":[
+    "General dimensions from References [Radulescu 2021] and [OCRWM 1987].",
+    "U-235 enrichment formula from Reference [Godfrey 2014].",
+    "Parameterized input based on polaris_bwr7x7.inp SCALE sample problem."
+]
+    },
+    "generate": {
+        "_type": "scale.olm.generate.root:jt_expander",
+        "template": "model.jt.inp",
+        "comp": {
+            "_type": "scale.olm.generate.comp:uo2_simple",
+            "density": 10.4
+        },
+        "static": {
+            "_type": "scale.olm.generate.static:pass_through",
+            "xslib": "broad_lwr",
+            "enr_variants" : [ 1.171, 0.775, 0.675, 0.531 ]
+        },
+        "states": {
+            "_type": "scale.olm.generate.states:full_hypercube",
+            "coolant_density": [
+                0.1,		
+                0.30,
+		0.60,
+                0.75
+            ],
+            "enrichment": [
+                1.0,
+		2.0,
+                3.0
+            ],
+            "wtpt_gd": [
+                3.0
+            ],
+            "specific_power": [
+                25.0
+            ]
+        },
+        "time": {
+            "_type": "scale.olm.generate.static:pass_through",
+            "gwd_burnups": [
+                0.5,
+                1.0,
+		5.0,
+                10.0,
+                25.0,
+                50.0,
+		60.0,
+                70.0
+            ]
+        }
+    },
+    "run": {
+        "_type": "scale.olm.run:makefile",
+        "dry_run": false
+    },
+    "assemble": {
+        "_type": "scale.olm.assemble:arpdata_txt",
+        "fuel_type": "UOX",
+        "dim_map": {"mod_dens": "coolant_density", "enrichment": "enrichment"},
+        "keep_every": 1
+    },
+    "check": {
+        "_type": "scale.olm.check:sequencer",
+        "sequence": [        
+        {
+            "_type": "scale.olm.check:LowOrderConsistency",
+            "name": "loc",
+            "template": "model/origami/system-uox.jt.inp",
+            "target_q1": 0.70,
+            "target_q2": 0.95,
+            "eps0": 1e-12,
+            "epsa": 1e-6,
+            "epsr": 1e-3,
+            "nuclide_compare": ["0092235","0094239","0094240","0094241","0094242","0095241","0094238","0092234","0092238","0055134","0055137","0060148","0063154","1095242","0095243","0096242","0096244"]
+        },
+        {
+            "eps0": 0.0001,
+            "_type": "scale.olm.check:GridGradient"
+        }
+        ]
+    },
+    "report": {
+        "_type": "scale.olm.report:rst2pdf",
+        "template": "report.jt.rst"
+    }
+}
