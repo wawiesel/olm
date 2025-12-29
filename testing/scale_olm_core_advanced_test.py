@@ -318,9 +318,25 @@ Some footer text...
         finally:
             os.unlink(temp_path)
 
-    def test_parse_burnups_from_polaris_t16(self):
-        # TODO: Fill it in
-        pass
+    def test_parse_burnups_from_polaris_t16(self, tmp_path):
+        """Test parsing burnup points from a Polaris t16 text file."""
+        t16_file = tmp_path / "sample.t16"
+        t16_file.write_text(
+            """' Record 1
+' Record 1 continued
+' Record 2
+        4         0         0
+' skip
+' skip
+' Burnups
+ 0.000000E+00 1.000000E-01
+ 2.500000E-01 1.000000E+00
+"""
+        )
+
+        burnups = core.ScaleOutfile.parse_burnups_from_polaris_t16(t16_file)
+
+        np.testing.assert_allclose(burnups, [0.0, 100.0, 250.0, 1000.0])
 
     def test_get_runtime(self):
         """Test extracting runtime from SCALE output using real file."""
