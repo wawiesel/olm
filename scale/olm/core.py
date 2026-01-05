@@ -1254,7 +1254,7 @@ class ScaleOutfile:
                 if version_match:
                     self.version = version_match.group(1).strip()
                 runtime_match = re.search(
-                    r"([^\s]+) finished\. used (\d+\.\d+) seconds\.", line
+                    r"([^\s]+) finished\. used (\d+(?:\.\d+)?) seconds\.", line
                 )
                 if runtime_match:
                     self.sequence_list.append(
