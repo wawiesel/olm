@@ -336,6 +336,29 @@ More output text...
         finally:
             os.unlink(temp_path)
 
+    def test_scale_outfile_accepts_integer_runtime_seconds(self, tmp_path):
+        """Test SCALE completion lines with integer runtime seconds."""
+        outfile = tmp_path / "scale.out"
+        outfile.write_text(
+            """
+Some output text...
+* SCALE 6.3.3
+t-depl finished. used 35 seconds.
+More output text...
+"""
+        )
+
+        info = core.ScaleOutfile(outfile)
+
+        assert info.version == "6.3.3"
+        assert info.sequence_list == [
+            {
+                "runtime_seconds": 35.0,
+                "sequence": "t-depl",
+                "product": "TRITON",
+            }
+        ]
+
 
 class TestObiwan:
     """Test OBIWAN F71 metadata parsing."""
