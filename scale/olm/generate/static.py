@@ -29,4 +29,7 @@ def pass_through(_type: Literal[_TYPE_PASS_THROUGH] = None, **x):
         {'x': 'sally', 'y': 9.0}
 
     """
+    # We're not using anything off of the passed-in state, don't pass it back
+    if "state" in x:
+        x.pop("state")
     return x

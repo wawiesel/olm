@@ -12,7 +12,7 @@ import math
 from pathlib import Path
 import json
 import copy
-from pydantic import BaseModel, Field, validate_call
+from pydantic import BaseModel, Field, validate_call, ConfigDict
 from typing import Optional, Dict, List, Literal, Annotated, Union
 from typing_extensions import TypedDict
 
@@ -26,19 +26,24 @@ __all__ = [
 
 
 # Data model definitions.
+# Note that by default, Pydantic ignores extra model parameters;
+# See https://docs.pydantic.dev/latest/concepts/models/#extra-data
 class StateWithEnrichment(BaseModel):
-    enrichment: Annotated[float, Field(gt=0.0,lt=100.0)]
+    enrichment: Annotated[float, Field(gt=0.0, lt=100.0)]
 
 
 class StateWithPuFracs(BaseModel):
-    pu_frac: Annotated[float, Field(gt=0.0,lt=100.0)]
-    pu239_frac: Annotated[float, Field(gt=0.0,lt=100.0)]
+    pu_frac: Annotated[float, Field(gt=0.0, lt=100.0)]
+    pu239_frac: Annotated[float, Field(gt=0.0, lt=100.0)]
 
-class IsotopicWts(TypedDict,total=False):
-    sym: Dict[str,float]
+
+class IsotopicWts(TypedDict, total=False):
+    sym: Dict[str, float]
+
 
 class IsotopicWtDict(TypedDict):
     iso: IsotopicWts
+
 
 def _iso_uo2(u234, u235, u236):
     """Tiny helper to pass u234,u235,u238 through to create map and recalc u238."""
@@ -65,17 +70,18 @@ def _test_args_uo2_simple(with_state: bool = False):
         args.pop("state")
     return args
 
+
 @validate_call
 def uo2_simple(
     state: StateWithEnrichment,
-    density: Annotated[float, Field(default=0.0,ge=0.0)],
+    density: Annotated[float, Field(default=0.0, ge=0.0)],
     _type: Literal[_TYPE_UO2_SIMPLE] = None,
 ):
     """Example of a simple enrichment formula."""
     return {
         "density": density,
         "uo2": {"iso": _iso_uo2(u234=1.0e-20, u235=state.enrichment, u236=1.0e-20)},
-        "_input": {"state": state.json(), "density": density},
+        "_input": {"state": state.model_dump(), "density": density},
     }
 
 
@@ -98,7 +104,7 @@ def _test_args_uo2_vera(with_state: bool = False):
 @validate_call
 def uo2_vera(
     state: StateWithEnrichment,
-    density: Annotated[float, Field(default=0.0,ge=0.0)],
+    density: Annotated[float, Field(default=0.0, ge=0.0)],
     _type: Literal[_TYPE_UO2_VERA] = None,
 ):
     """Enrichment formula from:
@@ -118,7 +124,7 @@ def uo2_vera(
                 u236=0.0046 * state.enrichment,
             )
         },
-        "_input": {"state": state.json(), "density": density},
+        "_input": {"state": state.model_dump(), "density": density},
     }
 
 
@@ -141,7 +147,7 @@ def _test_args_uo2_nuregcr5625(with_state: bool = False):
 @validate_call
 def uo2_nuregcr5625(
     state: StateWithEnrichment,
-    density: Annotated[float, Field(default=0.0,ge=0.0)],
+    density: Annotated[float, Field(default=0.0, ge=0.0)],
     _type: Literal[_TYPE_UO2_NUREGCR5625] = None,
 ):
     """Enrichment formula from NUREG/CR-5625."""
@@ -159,7 +165,7 @@ def uo2_nuregcr5625(
                 u236=0.0046 * state.enrichment,
             )
         },
-        "_input": {"state": state.json(), "density": density},
+        "_input": {"state": state.model_dump(), "density": density},
     }
 
 
@@ -185,9 +191,9 @@ def _test_args_mox_ornltm2003_2(with_state: bool = False):
 @validate_call
 def mox_ornltm2003_2(
     state: StateWithPuFracs,
-    density: Annotated[float, Field(default=0.0,ge=0.0)],
+    density: Annotated[float, Field(default=0.0, ge=0.0)],
     uo2: Optional[IsotopicWtDict] = None,
-    am241: Annotated[float, Field(default=1.e-20,ge=0.0,le=100.0)] = 1.0e-20,
+    am241: Annotated[float, Field(default=1.0e-20, ge=0.0, le=100.0)] = 1.0e-20,
     _type: Literal[_TYPE_MOX_ORNLTM2003_2] = None,
 ):
     """MOX isotopic vector calculation from ORNL/TM-2003/2, Sect. 3.2.2.1"""
@@ -214,7 +220,7 @@ def mox_ornltm2003_2(
         x[k] *= pu_plus_am_pct / 100.0
 
     # Get U isotopes and scale to remaining weight percent.
-    if uo2 and uo2['iso']:
+    if uo2 and uo2["iso"]:
         y = copy.deepcopy(uo2["iso"])
     else:
         y = uo2_nuregcr5625(state={"enrichment": 0.24})["uo2"]["iso"]
@@ -236,7 +242,12 @@ def mox_ornltm2003_2(
     comp["density"] = density
 
     # Copy the inputs.
-    comp["_input"] = {"state": state.json(), "density": density, "uo2": uo2, "am241": am241}
+    comp["_input"] = {
+        "state": state.model_dump(),
+        "density": density,
+        "uo2": uo2,
+        "am241": am241,
+    }
 
     return comp
 
@@ -267,12 +278,12 @@ def mox_multizone_2023(
     state: StateWithPuFracs,
     zone_names: Union[str, List[str]],
     zone_pins: List[Annotated[int, Field(ge=0)]],
-    density: Annotated[float, Field(default=0.0,ge=0.0)],
+    density: Annotated[float, Field(default=0.0, ge=0.0)],
     uo2: Optional[IsotopicWtDict] = None,
     zone_pu_fracs: Optional[List[float]] = None,
-    am241: Annotated[float, Field(default=1.e-20,ge=0.0,le=100.0)] = 1.0e-20,
-    gd2o3_pins: Annotated[int, Field(default=0,ge=0)] = 0,
-    gd2o3_wtpct: Annotated[float, Field(default=0.0,ge=0.0,le=100.0)] = 0,
+    am241: Annotated[float, Field(default=1.0e-20, ge=0.0, le=100.0)] = 1.0e-20,
+    gd2o3_pins: Annotated[int, Field(default=0, ge=0)] = 0,
+    gd2o3_wtpct: Annotated[float, Field(default=0.0, ge=0.0, le=100.0)] = 0,
     _type: Literal[_TYPE_MOX_MULTIZONE_2023] = None,
 ):
     """Create compositions for a zoned MOX assembly with a desired average plutonium fraction.
