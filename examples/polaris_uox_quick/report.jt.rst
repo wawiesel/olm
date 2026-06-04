@@ -121,4 +121,3 @@ This is the Polaris input (:code:`{{run.runs[0].input_file}}`) for the first per
 
 .. include:: {{run.runs[0].input_file}}
     :literal:
-

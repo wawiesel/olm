@@ -2,7 +2,7 @@
     "model": {
         "name": "bwr-7x7-quick",
         "description": "Generic BWR 7x7 Polaris lattice",
-        "sources":{	
+        "sources":{
 "Godfrey 2014": "Andrew T. Godfrey, ``VERA core physics benchmark progression problem specifications, Consortium for Advanced Simulation of LWRs'', 2014",
 "Radulescu 2021": "Georgeta Radulescu, Brandon R. Grogan, and Kaushik Banerjee, ``Fuel Assembly Reference Information for SNF Radiation Source Term Calculations,'' ORNL/SPR-2021/2093, Oak Ridge National Laboratory, 2021",
 "OCRWM 1987": "U.S. DOE Office of Civilian Radioactive Waste Management, ``Characteristics of spent fuel, high-level waste, and other radioactive wastes which may require long-term isolation: Appendix 2A, Physical descriptions of LWR (Light-Water Reactor) fuel assemblies,'' DOI: 10.2172/5258301, 1987"
@@ -29,7 +29,7 @@
         "states": {
             "_type": "scale.olm.generate.states:full_hypercube",
             "coolant_density": [
-                0.1,		
+                0.1,
                 0.30,
 		0.60,
                 0.75
@@ -72,13 +72,13 @@
     },
     "check": {
         "_type": "scale.olm.check:sequencer",
-        "sequence": [        
+        "sequence": [
         {
             "_type": "scale.olm.check:LowOrderConsistency",
             "name": "loc",
-            "template": "model/origami/system-uox.jt.inp",
-            "target_q1": 0.70,
-            "target_q2": 0.95,
+            "template": "model/origami/lumped0d-uox.jt.inp",
+            "target_q_r": 0.70,
+            "target_q_ar": 0.95,
             "eps0": 1e-12,
             "epsa": 1e-6,
             "epsr": 1e-3,
