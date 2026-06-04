@@ -106,9 +106,11 @@ class TestFileHandling:
             assert 'lib' in file_info
             assert 'output' in file_info
             assert 'f71' in file_info
+            assert 't16' in file_info
             assert str(file_info['lib']).endswith('.arp')
             assert str(file_info['output']).endswith('.out')
             assert str(file_info['f71']).endswith('.f71')
+            assert str(file_info['t16']).endswith('.t16')
         
     @patch('scale.olm.assemble.Path.exists')
     def test_get_files_missing_files(self, mock_exists):

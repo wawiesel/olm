@@ -1316,12 +1316,12 @@ class ScaleOutfile:
 
     @staticmethod
     def parse_burnups_from_polaris_t16(t16_file):
-        """Parse the list of burnups from a Polaris t16 file"""
+        """Parse the list of burnups from a Polaris t16 file."""
 
         burnup_list = []
         with open(t16_file, "r") as f:
-            for i in range(3):
-               f.readline() # skip first three lines
+            for _ in range(3):
+                f.readline()
 
             n_bu = int(f.readline().split()[0])
 
@@ -1329,23 +1329,25 @@ class ScaleOutfile:
             f.readline()
             f.readline()
             line = f.readline()
-            if not "Burnups" in line:
-                raise ValueError("Unexpected file structure to t16; expecting to find burnups record")
+            if "Burnups" not in line:
+                raise ValueError(
+                    "Unexpected file structure in t16; expected burnups record"
+                )
 
             while len(burnup_list) < n_bu:
                 tmp_bu = f.readline().split()
                 burnup_list = [*burnup_list, *tmp_bu]
 
         # Polaris reports burnups in GWd/MTHM; convert to MWd/MTHM
-        burnup_list = [ float(bu)*1000.0 for bu in burnup_list ]
+        burnup_list = [float(bu) * 1000.0 for bu in burnup_list]
 
         return burnup_list
 
     @staticmethod
-    def parse_polaris_state_table(output, material="FUEL") -> int:
+    def parse_polaris_state_table(output, material="BASIS") -> int:
         """Parse the material state information table to determine the
-          case corresponding to the fuel material (or other requested
-          depletable mixture)"""
+          case corresponding to the system heavy metal basis material
+          (or other requested depletable mixture)"""
 
         with open(output, "r") as f:
             found_integral_edit = False

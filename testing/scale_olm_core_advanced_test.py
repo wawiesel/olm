@@ -338,6 +338,23 @@ Some footer text...
 
         np.testing.assert_allclose(burnups, [0.0, 100.0, 250.0, 1000.0])
 
+    def test_parse_polaris_state_table_defaults_to_basis(self, tmp_path):
+        """Test Polaris integrated BASIS material case lookup."""
+        outfile = tmp_path / "polaris.out"
+        outfile.write_text(
+            """
+Some header text...
+|          Integrated edits for each material class      |
+|-----|-----|--------------------|-----------|-----------|
+|  13 |  25 |              BASIS | 0.000e+00 | 0.000e+00 |
+|  11 |  21 |               FUEL | 0.000e+00 | 0.000e+00 |
+"""
+        )
+
+        assert core.ScaleOutfile.parse_polaris_state_table(outfile) == 13
+        assert core.ScaleOutfile.parse_polaris_state_table(outfile, "FUEL") == 11
+        assert core.ScaleOutfile.parse_polaris_state_table(outfile, "CLAD") == -2
+
     def test_get_runtime(self):
         """Test extracting runtime from SCALE output using real file."""
         sample_output = """
