@@ -17,7 +17,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "click",
+    "click<8.2",
     "h5py",
     "imohash",
     "jinja2",
@@ -40,7 +40,7 @@ test = [
     "pytest-xdist",
 ]
 docs = [
-    "click-extra",
+    "click-extra<4.8",
     "myst-parser",
     "sphinx",
     "sphinx-autobuild",
