@@ -92,7 +92,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber,
-              merge_method: 'squash'  // Use squash merge as per project preference
+              merge_method: 'merge'
             });
             
             console.log(`Auto-merge enabled for PR #${prNumber}`);
@@ -108,5 +108,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
-              body: '🤖 **Auto-merge enabled!** This PR will be automatically merged when all conditions are met:\n\n✅ At least one approved review\n✅ All status checks passing\n✅ No changes requested\n✅ Not a draft PR\n\nUsing squash merge to maintain clean commit history.'
+              body: '🤖 **Auto-merge enabled!** This PR will be automatically merged when all conditions are met:\n\n✅ At least one approved review\n✅ All status checks passing\n✅ No changes requested\n✅ Not a draft PR\n\nUsing a merge commit so PR commit history is preserved.'
             }); 
