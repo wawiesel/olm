@@ -75,7 +75,7 @@ def uo2_simple(
     density: Annotated[float, Field(default=0.0, ge=0.0)],
     _type: Literal[_TYPE_UO2_SIMPLE] = None,
 ):
-    """Example of a simple enrichment formula."""
+    """Return a UO2 composition using the state enrichment as the U-235 wt%."""
     return {
         "density": density,
         "uo2": {"iso": _iso_uo2(u234=1.0e-20, u235=state.enrichment, u236=1.0e-20)},
