@@ -28,8 +28,13 @@ unexpected manifest changes as a signal to inspect the test diff carefully.
 
 The repository also uses CODEOWNERS to require owner review for the manifest,
 the manifest verifier, the regeneration script, the test workflow, the
-auto-merge workflow, and the CODEOWNERS file itself. These files are the
-control plane for test and merge integrity.
+coverage policy, the auto-merge workflow, and the CODEOWNERS file itself.
+These files are the control plane for test and merge integrity.
+
+`codecov.yml` defines the coverage policy. Project coverage uses the pull
+request base as the target with a `0%` threshold, so total coverage must not go
+down. Pull requests that lower project coverage need additional tests or less
+untested code before their Codecov project status should pass.
 
 ```{include} ../../README.md
 ```

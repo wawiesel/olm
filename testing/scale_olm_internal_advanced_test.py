@@ -6,6 +6,7 @@ with minimal mocking - focusing on real functionality where possible.
 """
 import pytest
 import os
+import sys
 import tempfile
 import json
 from pathlib import Path
@@ -44,6 +45,14 @@ class TestCopyDoc:
         # Should only include text before \f
         assert target_func.__doc__ == "This is public documentation."
         assert "\f" not in target_func.__doc__
+
+    def test_copy_doc_empty_docstring_raises(self):
+        """Test that copy_doc rejects source functions without docstrings."""
+        def source_func():
+            return "source"
+
+        with pytest.raises(ValueError, match="empty docstring"):
+            internal.copy_doc(source_func)(lambda: "target")
 
 
 class TestFunctionHandling:
@@ -105,6 +114,11 @@ class TestUtilityFunctions:
             assert "SCALE_DIR" in error_msg
             assert "OLM_SCALERTE" in error_msg
             assert "export" in error_msg
+
+    def test_obiwan_error_message_formatting(self):
+        """Test SCALE obiwan environment error message."""
+        with pytest.raises(ValueError, match="obiwan executable was not found"):
+            internal._raise_obiwan_error()
 
 
 class TestSchemaFunctions:
@@ -261,6 +275,29 @@ class TestJSONHandling:
 class TestRegistryBasics:
     """Test basic registry patterns without heavy mocking."""
 
+    @staticmethod
+    def write_arp_library(root, name="testlib", lib_name=None):
+        """Create a minimal arpdata.txt/arplibs pair for registry tests."""
+        lib_name = lib_name or f"{name}.f33"
+        root.mkdir(parents=True, exist_ok=True)
+        arplibs = root / "arplibs"
+        arplibs.mkdir()
+        (arplibs / lib_name).write_text("dummy library payload\n")
+        (root / "arpdata.txt").write_text(
+            "\n".join(
+                [
+                    f"!{name}",
+                    "1 1 2",
+                    "4.95",
+                    "0.723",
+                    f"'{lib_name}'",
+                    "0.0 1000.0",
+                    "",
+                ]
+            )
+        )
+        return root
+
     @patch.dict(os.environ, {'SCALE_OLM_PATH': '/test/path1:/test/path2'})
     def test_environment_path_parsing(self):
         """Test environment variable parsing for SCALE_OLM_PATH."""
@@ -280,9 +317,151 @@ class TestRegistryBasics:
 
         assert len(paths) == 0
 
+    def test_create_registry_reads_paths_and_environment(self, tmp_path, monkeypatch):
+        """Test registry creation from explicit paths and SCALE_OLM_PATH."""
+        path_library = self.write_arp_library(tmp_path / "path_library", "pathlib")
+        env_library = self.write_arp_library(tmp_path / "env_library", "envlib")
+        monkeypatch.setenv("SCALE_OLM_PATH", str(env_library))
+
+        registry = internal._create_registry([path_library], env=True)
+
+        assert sorted(registry) == ["envlib", "pathlib"]
+        assert registry["pathlib"].path == path_library / "arpdata.txt"
+        assert registry["pathlib"].arplibs_dir == path_library / "arplibs"
+        assert registry["pathlib"].get_lib_by_index(0) == "pathlib.f33"
+        assert registry["envlib"].get_lib_by_index(0) == "envlib.f33"
+
+    def test_make_mini_arpdatatxt_writes_registry_subset(self, tmp_path):
+        """Test writing a reduced arpdata.txt and arplibs directory."""
+        source = self.write_arp_library(tmp_path / "source", "uoxmini")
+        registry = internal._create_registry([source], env=False)
+        dest = tmp_path / "dest"
+        dest.mkdir()
+
+        internal._make_mini_arpdatatxt(
+            dry_run=False,
+            registry={"uoxmini": registry["uoxmini"]},
+            dest=dest,
+            replace=True,
+        )
+
+        arpdata_text = (dest / "arpdata.txt").read_text()
+        assert "!uoxmini" in arpdata_text
+        assert "'uoxmini.f33'" in arpdata_text
+        assert (dest / "arplibs" / "uoxmini.f33").read_text() == "dummy library payload\n"
+
+    def test_link_copies_selected_registry_entries(self, tmp_path):
+        """Test link copies only the selected registered library."""
+        source = self.write_arp_library(tmp_path / "source", "selected")
+        dest = tmp_path / "linked"
+        dest.mkdir()
+
+        result = internal.link(
+            names=["selected"],
+            paths=[str(source)],
+            env=False,
+            dest=str(dest),
+            show=False,
+            overwrite=True,
+            dry_run=False,
+        )
+
+        assert result == 0
+        assert "!selected" in (dest / "arpdata.txt").read_text()
+        assert (dest / "arplibs" / "selected.f33").exists()
+
+    def test_link_show_lists_registered_libraries(self, tmp_path, capsys):
+        """Test link --show lists available libraries without copying them."""
+        source = self.write_arp_library(tmp_path / "source", "showlib")
+
+        result = internal.link(
+            names=[],
+            paths=[str(source)],
+            env=False,
+            dest=str(tmp_path / "unused"),
+            show=True,
+            overwrite=False,
+            dry_run=True,
+        )
+
+        captured = capsys.readouterr()
+        assert result == 0
+        assert "showlib" in captured.out
+        assert str(source / "arpdata.txt") in captured.out
+
+    def test_link_missing_name_raises(self, tmp_path):
+        """Test link reports missing requested library names."""
+        source = self.write_arp_library(tmp_path / "source", "available")
+
+        with pytest.raises(ValueError, match="name=missing not found"):
+            internal.link(
+                names=["missing"],
+                paths=[str(source)],
+                env=False,
+                dest=str(tmp_path / "unused"),
+                show=False,
+                overwrite=False,
+                dry_run=True,
+            )
+
+    def test_install_writes_single_library_registry(self, tmp_path):
+        """Test install creates a destination registry from one work library."""
+        work_dir = self.write_arp_library(tmp_path / "work", "installable")
+        dest = tmp_path / "install_dest"
+
+        internal.install(str(work_dir), str(dest), overwrite=False, dry_run=False)
+
+        assert "!installable" in (dest / "arpdata.txt").read_text()
+        assert (dest / "arplibs" / "installable.f33").exists()
+
+    def test_install_rejects_multiple_library_blocks(self, tmp_path):
+        """Test install rejects work directories containing multiple libraries."""
+        work_dir = tmp_path / "work"
+        work_dir.mkdir()
+        (work_dir / "arplibs").mkdir()
+        (work_dir / "arplibs" / "one.f33").write_text("one\n")
+        (work_dir / "arplibs" / "two.f33").write_text("two\n")
+        (work_dir / "arpdata.txt").write_text(
+            "\n".join(
+                [
+                    "!one",
+                    "1 1 1",
+                    "3.0",
+                    "0.7",
+                    "'one.f33'",
+                    "0.0",
+                    "!two",
+                    "1 1 1",
+                    "4.0",
+                    "0.8",
+                    "'two.f33'",
+                    "0.0",
+                    "",
+                ]
+            )
+        )
+
+        with pytest.raises(ValueError, match="Only one library expected"):
+            internal.install(str(work_dir), str(tmp_path / "dest"), overwrite=False)
+
 
 class TestCommandExecution:
     """Test command execution patterns (only mock subprocess for safety)."""
+
+    def test_run_command_returns_stdout(self):
+        """Test run_command returns stdout from a successful child process."""
+        command = f'"{sys.executable}" -c "print(\\"clean output\\")"'
+
+        output = internal.run_command(command, echo=False)
+
+        assert output == "clean output\n"
+
+    def test_run_command_raises_on_error_match(self):
+        """Test run_command raises when stdout contains the error marker."""
+        command = f'"{sys.executable}" -c "print(\\"Error from child\\")"'
+
+        with pytest.raises(ValueError, match="Error from child"):
+            internal.run_command(command, echo=False)
 
     @patch('subprocess.Popen')
     def test_command_output_processing(self, mock_popen):
@@ -326,6 +505,61 @@ class TestEnvironmentLoading:
 
         assert scalerte_path == "/test/scale/bin/scalerte"
         assert obiwan_path == "/test/scale/bin/obiwan"
+
+    def test_load_env_writes_resolved_runtime_environment(self, tmp_path, monkeypatch):
+        """Test _load_env writes config/work/runtime paths into env.olm.json."""
+        config_file = tmp_path / "config.olm.json"
+        work_dir = tmp_path / "_custom_work"
+        scale_dir = tmp_path / "scale"
+        scalerte = tmp_path / "custom_scalerte"
+        obiwan = tmp_path / "custom_obiwan"
+        config_file.write_text(
+            json.dumps(
+                {
+                    "model": {
+                        "name": "test_model",
+                        "sources": ["source-a"],
+                        "revision": ["rev-a"],
+                    }
+                }
+            )
+        )
+        monkeypatch.setenv("OLM_WORK_DIR", str(work_dir))
+        monkeypatch.setenv("SCALE_DIR", str(scale_dir))
+        monkeypatch.setenv("OLM_SCALERTE", str(scalerte))
+        monkeypatch.setenv("OLM_OBIWAN", str(obiwan))
+
+        env, config = internal._load_env(str(config_file), nprocs=7)
+
+        assert config["model"]["name"] == "test_model"
+        assert env["config_file"] == str(config_file.resolve())
+        assert env["work_dir"] == str(work_dir)
+        assert env["scalerte"] == str(scalerte)
+        assert env["obiwan"] == str(obiwan)
+        assert env["nprocs"] == 7
+        assert json.loads((work_dir / "env.olm.json").read_text()) == env
+
+    def test_init_writes_named_variant_when_config_dir_omitted(self, tmp_path, monkeypatch):
+        """Test init uses the variant name as the output directory by default."""
+        monkeypatch.chdir(tmp_path)
+
+        internal.init(config_dir="", variant="uox_quick", list_=False)
+
+        output_dir = tmp_path / "uox_quick"
+        assert (output_dir / "config.olm.json").exists()
+        assert (output_dir / "model.jt.inp").exists()
+        assert (output_dir / "report.jt.rst").exists()
+
+    def test_write_init_variant_copies_config_and_template_files(self, tmp_path):
+        """Test writing an init variant copies its config and declared files."""
+        config_dir = tmp_path / "variant"
+
+        internal._write_init_variant("uox_quick", config_dir)
+
+        config = json.loads((config_dir / "config.olm.json").read_text())
+        assert config["model"]["name"] == "uox_quick"
+        assert "t-depl" in (config_dir / "model.jt.inp").read_text()
+        assert "{{model.name}}" in (config_dir / "report.jt.rst").read_text()
 
 
 class TestMakefilePatterns:
