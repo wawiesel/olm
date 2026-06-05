@@ -206,10 +206,10 @@ class TestMakefileFunction:
             
             expected_relative_paths = [
                 str(Path("subdir/input1.inp")),
-                str(Path("input2.inp")), 
+                str(Path("input2.inp")),
                 str(Path("another/deep/input3.inp"))
             ]
-            
+
             assert len(input_list) == len(expected_relative_paths)
             for expected in expected_relative_paths:
                 assert expected in input_list
@@ -286,4 +286,4 @@ class TestRunIntegration:
         assert run.makefile.__doc__ is not None
         assert "Makefile" in run.makefile.__doc__
         assert "_env" in run.makefile.__doc__
-        assert "_model" in run.makefile.__doc__ 
+        assert "_model" in run.makefile.__doc__
