@@ -11,7 +11,7 @@ echo "Installing pinned development snapshot..."
 pip install -r requirements.txt
 
 echo "Installing OLM with development extras..."
-pip install --editable ".[test,docs]"
+pip install --editable ".[test,docs,notebooks]"
 
 echo "Updating data submodule..."
 git submodule update --init data

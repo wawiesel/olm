@@ -52,6 +52,11 @@ docs = [
     "sphinx-toolbox",
     "tomli",
 ]
+notebooks = [
+    "ipykernel",
+    "jupyterlab",
+    "testbook",
+]
 dev = [
     "black",
     "bumpversion",

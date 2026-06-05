@@ -56,7 +56,7 @@ After enabling the virtual environment, install OLM with the optional dependenci
 needed for testing and documentation.
 
 ```console
-$ pip install --editable ".[test,docs]"
+$ pip install --editable ".[test,docs,notebooks]"
 ```
 
 The project metadata in `pyproject.toml` is the source of truth for package
@@ -73,7 +73,7 @@ This command will enable any changes you make to instantly propagate to the exec
 you can run just with `olm`.
 
 ```console
-$ pip install --editable ".[test,docs]"
+$ pip install --editable ".[test,docs,notebooks]"
 $ olm
 $ which olm
 ```
