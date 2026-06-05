@@ -1,0 +1,11 @@
+# Test integrity control plane.
+#
+# These files define or enforce the test manifest. Changes to them should be
+# reviewed by a repository owner because they affect whether test edits are
+# visible and tamper-evident.
+/testing/test_functions_manifest.txt @wawiesel
+/testing/scale_olm_test.py @wawiesel
+/scripts/regenerate_manifest.py @wawiesel
+/.github/workflows/test.yml @wawiesel
+/.github/workflows/auto-merge.yml @wawiesel
+/.github/CODEOWNERS @wawiesel
