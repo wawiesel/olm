@@ -7,11 +7,11 @@ fi
 echo "Activating virtual environment..."
 source venv/bin/activate
 
-echo "Installing requirements..."
+echo "Installing pinned development snapshot..."
 pip install -r requirements.txt
 
-echo "Installing OLM..."
-pip install --editable .
+echo "Installing OLM with development extras..."
+pip install --editable ".[test,docs]"
 
 echo "Updating data submodule..."
 git submodule update --init data
@@ -21,4 +21,3 @@ popd
 
 echo "Running tests"
 pytest -n 6 .
-

@@ -18,19 +18,46 @@ classifiers = [
 ]
 dependencies = [
     "click",
-    "matplotlib",
-    "scipy",
-    "numpy",
-    "imohash",
-    "pygments",
-    "pytest",
-    "pydantic",
     "h5py",
-    "tqdm",
+    "imohash",
+    "jinja2",
+    "matplotlib",
+    "numpy",
+    "pydantic",
+    "pygments",
+    "scipy",
     "structlog",
-    "hypothesis"
+    "tqdm",
+    "typing-extensions",
 ]
 requires-python = ">=3.9"
+
+[project.optional-dependencies]
+test = [
+    "hypothesis",
+    "pytest",
+    "pytest-cov",
+    "pytest-xdist",
+]
+docs = [
+    "click-extra",
+    "myst-parser",
+    "sphinx",
+    "sphinx-autobuild",
+    "sphinx-click",
+    "sphinx-copybutton",
+    "sphinx-jsonschema",
+    "sphinx-notfound-page",
+    "sphinx-rtd-theme",
+    "sphinx-toolbox",
+    "tomli",
+]
+dev = [
+    "black",
+    "bumpversion",
+    "flake8",
+    "pre-commit",
+]
 
 [project.urls]
 documentation = "https://scale-olm.readthedocs.io"
