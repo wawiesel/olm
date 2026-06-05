@@ -37,12 +37,10 @@ class StateWithPuFracs(BaseModel):
     pu239_frac: Annotated[float, Field(gt=0.0, lt=100.0)]
 
 
-class IsotopicWts(TypedDict, total=False):
-    sym: Dict[str, float]
-
-
 class IsotopicWtDict(TypedDict):
-    iso: IsotopicWts
+    __pydantic_config__ = ConfigDict(extra="forbid")
+
+    iso: Annotated[Dict[str, float], Field(min_length=1)]
 
 
 def _iso_uo2(u234, u235, u236):
