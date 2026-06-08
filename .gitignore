@@ -14,3 +14,9 @@ venv
 htmlcov/
 .coverage*
 coverage.xml
+
+# Private persistent-agent workspace files
+.privc/
+AGENTS.md
+__backlog.txt
+__operator.sh

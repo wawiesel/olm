@@ -30,7 +30,7 @@ dependencies = [
     "tqdm",
     "typing-extensions",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.9,<3.13"
 
 [project.optional-dependencies]
 test = [
