@@ -1261,8 +1261,60 @@ class Obiwan:
         self.obiwan = obiwan
 
     @staticmethod
-    def get_history_from_f71(obiwan, f71, caseid0):
+    def _get_info_rows_from_text(text0, source, caseid0):
+        """Parse OBIWAN info rows for one case from F71 info text."""
+        lines = text0.splitlines()
+        header_index = None
+        for i, line in enumerate(lines):
+            columns = line.split()
+            if columns and columns[0] == "pos":
+                header_index = i
+                break
+        if header_index is None:
+            raise ValueError(f"Could not find OBIWAN info table in f71={source}")
+
+        columns = lines[header_index].split()
+        required_columns = ["time", "power", "energy", "initialhm", "case"]
+        missing_columns = [
+            column for column in required_columns if column not in columns
+        ]
+        if missing_columns:
+            raise ValueError(
+                f"OBIWAN info table in f71={source} is missing required columns: "
+                + ", ".join(missing_columns)
+            )
+
+        column_index = {column: columns.index(column) for column in required_columns}
+        rows = []
+        for line in lines[header_index + 2 :]:
+            tokens = line.rstrip().split()
+            if len(tokens) <= max(column_index.values()):
+                break
+            try:
+                row = {
+                    "time": float(tokens[column_index["time"]]),
+                    "power": float(tokens[column_index["power"]]),
+                    "energy": float(tokens[column_index["energy"]]),
+                    "initialhm": float(tokens[column_index["initialhm"]]),
+                    "case": tokens[column_index["case"]],
+                }
+            except ValueError:
+                break
+            if str(caseid0) == str(row["case"]):
+                rows.append(row)
+        return rows
+
+    @staticmethod
+    def get_info_history_from_f71(obiwan, f71, caseid0):
         """
+        Read burnup history from an OBIWAN F71 info table.
+
+        OBIWAN reports elapsed time in seconds, accumulated energy in MWd, and
+        initial heavy metal in MTIHM. This method returns burnup points as
+        ``energy / initialhm`` in MWd/MTIHM. Interval history uses
+        ``burn = delta(time) / 86400`` in days and
+        ``power = delta(energy) / initialhm / burn`` in MW/MTIHM.
+
         Parse the history of the form as follows for 6.3 series:
 
         .. code:: text
@@ -1294,37 +1346,53 @@ class Obiwan:
               8  1.51200e+08  3.99026e+01  4.18116e+14  5.31986e+22  6.98569e+04  1.00000e+00  1.09091e+05      8     10      7 DC----
 
         """
-        # TODO: REMOVE THIS CALL TO RUN COMMAND IN FAVOR OF Obiwan class.
         text0 = run_command(f"{obiwan} view -format=info {f71}", echo=False)
+        rows = Obiwan._get_info_rows_from_text(text0, f71, caseid0)
+        if not rows:
+            raise ValueError(
+                f"Could not find case={caseid0} in OBIWAN info table for f71={f71}"
+            )
 
-        # Start the text with " pos " which should be the first thing on the header column
-        # line always and the last thing the "D - state definition present" label.
-        text = text0[text0.find(" pos ") : text0.find("D - state definition present")]
-        header = text.split("\n")[0]
-        columns = header.split()
-        j_caseid = columns.index("case")
-        ncolumns = j_caseid + 3
+        initialhm = rows[0]["initialhm"]
+        if initialhm <= 0.0:
+            raise ValueError(
+                f"Cannot calculate history for f71={f71}; initialhm={initialhm}"
+            )
 
-        burndata = list()
-        initialhm0 = None
-        last_days = 0.0
-        i = 0
-        for line in text.split("\n")[2:]:
-            i += 1
-            tokens = line.rstrip().split()
-            if len(tokens) != ncolumns:
-                break
-            caseid = tokens[j_caseid]
-            if str(caseid0) == str(caseid):
-                days = float(tokens[1]) / 86400.0
-                if days == 0.0:
-                    initialhm0 = float(tokens[6])
-                else:
-                    burndata.append(
-                        {"power": float(tokens[2]), "burn": (days - last_days)}
+        burnups = []
+        burndata = []
+        previous_days = None
+        previous_energy = None
+        for row in rows:
+            days = row["time"] / 86400.0
+            energy = row["energy"]
+            burnups.append(energy / initialhm)
+            if previous_days is not None:
+                burn = days - previous_days
+                if burn <= 0.0:
+                    raise ValueError(
+                        "OBIWAN info table time must be strictly increasing after "
+                        f"the initial state for f71={f71}"
                     )
-                last_days = days
-        return {"burndata": burndata, "initialhm": initialhm0}
+                power = (energy - previous_energy) / initialhm / burn
+                burndata.append({"power": power, "burn": burn})
+            previous_days = days
+            previous_energy = energy
+
+        return {"burndata": burndata, "burnups": burnups, "initialhm": initialhm}
+
+    @staticmethod
+    def get_burnups_from_f71(obiwan, f71, caseid0):
+        return Obiwan.get_info_history_from_f71(obiwan, f71, caseid0)["burnups"]
+
+    @staticmethod
+    def get_initialhm_from_f71(obiwan, f71, caseid0):
+        return Obiwan.get_info_history_from_f71(obiwan, f71, caseid0)["initialhm"]
+
+    @staticmethod
+    def get_history_from_f71(obiwan, f71, caseid0):
+        history = Obiwan.get_info_history_from_f71(obiwan, f71, caseid0)
+        return {"burndata": history["burndata"], "initialhm": history["initialhm"]}
 
 
 class ScaleRunner:

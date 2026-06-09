@@ -159,9 +159,9 @@ Generating inputs
     
     14 directories, 26 files
 
-You will notice that all calculations happen in a work directory, which my default is
+You will notice that all calculations happen in a work directory, which by default is
 next to the :code:`config.olm.json` file as :code:`_work`. It can be changed by setting the environment
-variable :code:`SCALE_OLM_WORK`.
+variable :code:`OLM_WORK_DIR`.
 
 Running the calculations
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -303,7 +303,6 @@ Run the input with SCALE.
     
     $ $SCALE_DIR/bin/scalerte -m origami.inp
     
-
 
 
 

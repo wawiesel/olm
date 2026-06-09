@@ -102,12 +102,13 @@ class TestFileHandling:
         result = assemble._get_files(work_dir, suffix, perms)
         
         assert len(result) == 3
-        # Each result should be a dict with 'lib' and 'output' keys
         for file_info in result:
             assert 'lib' in file_info
             assert 'output' in file_info
+            assert 'f71' in file_info
             assert str(file_info['lib']).endswith('.arp')
             assert str(file_info['output']).endswith('.out')
+            assert str(file_info['f71']).endswith('.f71')
         
     @patch('scale.olm.assemble.Path.exists')
     def test_get_files_missing_files(self, mock_exists):
@@ -135,43 +136,43 @@ class TestFileHandling:
 class TestBurnupListExtraction:
     """Test burnup list extraction from files."""
     
-    @patch('scale.olm.core.ScaleOutfile.parse_burnups_from_triton_output')
-    def test_get_burnup_list_basic(self, mock_parse_burnups):
+    @patch('scale.olm.core.Obiwan.get_burnups_from_f71')
+    def test_get_burnup_list_basic(self, mock_get_burnups):
         """Test burnup extraction from file list."""
-        # Mock burnup parsing
         mock_burnup_data = np.array([0.0, 5.0, 10.0, 15.0, 20.0])
-        mock_parse_burnups.return_value = mock_burnup_data
+        mock_get_burnups.return_value = mock_burnup_data
         
         file_list = [
-            {'output': Path('perm_000.out')},
-            {'output': Path('perm_001.out')},
+            {'output': Path('perm_000.out'), 'f71': Path('perm_000.f71')},
+            {'output': Path('perm_001.out'), 'f71': Path('perm_001.f71')},
         ]
         
-        result = assemble._get_burnup_list(file_list)
+        result = assemble._get_burnup_list("obiwan", file_list)
         
         np.testing.assert_array_equal(result, mock_burnup_data)
-        assert mock_parse_burnups.call_count == 2
+        assert mock_get_burnups.call_count == 2
+        mock_get_burnups.assert_any_call("obiwan", Path('perm_000.f71'), -2)
+        mock_get_burnups.assert_any_call("obiwan", Path('perm_001.f71'), -2)
     
-    @patch('scale.olm.core.ScaleOutfile.parse_burnups_from_triton_output')
-    def test_get_burnup_list_inconsistent_burnups(self, mock_parse_burnups):
+    @patch('scale.olm.core.Obiwan.get_burnups_from_f71')
+    def test_get_burnup_list_inconsistent_burnups(self, mock_get_burnups):
         """Test burnup extraction with inconsistent burnup lists."""
-        # Mock different burnup data for different files
-        mock_parse_burnups.side_effect = [
+        mock_get_burnups.side_effect = [
             np.array([0.0, 5.0, 10.0]),
             np.array([0.0, 5.0, 15.0])  # Different!
         ]
         
         file_list = [
-            {'output': Path('perm_000.out')},
-            {'output': Path('perm_001.out')},
+            {'output': Path('perm_000.out'), 'f71': Path('perm_000.f71')},
+            {'output': Path('perm_001.out'), 'f71': Path('perm_001.f71')},
         ]
         
         with pytest.raises(ValueError, match="burnups deviated from previous"):
-            assemble._get_burnup_list(file_list)
+            assemble._get_burnup_list("obiwan", file_list)
     
     def test_get_burnup_list_empty_files(self):
         """Test burnup extraction with empty file list."""
-        result = assemble._get_burnup_list([])
+        result = assemble._get_burnup_list("obiwan", [])
         assert result == []
 
 
@@ -267,8 +268,16 @@ class TestArpInfoMaster:
         
         # Mock file discovery
         mock_file_list = [
-            {"lib": Path('/work/perm_000.system.f33'), "output": Path('/work/perm_000.out')},
-            {"lib": Path('/work/perm_001.system.f33'), "output": Path('/work/perm_001.out')},
+            {
+                "lib": Path('/work/perm_000.system.f33'),
+                "output": Path('/work/perm_000.out'),
+                "f71": Path('/work/perm_000.f71'),
+            },
+            {
+                "lib": Path('/work/perm_001.system.f33'),
+                "output": Path('/work/perm_001.out'),
+                "f71": Path('/work/perm_001.f71'),
+            },
         ]
         mock_get_files.return_value = mock_file_list
         
@@ -281,12 +290,12 @@ class TestArpInfoMaster:
         mock_burnup_list = np.array([0, 10, 20, 30])
         mock_get_burnup_list.return_value = mock_burnup_list
         
-        result = assemble._get_arpinfo(work_dir, name, fuel_type, dim_map)
+        result = assemble._get_arpinfo("obiwan", work_dir, name, fuel_type, dim_map)
         
         # Verify the full workflow
         mock_get_files.assert_called_once_with(work_dir, ".system.f33", mock_generate_data["perms"])
         mock_get_arpinfo_uox.assert_called_once_with(name, mock_generate_data["perms"], mock_file_list, dim_map)
-        mock_get_burnup_list.assert_called_once_with(mock_file_list)
+        mock_get_burnup_list.assert_called_once_with("obiwan", mock_file_list)
         
         # Verify result
         assert result == mock_arpinfo
@@ -302,7 +311,7 @@ class TestArpInfoMaster:
         
         with patch('builtins.open', mock_open(read_data='{"perms": []}')):
             with pytest.raises(ValueError, match="Unknown fuel_type"):
-                assemble._get_arpinfo(work_dir, name, fuel_type, dim_map)
+                assemble._get_arpinfo("obiwan", work_dir, name, fuel_type, dim_map)
 
 
 class TestCompositionSystem:
@@ -460,4 +469,4 @@ class TestIntegrationScenarios:
         # Verify extracted values are reasonable
         assert all(0 < enr < 10 for enr in enrichments)
         assert all(0 < mod < 2 for mod in mod_densities)
-        assert len(set(enrichments)) == len(enrichments)  # All unique 
+        assert len(set(enrichments)) == len(enrichments)  # All unique

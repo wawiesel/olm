@@ -10,6 +10,15 @@
             "title": "Template",
             "type": "string"
         },
+        "metric": {
+            "default": null,
+            "enum": [
+                "grams_per_initial_hm",
+                "atom_fraction"
+            ],
+            "title": "Metric",
+            "type": "string"
+        },
         "eps0": {
             "default": null,
             "title": "Eps0",
@@ -65,6 +74,7 @@
         "            \"_type\": \"scale.olm.check:LowOrderConsistency\",",
         "            \"name\": \"\",",
         "            \"template\": \"\",",
+        "            \"metric\": \"grams_per_initial_hm\",",
         "            \"eps0\": 1e-12,",
         "            \"epsa\": 1e-06,",
         "            \"epsr\": 0.001,",

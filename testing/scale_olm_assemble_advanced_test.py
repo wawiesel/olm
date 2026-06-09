@@ -106,42 +106,47 @@ class TestBurnupListProcessing:
     
     def test_get_burnup_list_consistent_advanced(self):
         """Test burnup list extraction with consistent data."""
-        # Mock file list with consistent burnup data
         mock_burnup = np.array([0.0, 1.0, 5.0, 10.0, 25.0, 50.0])
-        
-        with patch.object(core.ScaleOutfile, 'parse_burnups_from_triton_output', return_value=mock_burnup):
-            file_list = [
-                {"output": "file1.out"},
-                {"output": "file2.out"},
-                {"output": "file3.out"},
-            ]
-            
-            result = assemble._get_burnup_list(file_list)
-            np.testing.assert_array_equal(result, mock_burnup)
+        file_list = [
+            {"output": "file1.out", "f71": "file1.f71"},
+            {"output": "file2.out", "f71": "file2.f71"},
+            {"output": "file3.out", "f71": "file3.f71"},
+        ]
+
+        with patch.object(
+            core.Obiwan, "get_burnups_from_f71", return_value=mock_burnup
+        ) as mock_get_burnups:
+            result = assemble._get_burnup_list("obiwan", file_list)
+
+        np.testing.assert_array_equal(result, mock_burnup)
+        assert mock_get_burnups.call_count == 3
     
     def test_get_burnup_list_inconsistent_advanced(self):
         """Test error handling when burnup lists are inconsistent."""
         burnup1 = np.array([0.0, 1.0, 5.0, 10.0])
         burnup2 = np.array([0.0, 2.0, 6.0, 12.0])  # Different values
-        
-        with patch.object(core.ScaleOutfile, 'parse_burnups_from_triton_output', side_effect=[burnup1, burnup2]):
-            file_list = [
-                {"output": "file1.out"},
-                {"output": "file2.out"},
-            ]
-            
+        file_list = [
+            {"output": "file1.out", "f71": "file1.f71"},
+            {"output": "file2.out", "f71": "file2.f71"},
+        ]
+
+        with patch.object(
+            core.Obiwan, "get_burnups_from_f71", side_effect=[burnup1, burnup2]
+        ):
             with pytest.raises(ValueError, match="burnups deviated from previous"):
-                assemble._get_burnup_list(file_list)
+                assemble._get_burnup_list("obiwan", file_list)
     
     def test_get_burnup_list_single_file_advanced(self):
         """Test burnup list extraction with single file."""
         mock_burnup = np.array([0.0, 5.0, 15.0, 30.0])
-        
-        with patch.object(core.ScaleOutfile, 'parse_burnups_from_triton_output', return_value=mock_burnup):
-            file_list = [{"output": "single_file.out"}]
-            
-            result = assemble._get_burnup_list(file_list)
-            np.testing.assert_array_equal(result, mock_burnup)
+        file_list = [{"output": "single_file.out", "f71": "single_file.f71"}]
+
+        with patch.object(
+            core.Obiwan, "get_burnups_from_f71", return_value=mock_burnup
+        ):
+            result = assemble._get_burnup_list("obiwan", file_list)
+
+        np.testing.assert_array_equal(result, mock_burnup)
 
 
 class TestCompositionSystemProcessing:
@@ -380,4 +385,4 @@ class TestMathematicalProperties:
             
             # Should be roughly 1/keep_every of original size (with some tolerance for boundary effects)
             expected_size = max(2, original_length // keep_every + 2)  # +2 for potential boundary effects
-            assert len(result) <= expected_size, f"Thinning not efficient enough: got {len(result)}, expected ≤ {expected_size}" 
+            assert len(result) <= expected_size, f"Thinning not efficient enough: got {len(result)}, expected ≤ {expected_size}"

@@ -9,6 +9,7 @@ import pytest
 import numpy as np
 import tempfile
 import os
+from unittest.mock import patch
 
 import scale.olm.core as core
 
@@ -244,6 +245,48 @@ More output text...
 
         finally:
             os.unlink(temp_path)
+
+
+class TestObiwan:
+    """Test OBIWAN F71 metadata parsing."""
+
+    def test_get_info_history_from_f71_scale_7_table(self):
+        """Read burnups and interval history from SCALE 7 OBIWAN info text."""
+        info_text = """
+Some OBIWAN header text...
+ pos         time        power         flux      fluence       energy    initialhm       volume libpos   case   step DCGNAB
+ (-)          (s)         (MW)   (n/cm^2-s)     (n/cm^2)        (MWd)      (MTIHM)       (cm^3)    (-)    (-)    (-)    (-)
+  24  0.00000e+00  4.00000e+01  1.00000e+14  0.00000e+00  0.00000e+00  1.00000e+00  1.09084e+05      1     10      0 DC----
+  25  0.00000e+00  0.00000e+00  0.00000e+00  0.00000e+00  0.00000e+00  1.00000e+00  1.09084e+05      1     -2      0 DC----
+  26  2.16000e+06  3.98786e+01  3.63597e+14  7.85370e+20  9.96965e+02  1.00000e+00  1.09084e+05      2     -2      1 DC----
+  27  2.16000e+07  3.98781e+01  3.80710e+14  8.18637e+21  9.96954e+03  1.00000e+00  1.09084e+05      3     -2      2 DC----
+  28  5.40000e+07  3.98783e+01  4.20568e+14  2.18128e+22  2.49239e+04  1.00000e+00  1.09084e+05      4     -2      3 DC----
+D - state definition present
+"""
+
+        with patch("scale.olm.core.run_command", return_value=info_text) as run:
+            history = core.Obiwan.get_info_history_from_f71(
+                "/path/to/obiwan", "sample.f71", -2
+            )
+
+        run.assert_called_once_with(
+            "/path/to/obiwan view -format=info sample.f71", echo=False
+        )
+        np.testing.assert_allclose(
+            history["burnups"],
+            [0.0, 996.965, 9969.54, 24923.9],
+            rtol=0.0,
+            atol=1.0e-8,
+        )
+        assert history["initialhm"] == pytest.approx(1.0)
+        np.testing.assert_allclose(
+            [entry["burn"] for entry in history["burndata"]],
+            [25.0, 225.0, 375.0],
+        )
+        np.testing.assert_allclose(
+            [entry["power"] for entry in history["burndata"]],
+            [996.965 / 25.0, (9969.54 - 996.965) / 225.0, (24923.9 - 9969.54) / 375.0],
+        )
 
 
 class TestReactorLibraryUtilities:

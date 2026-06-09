@@ -60,7 +60,7 @@ def arpdata_txt(
     work_path = Path(_env["work_dir"])
 
     # Get library info data structure.
-    arpinfo = _get_arpinfo(work_path, _model["name"], fuel_type, dim_map)
+    arpinfo = _get_arpinfo(_env["obiwan"], work_path, _model["name"], fuel_type, dim_map)
 
     # Generate thinned burnup list.
     thinned_burnup_list = _generate_thinned_burnup_list(keep_every, arpinfo.burnup_list)
@@ -195,24 +195,39 @@ def _get_files(work_dir, suffix, perms):
                 f"output file={output} does not exist! Maybe run was not complete successfully?"
             )
 
-        file_list.append({"lib": lib, "output": output})
+        f71 = work_dir / Path(input).with_suffix(".f71")
+        if not f71.exists():
+            raise ValueError(
+                f"f71 file={f71} does not exist! Maybe run was not complete successfully?"
+            )
+
+        file_list.append({"lib": lib, "output": output, "f71": f71})
 
     return file_list
 
 
-def _get_burnup_list(file_list):
-    """Extract a burnup list from the output file and make sure they are all the same."""
+def _burnup_lists_match(reference, candidate, burnup_rtol):
+    reference = np.asarray(reference)
+    candidate = np.asarray(candidate)
+    if reference.shape != candidate.shape:
+        return False
+    return np.allclose(reference, candidate, rtol=burnup_rtol, atol=1.0e-6)
+
+
+def _get_burnup_list(obiwan, file_list, burnup_rtol=2.0e-2):
+    """Extract burnups from F71 info and verify that all permutations match."""
     burnup_list = list()
     previous_output_file = ""
     for i in range(len(file_list)):
         output_file = file_list[i]["output"]
-        bu = core.ScaleOutfile.parse_burnups_from_triton_output(output_file)
+        bu = core.Obiwan.get_burnups_from_f71(obiwan, file_list[i]["f71"], -2)
 
-        if len(burnup_list) > 0 and not np.array_equal(burnup_list, bu):
+        if len(burnup_list) == 0:
+            burnup_list = bu
+        elif not _burnup_lists_match(burnup_list, bu, burnup_rtol):
             raise ValueError(
                 f"Output file={output_file} burnups deviated from previous {previous_output_file}!"
             )
-        burnup_list = bu
         previous_output_file = output_file
 
     return burnup_list
@@ -278,7 +293,7 @@ def _get_arpinfo_mox(name, perms, file_list, dim_map):
     return arpinfo
 
 
-def _get_arpinfo(work_dir, name, fuel_type, dim_map):
+def _get_arpinfo(obiwan, work_dir, name, fuel_type, dim_map):
     """Populate the ArpInfo data."""
 
     # Get generate data which has permutations list with file names.
@@ -302,7 +317,7 @@ def _get_arpinfo(work_dir, name, fuel_type, dim_map):
         )
 
     # Get the burnups.
-    arpinfo.burnup_list = _get_burnup_list(file_list)
+    arpinfo.burnup_list = _get_burnup_list(obiwan, file_list)
 
     # Set new canonical file names.
     arpinfo.set_canonical_filenames(".h5")

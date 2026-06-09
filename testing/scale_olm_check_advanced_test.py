@@ -93,8 +93,8 @@ class TestGridGradientMath:
 class TestLowOrderConsistencyUtils:
     """Test utility functions in LowOrderConsistency class."""
     
-    def test_make_diff_plot_with_mock_data(self):
-        """Test difference plot creation with mocked matplotlib."""
+    def test_make_scaled_difference_plot_with_mock_data(self):
+        """Test scaled-difference plot creation with mocked matplotlib."""
         with patch('matplotlib.pyplot.figure'), \
              patch('matplotlib.pyplot.fill_between'), \
              patch('matplotlib.pyplot.plot'), \
@@ -108,17 +108,35 @@ class TestLowOrderConsistencyUtils:
             identifier = "U-235"
             image = "/tmp/test_plot.png"
             time = [0, 86400, 172800]  # 0, 1, 2 days in seconds
-            min_diff = [-0.01, -0.02, -0.01]
-            max_diff = [0.01, 0.02, 0.01]
-            max_diff0 = 0.02
+            min_scaled_difference = [-0.01, -0.02, -0.01]
+            max_scaled_difference = [0.01, 0.02, 0.01]
+            max_abs_scaled_difference = 0.02
             perms = [
-                {"(lo-hi)/max(|hi|)": [-0.005, -0.015, -0.005]},
-                {"(lo-hi)/max(|hi|)": [0.005, 0.015, 0.005]}
+                {
+                    "scaled_difference": [
+                        -0.005,
+                        -0.015,
+                        -0.005,
+                    ]
+                },
+                {
+                    "scaled_difference": [
+                        0.005,
+                        0.015,
+                        0.005,
+                    ]
+                },
             ]
             
             # Should not raise an exception
-            check.LowOrderConsistency.make_diff_plot(
-                identifier, image, time, min_diff, max_diff, max_diff0, perms
+            check.LowOrderConsistency.make_scaled_difference_plot(
+                identifier,
+                image,
+                time,
+                min_scaled_difference,
+                max_scaled_difference,
+                max_abs_scaled_difference,
+                perms,
             )
             
             # Verify savefig was called with correct image path
@@ -273,6 +291,42 @@ class TestIntegrationWithMocks:
             assert 'test_pass' in result
             assert 'sequence' in result
 
+    @patch('scale.olm.internal.logger')
+    @patch('scale.olm.internal._fn_redirect')
+    @patch('scale.olm.core.ReactorLibrary')
+    def test_sequencer_logs_failing_checks(
+        self, mock_reactor_lib, mock_fn_redirect, mock_logger
+    ):
+        """Test sequencer message for completed checks that fail criteria."""
+        mock_check_instance = Mock()
+        mock_info = Mock()
+        mock_info.name = "LowOrderConsistency"
+        mock_info.test_pass = False
+
+        mock_check_instance.configure_mock(**{'run.return_value': mock_info})
+        mock_fn_redirect.return_value = mock_check_instance
+        mock_reactor_lib.return_value = Mock()
+
+        sequence = [{"_type": "scale.olm.check:LowOrderConsistency"}]
+        model = {"name": "test_reactor"}
+        env = {"work_dir": "/tmp/test"}
+
+        with patch('pathlib.Path.exists', return_value=False):
+            result = check.sequencer(
+                sequence=sequence,
+                _model=model,
+                _env=env,
+                dry_run=False,
+            )
+
+        assert result['test_pass'] is False
+        mock_logger.warning.assert_called_once_with(
+            "Finished check sequence with failing checks",
+            test_pass=False,
+            checks=1,
+            failed_checks=["LowOrderConsistency"],
+        )
+
 
 class TestMathematicalCalculations:
     """Test mathematical calculations that might be present in check classes."""
@@ -330,4 +384,4 @@ class TestMathematicalCalculations:
         q2 = 1.0 - 0.9 * fa - 0.1 * fr
         
         assert abs(q1 - expected_q1) < 1e-10
-        assert abs(q2 - expected_q2) < 1e-10 
+        assert abs(q2 - expected_q2) < 1e-10

@@ -42,6 +42,7 @@ def _test_args_sequencer(with_state: bool = False):
                 "_type": "scale.olm.check:LowOrderConsistency",
                 "name": "loc",
                 "template": "model/origami/system-uox.jt.inp",
+                "metric": "grams_per_initial_hm",
                 "target_q1": 0.70,
                 "target_q2": 0.95,
                 "eps0": 1e-12,
@@ -78,6 +79,7 @@ def sequencer(
     try:
         # Process all the input.
         run_list = []
+        failed_checks = []
         i = 0
         for s in sequence:
             # Set the full name.
@@ -113,10 +115,19 @@ def sequencer(
 
             if not info.test_pass:
                 test_pass = False
+                failed_checks.append(getattr(info, "name", r.__class__.__name__))
 
-        internal.logger.info(
-            "Finished without exception test_pass={}".format(test_pass)
-        )
+        if test_pass:
+            internal.logger.info(
+                "Finished check sequence", test_pass=True, checks=len(output)
+            )
+        else:
+            internal.logger.warning(
+                "Finished check sequence with failing checks",
+                test_pass=False,
+                checks=len(output),
+                failed_checks=failed_checks,
+            )
 
     except ValueError as ve:
         internal.logger.error(str(ve))
@@ -377,6 +388,7 @@ class LowOrderConsistency:
     Args:
         name: Name of the test.
         template: Template file to use for the low-order calculation.
+        metric: Primary inventory metric to use for quality scores.
         nuclide_compare: List of nuclide identifiers for the detailed error plots.
         eprs: The limit for the relative gradient.
         epsa: The limit for the absolute gradient.
@@ -389,6 +401,7 @@ class LowOrderConsistency:
     @staticmethod
     def describe_params():
         return {
+            "metric": "primary inventory metric",
             "eps0": "minimum value",
             "epsa": "absolute epsilon",
             "epsr": "relative epsilon",
@@ -416,6 +429,9 @@ class LowOrderConsistency:
         self,
         name: str = "",
         template: str = "",
+        metric: Literal[
+            "grams_per_initial_hm", "atom_fraction"
+        ] = "grams_per_initial_hm",
         eps0: float = 1e-12,
         epsa: float = 1e-6,
         epsr: float = 1e-3,
@@ -431,6 +447,7 @@ class LowOrderConsistency:
         self._model = _model
         self.name = name
         self.nuclide_compare = nuclide_compare
+        self.metric = metric
         self.eps0 = eps0
         self.epsa = epsa
         self.epsr = epsr
@@ -457,8 +474,16 @@ class LowOrderConsistency:
         self.check_dir = self.check_path.relative_to(self.work_path)
 
     @staticmethod
-    def make_diff_plot(identifier, image, time, min_diff, max_diff, max_diff0, perms):
-        """Make the difference plot."""
+    def make_scaled_difference_plot(
+        identifier,
+        image,
+        time,
+        min_scaled_difference,
+        max_scaled_difference,
+        max_abs_scaled_difference,
+        perms,
+    ):
+        """Make the scaled-difference plot."""
         import matplotlib.pyplot as plt
 
         plt.rcParams.update({"font.size": 18})
@@ -466,8 +491,8 @@ class LowOrderConsistency:
         color = core.NuclideInventory._nuclide_color(identifier)
         plt.fill_between(
             np.asarray(time) / 86400.0,
-            100 * np.asarray(min_diff),
-            100 * np.asarray(max_diff),
+            100 * np.asarray(min_scaled_difference),
+            100 * np.asarray(max_scaled_difference),
             alpha=0.3,
             color=color,
         )
@@ -475,19 +500,139 @@ class LowOrderConsistency:
         for perm in perms:
             plt.plot(
                 np.asarray(time) / 86400.0,
-                100 * np.asarray(perm["(lo-hi)/max(|hi|)"]),
+                100 * np.asarray(perm["scaled_difference"]),
                 "k-",
                 alpha=0.4,
             )
 
         plt.xlabel("time (days)")
-        plt.ylabel("lo/hi-1 (%)")
-        plt.legend(["{} (max error: {:.2f} %)".format(identifier, 100 * max_diff0)])
+        plt.ylabel(LowOrderConsistency._scaled_difference_ylabel())
+        plt.legend(
+            [
+                "{} (max |scaled_difference|: {:.2f} %)".format(
+                    identifier, 100 * max_abs_scaled_difference
+                )
+            ]
+        )
         plt.savefig(image, bbox_inches="tight")
+
+    @staticmethod
+    def _metric_units(metric):
+        return {
+            "grams_per_initial_hm": "g/gIHM",
+            "atom_fraction": "atom fraction",
+        }[metric]
+
+    def _amounts_to_grams_per_initial_hm(self, amounts):
+        """Convert inventory amounts to grams per gram initial heavy metal.
+
+        Formula:
+            g/gIHM[p, t, n] =
+                amounts[p, t, n] [mol] * mass[n] [g/mol]
+                / (initialhm[p] [MTIHM] * 1.0e6 [g/MT])
+
+        The nuclide masses come from CompositionManager.mass().
+        Axes are point, time, and nuclide. The initial heavy metal is per point.
+        """
+        cm = self.composition_manager
+        masses = np.array([cm.mass(name) for name in self.names])
+        initialhm_g = (
+            np.asarray(self.initialhm_list, dtype=float)[:, None, None] * 1.0e6
+        )
+        nuclide_g = (
+            np.asarray(amounts, dtype=float)
+            * np.asarray(masses, dtype=float)[None, None, :]
+        )
+        return nuclide_g / initialhm_g
+
+    def _amounts_to_atom_fraction(self, amounts):
+        amounts = np.asarray(amounts, dtype=float)
+        if amounts.ndim != 3:
+            raise ValueError(
+                "LowOrderConsistency inventory amounts must have shape "
+                "(point, time, nuclide)."
+            )
+        totals = amounts.sum(axis=2)
+        if np.any(totals == 0.0):
+            raise ValueError("Cannot calculate atom fractions with zero total atoms.")
+        return amounts / totals[:, :, None]
+
+    @staticmethod
+    def _difference_arrays(lo, hi, eps0):
+        """Return absolute and relative pointwise inventory differences.
+
+        ahist = |lo - hi|
+        rhist = |(lo + eps0) / (hi + eps0) - 1|
+        """
+        ahist = np.absolute(lo - hi)
+        rhist = np.absolute((lo + eps0) / (hi + eps0) - 1.0)
+        return ahist, rhist
+
+    @staticmethod
+    def _scaled_difference(lo, hi):
+        """Return scaled_difference = (lo - hi) / max(hi) for one curve."""
+        return (lo - hi) / np.amax(hi)
+
+    @staticmethod
+    def _scaled_difference_ylabel():
+        return "(lo - hi) / max(hi) (%)"
+
+    @staticmethod
+    def _relative_difference_xlabel():
+        return r"$\log_{10} |lo/hi-1|$"
+
+    def _absolute_difference_ylabel(self):
+        label = r"$\log_{10} |hi-lo|$"
+        if self.metric == "grams_per_initial_hm":
+            return label + " [g/gIHM]"
+        return label
+
+    @staticmethod
+    def _require_initial_time(label, times):
+        times = np.asarray(times, dtype=float)
+        matches = np.where(np.isclose(times, 0.0, rtol=0.0, atol=1.0e-6))[0]
+        if len(matches) != 1:
+            raise ValueError(
+                f"{label} list of times must include exactly one time=0.0 "
+                f"entry; times={list(times)}"
+            )
+
+    @staticmethod
+    def _matching_time_indices(reference_time, candidate_time):
+        LowOrderConsistency._require_initial_time("HIGH order", reference_time)
+        LowOrderConsistency._require_initial_time("LOW order", candidate_time)
+
+        indices = []
+        candidate_time = np.asarray(candidate_time, dtype=float)
+        for time in np.asarray(reference_time, dtype=float):
+            matches = np.where(
+                np.isclose(candidate_time, time, rtol=0.0, atol=1.0e-6)
+            )[0]
+            if len(matches) != 1:
+                raise ValueError(
+                    f"HIGH order time={time} did not match exactly one "
+                    "LOW order time."
+                )
+            indices.append(int(matches[0]))
+        return indices
+
+    def _metric_arrays(self):
+        hi_amount = np.asarray(self.hi_list, dtype=float)
+        lo_amount = np.asarray(self.lo_list, dtype=float)
+
+        if self.metric == "atom_fraction":
+            return (
+                self._amounts_to_atom_fraction(lo_amount),
+                self._amounts_to_atom_fraction(hi_amount),
+            )
+
+        return (
+            self._amounts_to_grams_per_initial_hm(lo_amount),
+            self._amounts_to_grams_per_initial_hm(hi_amount),
+        )
 
     def info(self):
         """Recalculate test statistics."""
-        import matplotlib.pyplot as plt
         import sys
 
         # set number of permutations, timesteps, and nuclides for error array
@@ -499,6 +644,8 @@ class LowOrderConsistency:
         info.epsr = self.epsr
         info.target_q1 = self.target_q1
         info.target_q2 = self.target_q2
+        info.metric = self.metric
+        info.units = self._metric_units(self.metric)
         if not self.run_success:
             info.test_pass = False
             return info
@@ -519,32 +666,15 @@ class LowOrderConsistency:
                 "nuclide": eam,
                 "nuclide_izzzaaa": izzzaaa,
                 "time": self.time_list,
-                "max_diff": [-sys.float_info.max] * ntime,
-                "min_diff": [sys.float_info.max] * ntime,
+                "max_scaled_difference": [-sys.float_info.max] * ntime,
+                "min_scaled_difference": [sys.float_info.max] * ntime,
                 "perms": [],
                 "image": "",
             }
 
-        self.ahist = np.array(self.lo_list)
-        self.rhist = np.array(self.lo_list)
-        self.hi = np.array(self.hi_list)
-        self.lo = np.array(self.lo_list)
-
-        # For each permutation.
         internal.logger.info("Calculating all comparison histogram data...")
-        for k in range(len(self.lo_list)):
-            # For each time.
-            for j in range(len(self.lo_list[k])):
-                osum = self.lo_list[k][j].sum()
-                tsum = self.hi_list[k][j].sum()
-                oden = self.lo_list[k][j] / osum
-                tden = self.hi_list[k][j] / tsum
-                self.lo[k, j, :] = oden
-                self.hi[k, j, :] = tden
-                self.ahist[k, j, :] = np.absolute(oden - tden)
-                self.rhist[k, j, :] = np.absolute(
-                    (oden + self.eps0) / (tden + self.eps0) - 1.0
-                )
+        self.lo, self.hi = self._metric_arrays()
+        self.ahist, self.rhist = self._difference_arrays(self.lo, self.hi, self.eps0)
 
         # Extract each nuclide time series.
         internal.logger.info("Calculating nuclide-wise comparisons...")
@@ -554,7 +684,7 @@ class LowOrderConsistency:
             for k in range(len(self.lo_list)):
                 lo = self.lo[k, :, i_nuclide]
                 hi = self.hi[k, :, i_nuclide]
-                err = (lo - hi) / (self.eps0 + np.amax(np.absolute(hi)))
+                err = self._scaled_difference(lo, hi)
                 info.nuclide_compare[n]["perms"].append(
                     {
                         "hi_ii_json": str(
@@ -566,7 +696,7 @@ class LowOrderConsistency:
                         "point_index": k,
                         "lo": list(lo),
                         "hi": list(hi),
-                        "(lo-hi)/max(|hi|)": list(err),
+                        "scaled_difference": list(err),
                     }
                 )
 
@@ -575,28 +705,36 @@ class LowOrderConsistency:
         for n, d in info.nuclide_compare.items():
             i_nuclide = d["nuclide_index"]
             for k in range(len(self.lo_list)):
-                err = d["perms"][k]["(lo-hi)/max(|hi|)"]
+                err = d["perms"][k]["scaled_difference"]
                 for j in range(len(self.time_list)):
-                    d["max_diff"][j] = np.amax([err[j], d["max_diff"][j]])
-                    d["min_diff"][j] = np.amin([err[j], d["min_diff"][j]])
+                    d["max_scaled_difference"][j] = np.amax(
+                        [err[j], d["max_scaled_difference"][j]]
+                    )
+                    d["min_scaled_difference"][j] = np.amin(
+                        [err[j], d["min_scaled_difference"][j]]
+                    )
 
-            d["max_diff0"] = np.amax(
-                [np.absolute(d["max_diff"]), np.absolute(d["min_diff"])]
+            d["max_abs_scaled_difference"] = np.amax(
+                [
+                    np.absolute(d["max_scaled_difference"]),
+                    np.absolute(d["min_scaled_difference"]),
+                ]
             )
-            image = self.check_path / (n + "-diff.png")
+            image = self.check_path / (n + "-scaled-difference.png")
             internal.logger.info(
-                "creating nuclide diff", image=str(image.relative_to(self.work_path))
+                "creating nuclide scaled difference",
+                image=str(image.relative_to(self.work_path)),
             )
             info.nuclide_compare[n]["image"] = str(image)
 
             label = core.NuclideInventory._nice_label0(self.composition_manager, n)
-            LowOrderConsistency.make_diff_plot(
+            LowOrderConsistency.make_scaled_difference_plot(
                 label,
                 image,
                 d["time"],
-                d["min_diff"],
-                d["max_diff"],
-                d["max_diff0"],
+                d["min_scaled_difference"],
+                d["max_scaled_difference"],
+                d["max_abs_scaled_difference"],
                 d["perms"],
             )
 
@@ -609,8 +747,8 @@ class LowOrderConsistency:
         core.RelAbsHistogram.plot_hist(
             self,
             hist_image,
-            xlabel=r"$\log_{10} |hi/lo-1|$",
-            ylabel=r"$\log_{10} |hi-lo|$",
+            xlabel=self._relative_difference_xlabel(),
+            ylabel=self._absolute_difference_ylabel(),
         )
         info.hist_image = str(hist_image)
 
@@ -634,8 +772,8 @@ class LowOrderConsistency:
 
         return info
 
-    def __run_lo_fidelity(self, do_run):
-        """Run the LOWER fidelity calculation which should be consistent as possible with
+    def __run_lo_order(self, do_run):
+        """Run the LOW order calculation which should be consistent as possible with
         the already-complete higher order calculation."""
 
         # Load the template file.
@@ -651,6 +789,7 @@ class LowOrderConsistency:
         ii_json_list = list()
         f71_list = list()
         input_list = list()
+        self.initialhm_list = list()
         for point in assemble_d["points"]:
             # Create the check input path.
             lib = Path(point["files"]["lib"])
@@ -662,6 +801,19 @@ class LowOrderConsistency:
             lo_ii_json = check_input.with_suffix(".ii.json")
             f71_list.append(check_input.with_suffix(".f71"))
             ii_json_list.append((hi_ii_json, lo_ii_json))
+            try:
+                initialhm = float(point["history"]["initialhm"])
+            except KeyError as exc:
+                raise ValueError(
+                    "LowOrderConsistency requires history.initialhm "
+                    f"for point={base}"
+                ) from exc
+            if initialhm <= 0.0:
+                raise ValueError(
+                    "LowOrderConsistency requires positive initial heavy metal "
+                    f"for point={base}"
+                )
+            self.initialhm_list.append(initialhm)
 
             # Create the directory.
             check_input.parent.mkdir(parents=True, exist_ok=True)
@@ -700,7 +852,7 @@ class LowOrderConsistency:
             input_list=input_list,
         )
 
-        # Actually generate the ii.json for the low fidelity calcs we just ran.
+        # Actually generate the ii.json for the LOW order calcs we just ran.
         if do_run:
             for f71 in f71_list:
                 lo = internal.run_command(
@@ -714,16 +866,17 @@ class LowOrderConsistency:
         return ii_json_list
 
     def __load_ii_json(self, ii_json_list):
-        """Load the ii.json data that exists on disk for HIGH and LOWER fidelity into memory."""
+        """Load HIGH order and LOW order ii.json data from disk into memory."""
         # We want nuclide data from one of the ii.json files.
         self.composition_manager = None
 
         # Convert the f71 to ii.json and extract the relevant information into memory.
         self.hi_list = list()
         self.lo_list = list()
+        self.time_list = None
         for hi_ii_json, lo_ii_json in ii_json_list:
             internal.logger.debug(f"loading HI {hi_ii_json}")
-            # Load the json data into HIGH fidelity and LOWER fidelity data structures.
+            # Load the json data into HIGH order and LOW order data structures.
             # Note there's a little duplicate code here, but probably not worth refactoring.
             with open(hi_ii_json, "r") as f:
                 jt = json.load(f)
@@ -737,9 +890,8 @@ class LowOrderConsistency:
 
                 hi = np.array(case["amount"])
                 hi_vector = case["nuclideVectorHash"]
-                self.hi_list.append(hi)
                 self.names = jt["definitions"]["nuclideVectors"][hi_vector]
-                self.time_list = case["time"]
+                hi_time = case["time"]
 
             internal.logger.debug(f"loading LO {lo_ii_json}")
             with open(lo_ii_json, "r") as f:
@@ -747,21 +899,30 @@ class LowOrderConsistency:
                 case = jo["responses"][f"case({self.lo_case})"]
                 lo = np.array(case["amount"])
                 lo_time = case["time"]
-                self.lo_list.append(lo)
 
-                # Check consistency.
-                if not np.array_equal(lo_time, self.time_list):
-                    raise ValueError(
-                        f"HIGH fidelity list of times={self.time_list} is inconsistent with LOWER fidelity list of times {lo_time}"
-                    )
+                # Check consistency and align LOW order extra points to the HIGH grid.
+                indices = self._matching_time_indices(hi_time, lo_time)
+                lo = lo[indices, :]
                 lo_vector = case["nuclideVectorHash"]
                 if not lo_vector == hi_vector:
                     raise ValueError(
-                        f"HIGH fidelity nuclide vector hash {hi_vector} is not the same as LOWER fidelity vector hash {lo_vector}, meaning the two nuclide sets are somehow inconsistent, which should not be possible."
+                        f"HIGH order nuclide vector hash {hi_vector} is not "
+                        f"the same as LOW order vector hash {lo_vector}, "
+                        "meaning the two nuclide sets are somehow inconsistent, "
+                        "which should not be possible."
                     )
+                if self.time_list is None:
+                    self.time_list = hi_time
+                elif not np.array_equal(hi_time, self.time_list):
+                    raise ValueError(
+                        f"HIGH order list of times={hi_time} is inconsistent "
+                        f"with previous HIGH order list of times {self.time_list}"
+                    )
+                self.hi_list.append(hi)
+                self.lo_list.append(lo)
 
     def run(self, reactor_library):
-        """Run a consistent set of LOWER fidelity calculations which also produce an
+        """Run a consistent set of LOW order calculations which also produce an
         f71--typically ORIGAMI."""
 
         # TODO: The reactor_library is not explicitly used because it was already expanded
@@ -784,7 +945,7 @@ class LowOrderConsistency:
         self.lo_case = 1
 
         try:
-            self.ii_json_list = self.__run_lo_fidelity(do_run)
+            self.ii_json_list = self.__run_lo_order(do_run)
             self.__load_ii_json(self.ii_json_list)
             self.run_success = True
 
