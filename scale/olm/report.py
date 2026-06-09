@@ -2,6 +2,7 @@ from pathlib import Path
 import scale.olm.internal as internal
 import scale.olm.core as core
 import json
+import shlex
 from typing import Literal
 
 __all__ = ["rst2pdf"]
@@ -85,7 +86,14 @@ def rst2pdf(
         f.write(filled_text)
 
     # Generate PDF.
-    internal.run_command(f"rst2pdf -s twocolumn {rst}", check_return_code=False)
+    report_style_dir = Path(__file__).parent / "templates" / "report"
+    command = (
+        "rst2pdf "
+        f"--stylesheet-path={shlex.quote(str(report_style_dir))} "
+        "-s twocolumn,olm-report "
+        f"{shlex.quote(str(rst))}"
+    )
+    internal.run_command(command, check_return_code=False)
     internal.logger.info("Generated report", pdf_file=str(pdf))
 
     data["_"] = {

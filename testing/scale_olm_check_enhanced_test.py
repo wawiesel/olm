@@ -311,6 +311,11 @@ class TestLowOrderConsistency:
         assert info.worst_time_quality['limiting_score_shortfall'] == pytest.approx(
             0.7
         )
+        assert info.first_failed_time_quality['index'] == 1
+        assert info.first_failed_time_quality['time_days'] == pytest.approx(1.0)
+        assert info.first_failed_time_quality['burnup_gwd_per_mtihm'] == (
+            pytest.approx(10.0)
+        )
         mock_time_quality_plot.assert_called_once()
         mock_hist_plot.assert_called_once()
 

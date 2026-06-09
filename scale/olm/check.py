@@ -791,6 +791,13 @@ class LowOrderConsistency:
         )
 
     @staticmethod
+    def _first_failed_time_quality(time_quality):
+        for row in time_quality:
+            if not row["test_pass"]:
+                return dict(row)
+        return None
+
+    @staticmethod
     def _burnup_list_from_assemble(assemble_data):
         burnup = assemble_data.get("space", {}).get("burnup", {}).get("grid")
         if burnup is not None:
@@ -846,6 +853,7 @@ class LowOrderConsistency:
             "test_pass_time",
             "time_quality",
             "worst_time_quality",
+            "first_failed_time_quality",
             "mean_abs_diff",
             "mean_rel_diff",
         ]
@@ -1192,6 +1200,7 @@ class LowOrderConsistency:
         info.time_quality_image = str(time_quality_image)
         info.test_pass_time = self._time_quality_pass(time_quality)
         info.worst_time_quality = self._worst_time_quality(time_quality)
+        info.first_failed_time_quality = self._first_failed_time_quality(time_quality)
 
         summary = self._quality_summary(self.ahist, self.rhist)
         for key, value in summary.items():

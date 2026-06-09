@@ -13,6 +13,7 @@ from unittest.mock import patch, mock_open, MagicMock
 
 import scale.olm.report as report
 import scale.olm.internal as internal
+import scale.olm.core as core
 
 
 class TestReportModule:
@@ -223,6 +224,8 @@ class TestRst2pdfFunction:
             mock_run.assert_called_once()
             call_args = mock_run.call_args[0][0]
             assert "rst2pdf" in call_args
+            assert "--stylesheet-path=" in call_args
+            assert "-s twocolumn,olm-report" in call_args
             assert "test_model.rst" in call_args
 
     def test_rst2pdf_result_metadata(self):
@@ -338,3 +341,101 @@ class TestReportIntegration:
 
             # Dry run should not log anything
             mock_logger.info.assert_not_called()
+
+    def test_scale_short_report_formats_quality_tables(self):
+        """Test report source uses compact q-score formatting and path display."""
+        template_path = (
+            Path(__file__).parents[1]
+            / "scale"
+            / "olm"
+            / "templates"
+            / "report"
+            / "scale-short.jt.rst"
+        )
+        template_text = template_path.read_text()
+        data = {
+            "model": {
+                "name": "uox_quick",
+                "description": "test report",
+                "sources": {},
+                "revision": [],
+                "notes": [],
+            },
+            "assemble": {"date": "2026-06-09", "space": {}},
+            "run": {
+                "version": "7.0.b12",
+                "total_runtime_hrs": 1.23456,
+                "runs": [
+                    {
+                        "input_file": "/tmp/example/work/perms/hash/model_abcdef.inp",
+                        "output_file": "/tmp/example/work/perms/hash/model_abcdef.out",
+                        "success": True,
+                        "runtime_hrs": 0.004321,
+                    }
+                ],
+            },
+            "generate": {"static": {}},
+            "check": {
+                "test_pass": False,
+                "sequence": [
+                    {
+                        "test_pass": False,
+                        "q1": 0.6812437810945273,
+                        "target_q1": 0.7,
+                        "q2": 0.9658407960199005,
+                        "target_q2": 0.95,
+                        "test_pass_time": False,
+                        "metric": "grams_per_initial_hm",
+                        "units": "g/gIHM",
+                        "eps0": 1.0e-12,
+                        "epsa": 1.0e-6,
+                        "epsr": 1.0e-3,
+                        "m": 20100,
+                        "wr": 6407,
+                        "wa": 51,
+                        "fr": 0.3187562189054726,
+                        "fa": 0.002537313432835821,
+                        "time_quality_image": "/tmp/example/work/q1-q2-by-time.png",
+                        "time_quality": [
+                            {
+                                "time_days": 25.0,
+                                "burnup_gwd_per_mtihm": 0.987483,
+                                "q1": 0.6812437810945273,
+                                "q2": 0.9658407960199005,
+                                "test_pass": False,
+                            }
+                        ],
+                        "first_failed_time_quality": {
+                            "time_days": 25.0,
+                            "burnup_gwd_per_mtihm": 0.987483,
+                            "q1": 0.6812437810945273,
+                            "q2": 0.9658407960199005,
+                            "limiting_score": "q1",
+                        },
+                        "worst_time_quality": {
+                            "time_days": 25.0,
+                            "burnup_gwd_per_mtihm": 0.987483,
+                            "q1": 0.6812437810945273,
+                            "q2": 0.9658407960199005,
+                            "limiting_score": "q1",
+                        },
+                    }
+                ],
+            },
+        }
+
+        rendered = core.TemplateManager.expand_text(
+            template_text,
+            data,
+            src_path=str(template_path),
+        )
+
+        assert "time_quality_image" not in rendered
+        assert "/tmp/example/work/perms/hash/model_abcdef.out" not in rendered
+        assert ":code:`model_abcdef.out`" in rendered
+        assert ":code:`model_abcdef.inp`" in rendered
+        assert "0.681243" not in rendered
+        assert "0.681" in rendered
+        assert "0.966" in rendered
+        assert "first fail" in rendered
+        assert ".. class:: olm-qscore-table" in rendered
