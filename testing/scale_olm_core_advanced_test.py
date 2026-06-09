@@ -44,6 +44,63 @@ class TestTemplateManager:
 
         assert result == "ABC"
 
+    def test_expand_text_formats_float_substitutions_with_12_digit_exponents(self):
+        """Test default template expansion renders floats consistently."""
+        result = core.TemplateManager.expand_text(
+            "{{ scalar }} {{ array_scalar }} {{ integer }} {{ text }}",
+            {
+                "scalar": 1.234567890123456,
+                "array_scalar": np.float64(0.125),
+                "integer": 7,
+                "text": "abc",
+            },
+        )
+
+        assert result == "1.234567890123e+00 1.250000000000e-01 7 abc"
+
+    def test_expand_text_accepts_float_format_override(self):
+        """Test callers can select the model-level float format."""
+        result = core.TemplateManager.expand_text(
+            "{{ scalar }}", {"scalar": 1.234567890123456}, float_format=".4e"
+        )
+
+        assert result == "1.2346e+00"
+
+    def test_template_float_format_defaults_to_12_digit_exponents(self):
+        """Test the model-level template format default."""
+        assert core.TemplateManager.template_float_format({}) == ".12e"
+        assert (
+            core.TemplateManager.template_float_format(
+                {"template_float_format": ".5e"}
+            )
+            == ".5e"
+        )
+
+    def test_expand_text_formats_float_expression_results_with_12_digit_exponents(self):
+        """Test arithmetic expression results use the default float format."""
+        result = core.TemplateManager.expand_text(
+            "{{ ppm * 1e-6 }}", {"ppm": 600.0}
+        )
+
+        assert result == "6.000000000000e-04"
+
+    def test_expand_text_preserves_explicit_string_formatting(self):
+        """Test templates can override the default by rendering a string."""
+        result = core.TemplateManager.expand_text(
+            "{{ '{:.4f}'.format(value) }}", {"value": 1.23456789}
+        )
+
+        assert result == "1.2346"
+
+    def test_tree_print_formats_float_values_like_template_expansion(self):
+        """Test error diagnostics use the same float representation."""
+        result = core.TemplateManager._tree_print(
+            {"state": {"power": 40.0, "nlib": 2}}
+        )
+
+        assert "state.power=4.000000000000e+01\n" in result
+        assert "state.nlib=2\n" in result
+
 
 class TestCompositionManager:
     """Test the CompositionManager class for nuclide data and calculations."""

@@ -128,6 +128,62 @@ class TestRst2pdfFunction:
             assert "check" in result
             assert "_" in result
 
+    def test_rst2pdf_uses_packaged_template(self):
+        """Test rst2pdf resolves packaged templates when no local file exists."""
+        self.create_mock_data_files()
+
+        _env = {
+            "config_file": str(self.config_dir / "config.json"),
+            "work_dir": str(self.work_dir),
+        }
+        _model = {"name": "test_model"}
+
+        with patch('scale.olm.core.TemplateManager.expand_text') as mock_expand, \
+             patch('scale.olm.internal.run_command') as mock_run:
+
+            mock_expand.return_value = "Expanded template content"
+
+            result = report.rst2pdf(
+                template="report/scale-short.jt.rst",
+                _model=_model,
+                _env=_env,
+            )
+
+            template_path = Path(result["_"]["template"])
+            assert template_path.name == "scale-short.jt.rst"
+            assert template_path.parent.name == "report"
+            mock_expand.assert_called_once()
+            mock_run.assert_called_once()
+
+    def test_rst2pdf_uses_model_template_float_format(self):
+        """Test report template expansion uses the model float format."""
+        self.create_mock_data_files()
+
+        template_file = self.config_dir / "test.rst"
+        template_file.write_text("model value={{ model.value }}")
+
+        _env = {
+            "config_file": str(self.config_dir / "config.json"),
+            "work_dir": str(self.work_dir),
+        }
+        _model = {
+            "name": "test_model",
+            "template_float_format": ".4e",
+            "value": 1.23456789,
+        }
+
+        with patch('scale.olm.internal.run_command') as mock_run:
+            report.rst2pdf(
+                template="test.rst",
+                _model=_model,
+                _env=_env,
+            )
+
+            assert (self.work_dir / "test_model.rst").read_text() == (
+                "model value=1.2346e+00"
+            )
+            mock_run.assert_called_once()
+
     def test_rst2pdf_data_file_creation(self):
         """Test that rst2pdf creates proper data files."""
         # Create template file
@@ -279,6 +335,6 @@ class TestReportIntegration:
         with patch('scale.olm.internal.logger') as mock_logger:
             # Test dry run logging
             report.rst2pdf(dry_run=True)
-            
+
             # Dry run should not log anything
-            mock_logger.info.assert_not_called() 
+            mock_logger.info.assert_not_called()

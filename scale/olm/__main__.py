@@ -112,12 +112,20 @@ Choose from one of the variants when you pass the --list option.
   \b
   $ olm init --list
 
-By default creates a directory called `mox_quick` with the files.
+By default creates a directory called `mox_quick` with a config file that
+references packaged templates.
 
 .. code:: console
 
   \b
   $ olm init --variant mox_quick
+
+Pass --copy to copy editable template files into the initialized directory.
+
+.. code:: console
+
+  \b
+  $ olm init --variant mox_quick --copy
 
 """,
 )
@@ -130,6 +138,13 @@ By default creates a directory called `mox_quick` with the files.
     is_flag=True,
     default=False,
     help="List all known variants and exit.",
+)
+@click.option(
+    "--copy",
+    "copy_files",
+    is_flag=True,
+    default=False,
+    help="Copy packaged template files into the initialized directory.",
 )
 @internal.copy_doc(internal.init)
 def olm_init(**kwargs):

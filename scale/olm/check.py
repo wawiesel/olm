@@ -12,7 +12,8 @@ from pathlib import Path
 import copy
 import os
 import scale.olm.internal as internal
-from typing import List, Union, Dict, Literal
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from typing import List, Union, Dict, Literal, Annotated, Optional
 
 
 class CheckInfo:
@@ -22,6 +23,31 @@ class CheckInfo:
 
 Model = Dict[str, any]
 Env = Dict[str, any]
+
+
+class LowOrderConsistencyConvergence(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    nlib_start: Annotated[int, Field(gt=0)] = 1
+    nlib_max: Annotated[int, Field(gt=0)] = 1
+    nburn_start: Annotated[int, Field(gt=0)] = 1
+    nburn_max: Annotated[int, Field(gt=0)] = 1
+    q1_stop_criteria: Annotated[float, Field(ge=0.0)] = 0.0
+    q2_stop_criteria: Annotated[float, Field(ge=0.0)] = 0.0
+
+    @model_validator(mode="after")
+    def _check_ranges(self):
+        if self.nlib_max < self.nlib_start:
+            raise ValueError(
+                "LowOrderConsistency convergence.nlib_max must be greater than "
+                "or equal to convergence.nlib_start."
+            )
+        if self.nburn_max < self.nburn_start:
+            raise ValueError(
+                "LowOrderConsistency convergence.nburn_max must be greater than "
+                "or equal to convergence.nburn_start."
+            )
+        return self
 
 # -----------------------------------------------------------------------------------------
 
@@ -365,6 +391,8 @@ def _schema_LowOrderConsistency(with_state: bool = False):
 def _test_args_LowOrderConsistency(with_state: bool = False):
     args = {"_type": _TYPE_LOWORDERCONSISTENCY}
     args.update(LowOrderConsistency.default_params())
+    if args.get("convergence") is None:
+        args.pop("convergence")
     return args
 
 
@@ -390,11 +418,13 @@ class LowOrderConsistency:
         template: Template file to use for the low-order calculation.
         metric: Primary inventory metric to use for quality scores.
         nuclide_compare: List of nuclide identifiers for the detailed error plots.
-        eprs: The limit for the relative gradient.
-        epsa: The limit for the absolute gradient.
+        convergence: Optional convergence study settings. Omit this block to run
+            one low-order calculation with nlib=1 and nburn=1.
+        eps0: The minimum value used in the relative difference calculation.
+        epsa: The limit for the absolute difference.
+        epsr: The limit for the relative difference.
         target_q1: The target for the q1 (relative only) score.
-        target_g2: The target for the q2 (weighted relative and absolute) score.
-        eps0: The minimum gradient to care about.
+        target_q2: The target for the q2 (weighted relative and absolute) score.
 
     """
 
@@ -407,6 +437,7 @@ class LowOrderConsistency:
             "epsr": "relative epsilon",
             "target_q1": "target for quality score 1",
             "target_q2": "target for quality score 2",
+            "convergence": "optional ORIGAMI nlib/nburn convergence study",
             "nuclide_compare": "plot me",
             "template": "template file name",
             "name": "name for test",
@@ -432,11 +463,12 @@ class LowOrderConsistency:
         metric: Literal[
             "grams_per_initial_hm", "atom_fraction"
         ] = "grams_per_initial_hm",
-        eps0: float = 1e-12,
-        epsa: float = 1e-6,
-        epsr: float = 1e-3,
-        target_q1: float = 0.9,
-        target_q2: float = 0.95,
+        eps0: Annotated[float, Field(ge=0.0)] = 1e-12,
+        epsa: Annotated[float, Field(ge=0.0)] = 1e-6,
+        epsr: Annotated[float, Field(ge=0.0)] = 1e-3,
+        target_q1: Annotated[float, Field(ge=0.0, le=1.0)] = 0.9,
+        target_q2: Annotated[float, Field(ge=0.0, le=1.0)] = 0.95,
+        convergence: Optional[LowOrderConsistencyConvergence] = None,
         nuclide_compare: List[str] = ["u235", "pu239"],
         _model: Model = None,
         _env: Env = None,
@@ -453,6 +485,16 @@ class LowOrderConsistency:
         self.epsr = epsr
         self.target_q1 = target_q1
         self.target_q2 = target_q2
+        self.convergence_enabled = convergence is not None
+        self.convergence = LowOrderConsistencyConvergence.model_validate(
+            convergence or {}
+        )
+        self.nlib_start = self.convergence.nlib_start
+        self.nlib_max = self.convergence.nlib_max
+        self.nburn_start = self.convergence.nburn_start
+        self.nburn_max = self.convergence.nburn_max
+        self.q1_stop_criteria = self.convergence.q1_stop_criteria
+        self.q2_stop_criteria = self.convergence.q2_stop_criteria
 
         if _dry_run:
             return
@@ -471,7 +513,8 @@ class LowOrderConsistency:
         )
 
         self.work_path = Path(_env["work_dir"])
-        self.check_path = self.work_path / "check" / name
+        self.base_check_path = self.work_path / "check" / name
+        self.check_path = self.base_check_path
         self.check_dir = self.check_path.relative_to(self.work_path)
 
     @staticmethod
@@ -587,6 +630,41 @@ class LowOrderConsistency:
         if self.metric == "grams_per_initial_hm":
             return label + " [g/gIHM]"
         return label
+
+    def _use_convergence_subdirectories(self):
+        return self.nlib_max > self.nlib_start or self.nburn_max > self.nburn_start
+
+    def _set_check_path_for_convergence(self, nlib, nburn):
+        check_path = self.base_check_path
+        if self._use_convergence_subdirectories():
+            if self.nlib_max > self.nlib_start:
+                check_path = check_path / f"nlib{nlib:04d}"
+            if self.nburn_max > self.nburn_start:
+                check_path = check_path / f"nburn{nburn:04d}"
+        self.check_path = check_path
+        self.check_dir = self.check_path.relative_to(self.work_path)
+
+    @staticmethod
+    def _convergence_summary(info):
+        keys = [
+            "nlib",
+            "nburn",
+            "q1",
+            "q2",
+            "test_pass",
+            "test_pass_q1",
+            "test_pass_q2",
+            "mean_abs_diff",
+            "mean_rel_diff",
+        ]
+        return {key: getattr(info, key) for key in keys if hasattr(info, key)}
+
+    def _scores_converged(self, previous_info, current_info, fixed_grid):
+        if previous_info is None:
+            return fixed_grid
+        dq1 = abs(current_info.q1 - previous_info.q1)
+        dq2 = abs(current_info.q2 - previous_info.q2)
+        return dq1 <= self.q1_stop_criteria and dq2 <= self.q2_stop_criteria
 
     @staticmethod
     def _require_initial_time(label, times):
@@ -773,7 +851,7 @@ class LowOrderConsistency:
 
         return info
 
-    def __run_lo_order(self, do_run):
+    def __run_lo_order(self, do_run, nlib, nburn):
         """Run the LOW order calculation which should be consistent as possible with
         the already-complete higher order calculation."""
 
@@ -820,9 +898,17 @@ class LowOrderConsistency:
             check_input.parent.mkdir(parents=True, exist_ok=True)
 
             # Populate data.
+            check = {"name": self.name}
+            if self.convergence_enabled:
+                check["convergence"] = {
+                    "nburn": nburn,
+                    "nlib": nlib,
+                }
+
             check_data = {
                 **point,
                 "name": self.name,
+                "check": check,
                 "_": {"env": self._env, "model": self._model},
             }
 
@@ -840,6 +926,7 @@ class LowOrderConsistency:
                 check_data,
                 src_path=str(self.template_path),
                 search_paths=self.template_paths,
+                float_format=core.TemplateManager.template_float_format(self._model),
             )
 
             # Write the check input file.
@@ -927,6 +1014,93 @@ class LowOrderConsistency:
                 self.hi_list.append(hi)
                 self.lo_list.append(lo)
 
+    def _run_once(self, do_run, nlib, nburn):
+        self._set_check_path_for_convergence(nlib, nburn)
+        self.ii_json_list = self.__run_lo_order(do_run, nlib, nburn)
+        self.__load_ii_json(self.ii_json_list)
+        self.run_success = True
+        info = self.info()
+        info.nlib = nlib
+        info.nburn = nburn
+        info.nlib_converged = self.nlib_start == self.nlib_max
+        info.nburn_converged = self.nburn_start == self.nburn_max
+        info.test_pass_nlib = True
+        info.test_pass_nburn = True
+        return info
+
+    def _run_nlib_convergence(self, do_run, nburn):
+        previous_info = None
+        current_info = None
+        nlib_history = []
+        nlib = self.nlib_start
+
+        while True:
+            current_info = self._run_once(do_run, nlib, nburn)
+            converged = self._scores_converged(
+                previous_info,
+                current_info,
+                fixed_grid=self.nlib_start == self.nlib_max,
+            )
+            if previous_info is not None:
+                current_info.nlib_delta_q1 = abs(current_info.q1 - previous_info.q1)
+                current_info.nlib_delta_q2 = abs(current_info.q2 - previous_info.q2)
+            current_info.nlib_converged = converged
+            current_info.test_pass_nlib = converged
+            nlib_history.append(self._convergence_summary(current_info))
+
+            if converged or nlib >= self.nlib_max:
+                break
+
+            previous_info = current_info
+            nlib = min(nlib * 2, self.nlib_max)
+
+        current_info.nlib_history = nlib_history
+        return current_info
+
+    def _copy_nlib_convergence_status(self, target_info, nlib_info):
+        target_info.nlib_history = nlib_info.nlib_history
+        target_info.nlib_converged = nlib_info.nlib_converged
+        target_info.test_pass_nlib = nlib_info.test_pass_nlib
+        if hasattr(nlib_info, "nlib_delta_q1"):
+            target_info.nlib_delta_q1 = nlib_info.nlib_delta_q1
+        if hasattr(nlib_info, "nlib_delta_q2"):
+            target_info.nlib_delta_q2 = nlib_info.nlib_delta_q2
+
+    def _run_nburn_convergence(self, do_run, nlib_info):
+        previous_info = None
+        current_info = nlib_info
+        nburn_history = []
+        nburn = self.nburn_start
+        nlib = nlib_info.nlib
+
+        while True:
+            if previous_info is None:
+                current_info = nlib_info
+            else:
+                current_info = self._run_once(do_run, nlib, nburn)
+                self._copy_nlib_convergence_status(current_info, nlib_info)
+
+            converged = self._scores_converged(
+                previous_info,
+                current_info,
+                fixed_grid=self.nburn_start == self.nburn_max,
+            )
+            if previous_info is not None:
+                current_info.nburn_delta_q1 = abs(current_info.q1 - previous_info.q1)
+                current_info.nburn_delta_q2 = abs(current_info.q2 - previous_info.q2)
+            current_info.nburn_converged = converged
+            current_info.test_pass_nburn = converged
+            nburn_history.append(self._convergence_summary(current_info))
+
+            if converged or nburn >= self.nburn_max:
+                break
+
+            previous_info = current_info
+            nburn = min(nburn * 2, self.nburn_max)
+
+        current_info.nburn_history = nburn_history
+        return current_info
+
     def run(self, reactor_library):
         """Run a consistent set of LOW order calculations which also produce an
         f71--typically ORIGAMI."""
@@ -949,14 +1123,61 @@ class LowOrderConsistency:
         # Set the case identifiers for the high and low problems.
         self.hi_case = -2
         self.lo_case = 1
+        current_info = None
 
         try:
-            self.ii_json_list = self.__run_lo_order(do_run)
-            self.__load_ii_json(self.ii_json_list)
-            self.run_success = True
+            if self.convergence_enabled:
+                current_info = self._run_nlib_convergence(do_run, self.nburn_start)
+                if current_info.nlib_converged:
+                    current_info = self._run_nburn_convergence(do_run, current_info)
+                else:
+                    current_info.nburn_history = []
+            else:
+                current_info = self._run_once(do_run, 1, 1)
 
         except ValueError as ve:
             self.run_success = False
             internal.logger.error(str(ve))
+            current_info = self.info()
 
-        return self.info()
+        if self.convergence_enabled:
+            current_info.nlib = getattr(current_info, "nlib", self.nlib_start)
+            current_info.nburn = getattr(current_info, "nburn", self.nburn_start)
+            current_info.nlib_start = self.nlib_start
+            current_info.nlib_max = self.nlib_max
+            current_info.nburn_start = self.nburn_start
+            current_info.nburn_max = self.nburn_max
+            current_info.q1_stop_criteria = self.q1_stop_criteria
+            current_info.q2_stop_criteria = self.q2_stop_criteria
+            current_info.nlib_history = getattr(current_info, "nlib_history", [])
+            current_info.nburn_history = getattr(current_info, "nburn_history", [])
+            current_info.nlib_converged = getattr(
+                current_info, "nlib_converged", self.nlib_start == self.nlib_max
+            )
+            current_info.nburn_converged = getattr(
+                current_info, "nburn_converged", self.nburn_start == self.nburn_max
+            )
+            current_info.test_pass_nlib = getattr(
+                current_info, "test_pass_nlib", current_info.nlib_converged
+            )
+            current_info.test_pass_nburn = getattr(
+                current_info, "test_pass_nburn", current_info.nburn_converged
+            )
+            current_info.test_pass = (
+                current_info.test_pass
+                and current_info.test_pass_nlib
+                and current_info.test_pass_nburn
+            )
+        else:
+            for key in (
+                "nlib",
+                "nburn",
+                "nlib_converged",
+                "nburn_converged",
+                "test_pass_nlib",
+                "test_pass_nburn",
+            ):
+                if hasattr(current_info, key):
+                    delattr(current_info, key)
+
+        return current_info

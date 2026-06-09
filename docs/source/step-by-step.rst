@@ -18,22 +18,23 @@ Initialize a new reactor library directory as follows.
     $ tree uox_quick
 
     uox_quick
-    ├── config.olm.json
-    ├── model.jt.inp
-    └── report.jt.rst
+    └── config.olm.json
     
-    1 directory, 3 files
+    1 directory, 1 file
 
 OLM uses templates for SCALE input files which are populated with data defined in special
 JSON files with extension :code:`.olm.json`. The :code:`config.olm.json` contains the configuration
 data that defines the reactor library, such as the maximum burnup to consider or the enrichment range.
-The :code:`template.inp` contains a basic TRITON input template from which to generate all the
-permutations needed.
+The quick variants reference packaged templates such as
+:code:`model/triton/pin-uox.jt.inp` and :code:`report/scale-short.jt.rst`.
+Packaged template names are relative to :code:`scale/olm/templates`. Use
+:code:`olm init --variant=uox_quick --copy` to copy those templates locally as
+:code:`model.jt.inp` and :code:`report.jt.rst` for editing.
 
 Inspect the files
 ~~~~~~~~~~~~~~~~~
 
-The :code:`model.jt.inp` file created contains 
+The packaged :code:`model/triton/pin-uox.jt.inp` file contains
 `Jinja <https://jinja.palletsprojects.com/en/3.1.x/templates/#synopsis>`_ 
 template directives. This SCALE input template is "expanded" into a proper SCALE
 input file using data contained in the :ref:`config.olm.json`.
@@ -303,7 +304,5 @@ Run the input with SCALE.
     
     $ $SCALE_DIR/bin/scalerte -m origami.inp
     
-
-
 
 

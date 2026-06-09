@@ -12,7 +12,7 @@ method, :code:`jt_expander`.
 
     "generate": {
         "_type": "scale.olm.generate.root:jt_expander",
-        "template": "model.jt.inp",
+        "template": "model/triton/pin-uox.jt.inp",
 
         "comp": {
             "fuel":{

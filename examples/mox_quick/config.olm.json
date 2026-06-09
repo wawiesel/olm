@@ -2,13 +2,14 @@
     "model": {
         "name": "mox_quick",
         "description": "A really simple MOX pin.",
+        "template_float_format": ".12e",
         "sources": { "1": "personal communication" },
         "revision": ["Unknown Author created today"],
         "notes": ["Nothing special"]
     },
     "generate": {
         "_type": "scale.olm.generate.root:jt_expander",
-        "template": "model.jt.inp",
+        "template": "model/triton/pin-mox.jt.inp",
         "comp": {
             "inner":
             {
@@ -96,6 +97,6 @@
     },
     "report": {
         "_type": "scale.olm.report:rst2pdf",
-        "template": "report.jt.rst"
+        "template": "report/scale-short.jt.rst"
     }
 }

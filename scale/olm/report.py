@@ -27,8 +27,9 @@ def rst2pdf(
 ):
     """Generate a report using rst2pdf.
 
-    Report templates are provided in restructured text. This function
-    expands those templates with a report.olm.json file that has data
+    Report templates are provided in restructured text. The template may be
+    local to the config directory or packaged under :code:`scale/olm/templates`.
+    This function expands the template with a report.olm.json file that has data
     from all the other stages.
 
         1. generate
@@ -40,8 +41,19 @@ def rst2pdf(
     if dry_run:
         return {}
 
-    # Load the template file.
-    template_path = Path(_env["config_file"]).parent / template
+    # Load the template file. Local config templates override packaged templates.
+    config_dir = Path(_env["config_file"]).parent
+    local_template_path = config_dir / template
+    template_paths = []
+    if local_template_path.exists():
+        template_path = local_template_path
+    else:
+        try:
+            tm = core.TemplateManager(paths=[config_dir])
+            template_path = Path(tm.path(template))
+            template_paths = tm.paths
+        except KeyError as exc:
+            raise FileNotFoundError(template) from exc
     internal.logger.info("Initializing report", template=str(template_path))
     with open(template_path, "r") as f:
         template_text = f.read()
@@ -65,6 +77,8 @@ def rst2pdf(
         template_text,
         data,
         src_path=str(template_path),
+        search_paths=template_paths,
+        float_format=core.TemplateManager.template_float_format(_model),
     )
     with open(rst, "w") as f:
         internal.logger.info("Writing report content", rst_file=str(rst))

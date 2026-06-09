@@ -205,7 +205,17 @@ def _get_init_variants():
     return init_path, variants
 
 
-def _write_init_variant(variant, config_dir):
+def _replace_config_paths(value, replacements):
+    if isinstance(value, dict):
+        return {k: _replace_config_paths(v, replacements) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_replace_config_paths(v, replacements) for v in value]
+    if isinstance(value, str):
+        return replacements.get(value, value)
+    return value
+
+
+def _write_init_variant(variant, config_dir, copy_files=False):
     logger.info("Creating init dir", config_dir=config_dir)
     config_path = Path(config_dir)
     config_path.mkdir(parents=True, exist_ok=True)
@@ -219,6 +229,9 @@ def _write_init_variant(variant, config_dir):
     d0 = config_path / "config.olm.json"
     logger.info("Copying config from", source=str(c0), destination=str(d0))
     shutil.copyfile(c0, d0)
+
+    if not copy_files:
+        return
 
     tm = core.TemplateManager()
     variant_files_json = variant_path / "files.json"
@@ -234,8 +247,14 @@ def _write_init_variant(variant, config_dir):
                 )
                 shutil.copyfile(resolved_path, config_path / file)
 
+        replacements = {source: file for file, source in files.items()}
+        with open(d0, "r") as f:
+            config = json.load(f)
+        with open(d0, "w") as f:
+            json.dump(_replace_config_paths(config, replacements), f, indent=4)
 
-def init(config_dir: str, variant: str, list_: bool):
+
+def init(config_dir: str, variant: str, list_: bool, copy_files: bool = False):
     r"""Initialize a new ORIGEN reactor library configuration.
     \f
     Args:
@@ -244,6 +263,9 @@ def init(config_dir: str, variant: str, list_: bool):
         variant: Initialization variant to write.
 
         list\_: Just list available variants.
+
+        copy_files: Copy packaged template files into the initialized directory
+            and update the generated config to reference those local files.
 
     """
     if list_ or variant == None:
@@ -258,7 +280,7 @@ def init(config_dir: str, variant: str, list_: bool):
         logger.debug("Assumed local directory", config_dir=variant)
         config_dir = variant
 
-    _write_init_variant(variant, config_dir)
+    _write_init_variant(variant, config_dir, copy_files=copy_files)
 
 
 def _make_mini_arpdatatxt(dry_run, registry, dest, replace=False):

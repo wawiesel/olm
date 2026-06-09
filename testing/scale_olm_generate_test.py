@@ -3,6 +3,72 @@ import pytest
 from pydantic import ValidationError
 
 
+def test_jt_expander_uses_packaged_template(tmp_path):
+    result = olm.generate.root.jt_expander(
+        template="model/triton/pin-uox.jt.inp",
+        static={
+            "_type": "scale.olm.generate.static:pass_through",
+            "addnux": 2,
+            "xslib": "v7-56",
+            "pitch": 1.26,
+            "fuelr": 0.4095,
+            "cladr": 0.4750,
+        },
+        states={
+            "_type": "scale.olm.generate.states:full_hypercube",
+            "coolant_density": [0.70],
+            "enrichment": [3.0],
+            "specific_power": [40.0],
+            "boron_ppm": [600.0],
+        },
+        comp={
+            "fuel": {
+                "_type": "scale.olm.generate.comp:uo2_nuregcr5625",
+                "density": 10.4,
+            }
+        },
+        time={
+            "_type": "scale.olm.generate.time:constpower_burndata",
+            "gwd_burnups": [0.0, 1.0],
+        },
+        _model={"name": "uox_quick"},
+        _env={
+            "config_file": str(tmp_path / "config.olm.json"),
+            "work_dir": str(tmp_path / "_work"),
+        },
+    )
+
+    input_file = tmp_path / "_work" / result["perms"][0]["input_file"]
+    text = input_file.read_text()
+    assert "pincell model" in text
+    assert "read burndata" in text
+    assert "den=1.040000000000e+01" in text
+
+
+def test_jt_expander_uses_model_template_float_format(tmp_path):
+    template = tmp_path / "model.jt.inp"
+    template.write_text("value={{static.value}}")
+
+    result = olm.generate.root.jt_expander(
+        template=template.name,
+        static={
+            "_type": "scale.olm.generate.static:pass_through",
+            "value": 1.23456789,
+        },
+        states={"_type": "scale.olm.generate.states:full_hypercube", "case": [1.0]},
+        comp={"_type": "scale.olm.generate.static:pass_through"},
+        time={"_type": "scale.olm.generate.static:pass_through"},
+        _model={"name": "format_test", "template_float_format": ".4e"},
+        _env={
+            "config_file": str(tmp_path / "config.olm.json"),
+            "work_dir": str(tmp_path / "_work"),
+        },
+    )
+
+    input_file = tmp_path / "_work" / result["perms"][0]["input_file"]
+    assert input_file.read_text() == "value=1.2346e+00"
+
+
 def test_constpower_burndata():
     # Test that the burnup sequence is correct.
     power = 40.0

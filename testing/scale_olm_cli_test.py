@@ -51,6 +51,7 @@ class TestOLMCLI:
         assert 'Usage:' in result.output
         assert '--variant' in result.output
         assert '--list' in result.output
+        assert '--copy' in result.output
 
     def test_olm_link_help(self):
         """Test link command help."""
@@ -90,6 +91,22 @@ class TestOLMCLI:
         result = self.runner.invoke(main.olm_init, ['--list'])
         assert result.exit_code == 0
         # Should list available variants without error
+
+    def test_olm_init_copy_templates(self, tmp_path):
+        """Test init --copy writes editable local template files."""
+        config_dir = tmp_path / "uox_copy"
+
+        result = self.runner.invoke(
+            main.olm_init,
+            ["--variant", "uox_quick", "--copy", str(config_dir)],
+        )
+
+        assert result.exit_code == 0
+        config = json.loads((config_dir / "config.olm.json").read_text())
+        assert config["generate"]["template"] == "model.jt.inp"
+        assert config["report"]["template"] == "report.jt.rst"
+        assert "t-depl" in (config_dir / "model.jt.inp").read_text()
+        assert "{{model.name}}" in (config_dir / "report.jt.rst").read_text()
 
     def test_olm_link_show(self):
         """Test showing available libraries."""
@@ -228,4 +245,4 @@ class TestCLIDocstrings:
             result = runner.invoke(cmd, ['--help'])
             assert result.exit_code == 0
             # Should contain usage examples
-            assert '**Usage**' in result.output or 'Usage' in result.output 
+            assert '**Usage**' in result.output or 'Usage' in result.output

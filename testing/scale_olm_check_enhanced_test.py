@@ -189,6 +189,7 @@ class TestLowOrderConsistency:
             'epsa',
             'epsr',
             'metric',
+            'convergence',
             'target_q1',
             'target_q2',
             'nuclide_compare',
@@ -202,8 +203,18 @@ class TestLowOrderConsistency:
         """Test that describe_params returns helpful descriptions."""
         descriptions = check.LowOrderConsistency.describe_params()
         
-        expected_keys = {'eps0', 'epsa', 'epsr', 'metric', 'target_q1', 'target_q2',
-                        'nuclide_compare', 'template', 'name'}
+        expected_keys = {
+            'eps0',
+            'epsa',
+            'epsr',
+            'metric',
+            'convergence',
+            'target_q1',
+            'target_q2',
+            'nuclide_compare',
+            'template',
+            'name',
+        }
         assert set(descriptions.keys()) == expected_keys
         
         # Verify descriptions are strings
@@ -459,6 +470,301 @@ class TestLowOrderConsistency:
         assert mock_plot_hist.call_args.kwargs['ylabel'] == (
             r"$\log_{10} |hi-lo|$ [g/gIHM]"
         )
+
+    def test_convergence_range_checks(self):
+        """Test LowOrderConsistency rejects inverted convergence ranges."""
+        with pytest.raises(ValueError, match='nlib_max'):
+            check.LowOrderConsistency(
+                _dry_run=True,
+                convergence={
+                    'nlib_start': 4,
+                    'nlib_max': 2,
+                },
+            )
+
+        with pytest.raises(ValueError, match='nburn_max'):
+            check.LowOrderConsistency(
+                _dry_run=True,
+                convergence={
+                    'nburn_start': 4,
+                    'nburn_max': 2,
+                },
+            )
+
+    def test_convergence_check_path_uses_subdirectories(self, tmp_path):
+        """Test convergence runs isolate outputs in parameter-specific directories."""
+        loc = check.LowOrderConsistency(
+            _dry_run=True,
+            convergence={
+                'nlib_start': 1,
+                'nlib_max': 4,
+                'nburn_start': 1,
+                'nburn_max': 2,
+            },
+        )
+        loc.work_path = tmp_path
+        loc.base_check_path = tmp_path / 'check' / 'loc'
+
+        loc._set_check_path_for_convergence(nlib=2, nburn=2)
+
+        assert loc.check_path == tmp_path / 'check' / 'loc' / 'nlib0002' / 'nburn0002'
+        assert loc.check_dir == Path('check/loc/nlib0002/nburn0002')
+
+    def test_scores_converged_uses_q_score_deltas(self):
+        """Test convergence is based on q1 and q2 score changes."""
+        loc = check.LowOrderConsistency(
+            _dry_run=True,
+            convergence={
+                'q1_stop_criteria': 0.01,
+                'q2_stop_criteria': 0.02,
+            },
+        )
+        previous = check.CheckInfo()
+        previous.q1 = 0.90
+        previous.q2 = 0.95
+        current = check.CheckInfo()
+        current.q1 = 0.905
+        current.q2 = 0.969
+
+        assert loc._scores_converged(previous, current, fixed_grid=False)
+
+        current.q2 = 0.971
+        assert not loc._scores_converged(previous, current, fixed_grid=False)
+
+    def test_run_nlib_convergence_doubles_until_scores_converge(self, monkeypatch):
+        """Test nlib convergence runs until q-score deltas meet the stop criteria."""
+        loc = check.LowOrderConsistency(
+            _dry_run=True,
+            convergence={
+                'nlib_start': 1,
+                'nlib_max': 4,
+                'q1_stop_criteria': 0.01,
+                'q2_stop_criteria': 0.01,
+            },
+        )
+        scores = {
+            1: (0.50, 0.60),
+            2: (0.70, 0.80),
+            4: (0.705, 0.805),
+        }
+        calls = []
+
+        def fake_run_once(do_run, nlib, nburn):
+            calls.append((nlib, nburn))
+            info = check.CheckInfo()
+            info.nlib = nlib
+            info.nburn = nburn
+            info.q1, info.q2 = scores[nlib]
+            info.test_pass = True
+            info.test_pass_q1 = True
+            info.test_pass_q2 = True
+            info.mean_abs_diff = 0.0
+            info.mean_rel_diff = 0.0
+            return info
+
+        monkeypatch.setattr(loc, '_run_once', fake_run_once)
+
+        info = loc._run_nlib_convergence(do_run=False, nburn=1)
+
+        assert calls == [(1, 1), (2, 1), (4, 1)]
+        assert info.nlib == 4
+        assert info.nlib_converged
+        assert info.test_pass_nlib
+        assert info.nlib_delta_q1 == pytest.approx(0.005)
+        assert info.nlib_delta_q2 == pytest.approx(0.005)
+        assert [row['nlib'] for row in info.nlib_history] == [1, 2, 4]
+
+    def test_run_nburn_convergence_uses_converged_nlib(self, monkeypatch):
+        """Test nburn convergence holds nlib fixed after nlib convergence."""
+        loc = check.LowOrderConsistency(
+            _dry_run=True,
+            convergence={
+                'nburn_start': 1,
+                'nburn_max': 4,
+                'q1_stop_criteria': 0.01,
+                'q2_stop_criteria': 0.01,
+            },
+        )
+        nlib_info = check.CheckInfo()
+        nlib_info.nlib = 2
+        nlib_info.nburn = 1
+        nlib_info.q1 = 0.50
+        nlib_info.q2 = 0.60
+        nlib_info.test_pass = True
+        nlib_info.test_pass_q1 = True
+        nlib_info.test_pass_q2 = True
+        nlib_info.mean_abs_diff = 0.0
+        nlib_info.mean_rel_diff = 0.0
+        nlib_info.nlib_history = [{'nlib': 2, 'nburn': 1}]
+        nlib_info.nlib_converged = True
+        nlib_info.test_pass_nlib = True
+        scores = {
+            2: (0.70, 0.80),
+            4: (0.705, 0.805),
+        }
+        calls = []
+
+        def fake_run_once(do_run, nlib, nburn):
+            calls.append((nlib, nburn))
+            info = check.CheckInfo()
+            info.nlib = nlib
+            info.nburn = nburn
+            info.q1, info.q2 = scores[nburn]
+            info.test_pass = True
+            info.test_pass_q1 = True
+            info.test_pass_q2 = True
+            info.mean_abs_diff = 0.0
+            info.mean_rel_diff = 0.0
+            return info
+
+        monkeypatch.setattr(loc, '_run_once', fake_run_once)
+
+        info = loc._run_nburn_convergence(do_run=False, nlib_info=nlib_info)
+
+        assert calls == [(2, 2), (2, 4)]
+        assert info.nlib == 2
+        assert info.nburn == 4
+        assert info.nburn_converged
+        assert info.test_pass_nburn
+        assert info.nlib_history == nlib_info.nlib_history
+        assert [row['nburn'] for row in info.nburn_history] == [1, 2, 4]
+
+    def test_run_without_convergence_omits_convergence_status(self, monkeypatch):
+        """Test single-run LOC output has no convergence fields by default."""
+        loc = check.LowOrderConsistency(_dry_run=True)
+        calls = []
+
+        def fake_run_once(do_run, nlib, nburn):
+            calls.append((nlib, nburn))
+            info = check.CheckInfo()
+            info.test_pass = True
+            info.nlib = nlib
+            info.nburn = nburn
+            info.nlib_converged = True
+            info.nburn_converged = True
+            info.test_pass_nlib = True
+            info.test_pass_nburn = True
+            return info
+
+        monkeypatch.setattr(loc, '_run_once', fake_run_once)
+
+        info = loc.run(reactor_library=None)
+
+        assert calls == [(1, 1)]
+        assert info.test_pass
+        assert not hasattr(info, 'nlib')
+        assert not hasattr(info, 'nburn')
+        assert not hasattr(info, 'test_pass_nlib')
+        assert not hasattr(info, 'test_pass_nburn')
+
+    @patch('scale.olm.internal._execute_makefile')
+    def test_run_lo_order_writes_check_convergence(self, mock_execute, tmp_path):
+        """Test LOW order input data exposes nlib and nburn to templates."""
+        work_path = tmp_path / 'work'
+        work_path.mkdir()
+        template_path = tmp_path / 'loc-template.jt.inp'
+        template_path.write_text(
+            'options{ nburn={{check.convergence.nburn}} }\n'
+            'cycle{ nlib={{check.convergence.nlib}} }\n'
+        )
+        assemble_data = {
+            'points': [
+                {
+                    'files': {
+                        'lib': 'check/loc/uox.arc.h5',
+                        'ii_json': 'hi.ii.json',
+                    },
+                    'history': {
+                        'initialhm': 1.0,
+                    },
+                }
+            ]
+        }
+        (work_path / 'assemble.olm.json').write_text(json.dumps(assemble_data))
+        env = {
+            'config_file': str(tmp_path / 'config.olm.json'),
+            'work_dir': str(work_path),
+            'nprocs': 1,
+        }
+        loc = check.LowOrderConsistency(
+            name='loc',
+            template=template_path.name,
+            convergence={},
+            _model={'name': 'test-model'},
+            _env=env,
+        )
+        loc.lo_case = 1
+
+        ii_json_list = loc._LowOrderConsistency__run_lo_order(
+            do_run=False,
+            nlib=2,
+            nburn=4,
+        )
+
+        check_dir = work_path / 'check' / 'loc' / 'uox.arc'
+        data = json.loads((check_dir / 'data.olm.json').read_text())
+        rendered = (check_dir / 'uox.arc.inp').read_text()
+        assert data['check']['convergence'] == {'nburn': 4, 'nlib': 2}
+        assert 'options{ nburn=4 }' in rendered
+        assert 'cycle{ nlib=2 }' in rendered
+        assert ii_json_list == [
+            (work_path / 'hi.ii.json', check_dir / 'uox.arc.ii.json')
+        ]
+        mock_execute.assert_called_once()
+
+    @patch('scale.olm.internal._execute_makefile')
+    def test_run_lo_order_omits_convergence_template_data_by_default(
+        self, mock_execute, tmp_path
+    ):
+        """Test default LOW order inputs do not require convergence template data."""
+        work_path = tmp_path / 'work'
+        work_path.mkdir()
+        template_path = tmp_path / 'loc-template.jt.inp'
+        template_path.write_text(
+            'options{ mtu={{history.initialhm}} }\n'
+            'cycle{ burn=1 }\n'
+        )
+        assemble_data = {
+            'points': [
+                {
+                    'files': {
+                        'lib': 'check/loc/uox.arc.h5',
+                        'ii_json': 'hi.ii.json',
+                    },
+                    'history': {
+                        'initialhm': 1.0,
+                    },
+                }
+            ]
+        }
+        (work_path / 'assemble.olm.json').write_text(json.dumps(assemble_data))
+        env = {
+            'config_file': str(tmp_path / 'config.olm.json'),
+            'work_dir': str(work_path),
+            'nprocs': 1,
+        }
+        loc = check.LowOrderConsistency(
+            name='loc',
+            template=template_path.name,
+            _model={'name': 'test-model'},
+            _env=env,
+        )
+        loc.lo_case = 1
+
+        loc._LowOrderConsistency__run_lo_order(
+            do_run=False,
+            nlib=1,
+            nburn=1,
+        )
+
+        check_dir = work_path / 'check' / 'loc' / 'uox.arc'
+        data = json.loads((check_dir / 'data.olm.json').read_text())
+        rendered = (check_dir / 'uox.arc.inp').read_text()
+        assert 'convergence' not in data['check']
+        assert 'options{ mtu=1.000000000000e+00 }' in rendered
+        assert 'nburn=' not in rendered
+        assert 'nlib=' not in rendered
+        mock_execute.assert_called_once()
 
 
 class TestSchemaFunctions:

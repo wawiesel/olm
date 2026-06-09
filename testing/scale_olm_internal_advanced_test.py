@@ -547,17 +547,32 @@ class TestEnvironmentLoading:
 
         output_dir = tmp_path / "uox_quick"
         assert (output_dir / "config.olm.json").exists()
-        assert (output_dir / "model.jt.inp").exists()
-        assert (output_dir / "report.jt.rst").exists()
+        assert not (output_dir / "model.jt.inp").exists()
+        assert not (output_dir / "report.jt.rst").exists()
 
-    def test_write_init_variant_copies_config_and_template_files(self, tmp_path):
-        """Test writing an init variant copies its config and declared files."""
+    def test_write_init_variant_uses_packaged_templates(self, tmp_path):
+        """Test init variants reference packaged templates instead of copying them."""
         config_dir = tmp_path / "variant"
 
         internal._write_init_variant("uox_quick", config_dir)
 
         config = json.loads((config_dir / "config.olm.json").read_text())
         assert config["model"]["name"] == "uox_quick"
+        assert config["model"]["template_float_format"] == ".12e"
+        assert config["generate"]["template"] == "model/triton/pin-uox.jt.inp"
+        assert config["report"]["template"] == "report/scale-short.jt.rst"
+        assert not (config_dir / "model.jt.inp").exists()
+        assert not (config_dir / "report.jt.rst").exists()
+
+    def test_write_init_variant_can_copy_local_templates(self, tmp_path):
+        """Test init variants can copy packaged templates for local editing."""
+        config_dir = tmp_path / "variant"
+
+        internal._write_init_variant("uox_quick", config_dir, copy_files=True)
+
+        config = json.loads((config_dir / "config.olm.json").read_text())
+        assert config["generate"]["template"] == "model.jt.inp"
+        assert config["report"]["template"] == "report.jt.rst"
         assert "t-depl" in (config_dir / "model.jt.inp").read_text()
         assert "{{model.name}}" in (config_dir / "report.jt.rst").read_text()
 

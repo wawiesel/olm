@@ -1,4 +1,49 @@
 {
+    "$defs": {
+        "LowOrderConsistencyConvergence": {
+            "additionalProperties": false,
+            "properties": {
+                "nlib_start": {
+                    "default": 1,
+                    "exclusiveMinimum": 0,
+                    "title": "Nlib Start",
+                    "type": "integer"
+                },
+                "nlib_max": {
+                    "default": 1,
+                    "exclusiveMinimum": 0,
+                    "title": "Nlib Max",
+                    "type": "integer"
+                },
+                "nburn_start": {
+                    "default": 1,
+                    "exclusiveMinimum": 0,
+                    "title": "Nburn Start",
+                    "type": "integer"
+                },
+                "nburn_max": {
+                    "default": 1,
+                    "exclusiveMinimum": 0,
+                    "title": "Nburn Max",
+                    "type": "integer"
+                },
+                "q1_stop_criteria": {
+                    "default": 0.0,
+                    "minimum": 0.0,
+                    "title": "Q1 Stop Criteria",
+                    "type": "number"
+                },
+                "q2_stop_criteria": {
+                    "default": 0.0,
+                    "minimum": 0.0,
+                    "title": "Q2 Stop Criteria",
+                    "type": "number"
+                }
+            },
+            "title": "LowOrderConsistencyConvergence",
+            "type": "object"
+        }
+    },
     "properties": {
         "name": {
             "default": null,
@@ -43,6 +88,17 @@
             "default": null,
             "title": "Target Q2",
             "type": "number"
+        },
+        "convergence": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/LowOrderConsistencyConvergence"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "default": null
         },
         "nuclide_compare": {
             "default": null,

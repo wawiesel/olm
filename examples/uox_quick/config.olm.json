@@ -2,6 +2,7 @@
     "model": {
         "name": "uox_quick",
         "description": "A 2D t-depl pin cell of W17x17 type.",
+        "template_float_format": ".12e",
         "sources":
         {
             "1":"Characteristics of Spent Fuel, High-Level Waste, and other Radioactive Wastes which May Require Long-Term Isolation, Appendix 2A. Physical Descriptions of LWR Fuel Assemblies, DOE/RW-0184, Volume 3 of 6, U.S. DOE Office of Civilian Radioactive Waste Management, 1987.",
@@ -23,7 +24,7 @@
     },
     "generate": {
         "_type": "scale.olm.generate.root:jt_expander",
-        "template": "model.jt.inp",
+        "template": "model/triton/pin-uox.jt.inp",
         "comp": {
             "fuel":{
                 "_type": "scale.olm.generate.comp:uo2_nuregcr5625",
@@ -101,6 +102,6 @@
     },
     "report": {
         "_type": "scale.olm.report:rst2pdf",
-        "template": "report.jt.rst"
+        "template": "report/scale-short.jt.rst"
     }
 }

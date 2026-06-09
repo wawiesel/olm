@@ -72,6 +72,8 @@ class TemplateManager:
 
     """
 
+    DEFAULT_TEMPLATE_FLOAT_FORMAT = ".12e"
+
     def __init__(self, paths=[], include_env=True):
         import copy
         import glob
@@ -118,18 +120,27 @@ class TemplateManager:
         """
         return self.templates[name]
 
-    def expand(self, name: str, data: dict):
+    def expand(
+        self,
+        name: str,
+        data: dict,
+        float_format: str = DEFAULT_TEMPLATE_FLOAT_FORMAT,
+    ):
         """Expand a template by name using provided data.
 
         Args:
             name: template name
             data: dictionary with all the data
+            float_format: format specifier for floating-point template values
 
         Returns:
             str: text from the expanded template and data
         """
         return TemplateManager.expand_file(
-            self.templates[name], data, search_paths=self.paths
+            self.templates[name],
+            data,
+            search_paths=self.paths,
+            float_format=float_format,
         )
 
     @staticmethod
@@ -175,7 +186,22 @@ class TemplateManager:
         return traceback_print[:-1]
 
     @staticmethod
-    def _tree_print(data, path=""):
+    def template_float_format(model):
+        return model.get(
+            "template_float_format",
+            TemplateManager.DEFAULT_TEMPLATE_FLOAT_FORMAT,
+        )
+
+    @staticmethod
+    def _format_template_value(
+        value, float_format=DEFAULT_TEMPLATE_FLOAT_FORMAT
+    ):
+        if isinstance(value, (float, np.floating)):
+            return format(value, float_format)
+        return value
+
+    @staticmethod
+    def _tree_print(data, path="", float_format=DEFAULT_TEMPLATE_FLOAT_FORMAT):
         if isinstance(data, dict):
             new = ""
             if path == "":
@@ -183,15 +209,20 @@ class TemplateManager:
             else:
                 root = path + "."
             for k, v in data.items():
-                new += TemplateManager._tree_print(v, path=root + k)
+                new += TemplateManager._tree_print(
+                    v, path=root + k, float_format=float_format
+                )
             return new
         elif isinstance(data, list):
             new = ""
             for i in range(len(data)):
-                new += TemplateManager._tree_print(data[i], path=path + f"[{i}]")
+                new += TemplateManager._tree_print(
+                    data[i], path=path + f"[{i}]", float_format=float_format
+                )
             return new
         else:
-            return f"{path}={data}\n"
+            value = TemplateManager._format_template_value(data, float_format)
+            return f"{path}={value}\n"
 
     @staticmethod
     def _template_search_paths(src_path: str = "", search_paths=None):
@@ -207,7 +238,11 @@ class TemplateManager:
 
     @staticmethod
     def expand_text(
-        text: str, data: dict, src_path: str = "", search_paths=None
+        text: str,
+        data: dict,
+        src_path: str = "",
+        search_paths=None,
+        float_format: str = DEFAULT_TEMPLATE_FLOAT_FORMAT,
     ):
         """Returns the expanded text with data.
 
@@ -218,6 +253,7 @@ class TemplateManager:
             data: dictionary containing data
             src_path: path to source template for traceback and relative includes
             search_paths: directories searched for parent/included templates
+            float_format: format specifier for floating-point template values
 
         Raises:
             ValueError: if jinja raises an undefined variable error
@@ -229,7 +265,13 @@ class TemplateManager:
 
         paths = TemplateManager._template_search_paths(src_path, search_paths)
         loader = FileSystemLoader([str(path) for path in paths]) if paths else None
-        env = Environment(loader=loader, undefined=StrictUndefined)
+        env = Environment(
+            loader=loader,
+            undefined=StrictUndefined,
+            finalize=lambda value: TemplateManager._format_template_value(
+                value, float_format
+            ),
+        )
         j2t = env.from_string(text)
 
         # Catch specific types of error.
@@ -239,7 +281,7 @@ class TemplateManager:
             trace = TemplateManager._jinja2_render_traceback(src_path=src_path)
             raise ValueError(
                 "Available data: \n"
-                + TemplateManager._tree_print(data)
+                + TemplateManager._tree_print(data, float_format=float_format)
                 + "\n"
                 + "Template error: "
                 + str(ve)
@@ -249,13 +291,19 @@ class TemplateManager:
             )
 
     @staticmethod
-    def expand_file(path: pathlib.Path, data: dict, search_paths=None):
+    def expand_file(
+        path: pathlib.Path,
+        data: dict,
+        search_paths=None,
+        float_format: str = DEFAULT_TEMPLATE_FLOAT_FORMAT,
+    ):
         """Returns expanded text from a file.
 
         Args:
             path: path containing a file to read
             data: dictionary containing data
             search_paths: directories searched for parent/included templates
+            float_format: format specifier for floating-point template values
 
         Returns:
             str: expanded text
@@ -263,7 +311,11 @@ class TemplateManager:
         with open(path, "r") as f:
             text = f.read()
             return TemplateManager.expand_text(
-                text, data, src_path=str(path), search_paths=search_paths
+                text,
+                data,
+                src_path=str(path),
+                search_paths=search_paths,
+                float_format=float_format,
             )
 
 

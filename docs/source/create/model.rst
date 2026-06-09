@@ -1,10 +1,14 @@
 model
 ~~~~~
 
-The model section defines aspects of the model such as a short description, sources, 
-and other reference data. It is intended to provide the front matter for a report or
-to inject in an input file traceability data. Only the :code:`name` field is used
-within OLM.
+The model section defines global model metadata and options such as a short
+description, sources, and other reference data. It is intended to provide the
+front matter for a report or to inject in an input file traceability data.
+
+The :code:`name` field names OLM output files. The optional
+:code:`template_float_format` field controls the default Python format specifier
+used for floating-point values substituted into Jinja templates. If omitted,
+OLM uses :code:`.12e`.
 
 .. code:: JSON
 
@@ -12,6 +16,7 @@ within OLM.
     {
         "name": "uox_quick",
         "description": "A 2D t-depl pin cell of W17x17 type.",
+        "template_float_format": ".12e",
         "sources":
         {
             "1":"Characteristics of Spent Fuel, High-Level Waste, and other Radioactive Wastes which May Require Long-Term Isolation, Appendix 2A. Physical Descriptions of LWR Fuel Assemblies, DOE/RW-0184, Volume 3 of 6, U.S. DOE Office of Civilian Radioactive Waste Management, 1987.",

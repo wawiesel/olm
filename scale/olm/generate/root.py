@@ -159,7 +159,8 @@ def jt_expander(
     Args:
 
         template: Template file name relative to the directory containing
-                  :code:`_env['config_file']`.
+                  :code:`_env['config_file']`, or a packaged template name
+                  relative to :code:`scale/olm/templates`.
 
         static: Data dictionary that is independent of state. Data is passed through function
                 :code:`_type` and then available as :code:`static.<key>` to
@@ -220,18 +221,33 @@ def jt_expander(
         work_path = Path(_env["work_dir"])
     generate_path = work_path / "perms"
 
-    # Load the template file.
-    if not "config_file" in _env:
-        template_path = template
-    else:
-        template_path = Path(_env["config_file"]).parent / template
-
-    if template_path == "":
+    template_path = Path(template)
+    template_paths = []
+    if template == "":
         internal.logger.warning(
             "Template file not specified. Assuming template showing all data."
         )
         template_text = ""
     else:
+        config_dir = Path(_env["config_file"]).parent if "config_file" in _env else None
+        if config_dir is not None:
+            local_template_path = config_dir / template
+            if local_template_path.exists():
+                template_path = local_template_path
+            else:
+                tm = core.TemplateManager(paths=[config_dir])
+                try:
+                    template_path = Path(tm.path(template))
+                except KeyError as exc:
+                    raise FileNotFoundError(template) from exc
+                template_paths = tm.paths
+        elif not template_path.exists():
+            tm = core.TemplateManager()
+            try:
+                template_path = Path(tm.path(template))
+            except KeyError as exc:
+                raise FileNotFoundError(template) from exc
+            template_paths = tm.paths
         with open(template_path, "r") as f:
             template_text = f.read()
 
@@ -244,6 +260,7 @@ def jt_expander(
     perms2 = []
     i = 0
     td = core.TempDir()
+    float_format = core.TemplateManager.template_float_format(_model)
     for state2 in states2:
         # For each state, generate the compositions.
         comp2 = {}
@@ -295,13 +312,19 @@ def jt_expander(
         internal.logger.info("Writing permutation", index=i, input_file=input_file)
         if template_text != "":
             filled_text = core.TemplateManager.expand_text(
-                template_text, data, src_path=str(template_path)
+                template_text,
+                data,
+                src_path=str(template_path),
+                search_paths=template_paths,
+                float_format=float_format,
             )
         else:
             internal.logger.warning(
                 "Template text empty--using tree_print to fill input."
             )
-            filled_text = core.TemplateManager._tree_print(data)
+            filled_text = core.TemplateManager._tree_print(
+                data, float_format=float_format
+            )
 
         with open(input_path, "w") as f:
             f.write(filled_text)
