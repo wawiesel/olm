@@ -465,6 +465,7 @@ class LowOrderConsistency:
         tm = core.TemplateManager([dir])
 
         self.template_path = tm.path(template)
+        self.template_paths = tm.paths
         internal.logger.info(
             "check " + __class__.__name__, template_file=self.template_path
         )
@@ -834,7 +835,12 @@ class LowOrderConsistency:
             )
 
             # Fill the template.
-            filled_text = core.TemplateManager.expand_text(template_text, check_data)
+            filled_text = core.TemplateManager.expand_text(
+                template_text,
+                check_data,
+                src_path=str(self.template_path),
+                search_paths=self.template_paths,
+            )
 
             # Write the check input file.
             internal.logger.debug(

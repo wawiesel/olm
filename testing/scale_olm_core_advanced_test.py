@@ -14,6 +14,37 @@ from unittest.mock import patch
 import scale.olm.core as core
 
 
+class TestTemplateManager:
+    """Test Jinja template expansion behavior."""
+
+    def test_expand_file_supports_same_directory_parent_template(self, tmp_path):
+        """Test direct file expansion resolves an inherited sibling template."""
+        base = tmp_path / "base.jt.inp"
+        child = tmp_path / "child.jt.inp"
+        base.write_text("A{% block body %}{% endblock %}C")
+        child.write_text(
+            "{% extends \"base.jt.inp\" %}{% block body %}{{ value }}{% endblock %}"
+        )
+
+        result = core.TemplateManager.expand_file(child, {"value": "B"})
+
+        assert result == "ABC"
+
+    def test_expand_supports_parent_template_from_template_manager_path(self, tmp_path):
+        """Test manager expansion searches registered template roots for parents."""
+        child_dir = tmp_path / "child"
+        child_dir.mkdir()
+        (tmp_path / "base.jt.inp").write_text("A{% block body %}{% endblock %}C")
+        (child_dir / "child.jt.inp").write_text(
+            "{% extends \"base.jt.inp\" %}{% block body %}B{% endblock %}"
+        )
+        manager = core.TemplateManager(paths=[tmp_path], include_env=False)
+
+        result = manager.expand("child/child.jt.inp", {})
+
+        assert result == "ABC"
+
+
 class TestCompositionManager:
     """Test the CompositionManager class for nuclide data and calculations."""
 

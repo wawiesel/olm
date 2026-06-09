@@ -128,7 +128,9 @@ class TemplateManager:
         Returns:
             str: text from the expanded template and data
         """
-        return TemplateManager.expand_file(self.templates[name], data)
+        return TemplateManager.expand_file(
+            self.templates[name], data, search_paths=self.paths
+        )
 
     @staticmethod
     def _jinja2_render_traceback(src_path):
@@ -192,7 +194,21 @@ class TemplateManager:
             return f"{path}={data}\n"
 
     @staticmethod
-    def expand_text(text: str, data: dict, src_path: str = ""):
+    def _template_search_paths(src_path: str = "", search_paths=None):
+        paths = []
+        if src_path:
+            paths.append(Path(src_path).parent.resolve())
+        if search_paths:
+            for path in search_paths:
+                path = Path(path).resolve()
+                if path not in paths:
+                    paths.append(path)
+        return paths
+
+    @staticmethod
+    def expand_text(
+        text: str, data: dict, src_path: str = "", search_paths=None
+    ):
         """Returns the expanded text with data.
 
         Use jinja to expand the text with data.
@@ -200,6 +216,8 @@ class TemplateManager:
         Args:
             text: text containing jinja directives
             data: dictionary containing data
+            src_path: path to source template for traceback and relative includes
+            search_paths: directories searched for parent/included templates
 
         Raises:
             ValueError: if jinja raises an undefined variable error
@@ -207,19 +225,12 @@ class TemplateManager:
         Returns:
             str: expanded text
         """
-        from jinja2 import (
-            Template,
-            StrictUndefined,
-            exceptions,
-            TemplateError,
-            Environment,
-            FileSystemLoader,
-        )
+        from jinja2 import StrictUndefined, exceptions, Environment, FileSystemLoader
 
-        j2t = Template(text, undefined=StrictUndefined)
-        j2t = Environment(
-            loader=FileSystemLoader(".."), undefined=StrictUndefined
-        ).from_string(text)
+        paths = TemplateManager._template_search_paths(src_path, search_paths)
+        loader = FileSystemLoader([str(path) for path in paths]) if paths else None
+        env = Environment(loader=loader, undefined=StrictUndefined)
+        j2t = env.from_string(text)
 
         # Catch specific types of error.
         try:
@@ -238,19 +249,22 @@ class TemplateManager:
             )
 
     @staticmethod
-    def expand_file(path: pathlib.Path, data: dict):
+    def expand_file(path: pathlib.Path, data: dict, search_paths=None):
         """Returns expanded text from a file.
 
         Args:
             path: path containing a file to read
             data: dictionary containing data
+            search_paths: directories searched for parent/included templates
 
         Returns:
             str: expanded text
         """
         with open(path, "r") as f:
             text = f.read()
-            return TemplateManager.expand_text(text, data, src_path=str(path))
+            return TemplateManager.expand_text(
+                text, data, src_path=str(path), search_paths=search_paths
+            )
 
 
 class CompositionManager:
@@ -419,9 +433,9 @@ class CompositionManager:
 
         # Renormalize.
         norm = sum / sum0 if sum0 > 0.0 else 0.0
-        if norm > 0.0:
-            for k in wtpt:
-                wtpt[k] /= norm
+        if norm>0.0:
+          for k in wtpt:
+              wtpt[k] /= norm
         return wtpt, norm
 
     @staticmethod
@@ -521,7 +535,7 @@ class CompositionManager:
             comp["hmo2"]["iso"], 1.0, key_filter="pu"
         )
         pu_frac += am241
-        norm = pu_frac + am_frac
+        norm = (pu_frac + am_frac)
         if norm > 0.0:
             pu239_frac = 100 * pu239 / norm
             am241_frac = 100 * am241 / norm
@@ -623,8 +637,10 @@ class BurnupHistory:
         eoc_cooling = 0.0
         shutdown = initial_shutdown
         for j in range(len(self.interval_power)):
+
             # We are at power now.
             if self.interval_power[j] > min_shutdown_power:
+
                 # But we were shutdown, so this is new cycle.
                 if shutdown:
                     shutdown = False
@@ -1969,22 +1985,20 @@ class ArpInfo:
         arpinfo = ArpInfo()
 
         # UOX option
-        if self.fuel_type == "UOX":
-            (ne, nm) = self.get_dims()
+        if self.fuel_type=="UOX":
+            (ne,nm) = self.get_dims()
             nb = len(self.burnup_list)
             ie_list = range(ne)
             im_list = range(nm)
             ib_list = range(nb)
-            if axis_name == "enrichment":
-                ie_list = ArpInfo._find_closest(self.enrichment_list, keep_values)
-            elif axis_name == "mod_dens":
-                im_list = ArpInfo._find_closest(self.mod_dens_list, keep_values)
-            elif axis_name == "times" or axis_name == "burnup":
-                ib_list = ArpInfo._find_closest(self.burnup_list, keep_values)
+            if axis_name=="enrichment":
+                ie_list = ArpInfo._find_closest(self.enrichment_list,keep_values)
+            elif axis_name=="mod_dens":
+                im_list = ArpInfo._find_closest(self.mod_dens_list,keep_values)
+            elif axis_name=="times" or axis_name=="burnup":
+                ib_list = ArpInfo._find_closest(self.burnup_list,keep_values)
             else:
-                raise ValueError(
-                    f"Restriction can only be called on enrichment, mod_dens, times, burnup axes. Not {axis_name}."
-                )
+                raise ValueError(f"Restriction can only be called on enrichment, mod_dens, times, burnup axes. Not {axis_name}.")
 
             new_lib_list = []
             new_burnup_list = []
@@ -1992,24 +2006,23 @@ class ArpInfo:
             new_mod_dens_list = []
             for im in im_list:
                 for ie in ie_list:
-                    i = self.get_index_by_dim((ie, im))
-                    new_lib_list.append(self.get_lib_by_index(i))
-                    new_mod_dens_list.append(self.mod_dens_list[im])
-                    new_enrichment_list.append(self.enrichment_list[ie])
+                    i = self.get_index_by_dim((ie,im))
+                    new_lib_list.append( self.get_lib_by_index(i) )
+                    new_mod_dens_list.append( self.mod_dens_list[im] )
+                    new_enrichment_list.append( self.enrichment_list[ie] )
             for ib in ib_list:
-                new_burnup_list.append(self.burnup_list[ib])
+                new_burnup_list.append( self.burnup_list[ib] )
 
             # Update with restricted data.
-            arpinfo.init_uox(
-                self.name, new_lib_list, new_enrichment_list, new_mod_dens_list
-            )
+            arpinfo.init_uox(self.name,new_lib_list,new_enrichment_list,new_mod_dens_list)
             arpinfo.burnup_list = new_burnup_list
 
-        elif self.fuel_type == "MOX":
+        elif self.fuel_type=="MOX":
             raise ValueError(f"MOX restrict not yet implemented.")
         else:
             raise ValueError(f"fuel_type must be MOX or UOX, found: {self.fuel_type}")
         return arpinfo
+
 
     def num_libs(self):
         """Get the total number of libraries."""
@@ -2148,23 +2161,23 @@ class ReactorLibrary:
             for count in range(num_parents[i]):
                 tind += 1
                 pid = nuclide_ids[parent_positions[tind] - 1]
-                transitions.append((did, transition_ids[tind], pid))
+                transitions.append( (did,transition_ids[tind],pid) )
 
         return nuclide_ids, transitions
 
     @staticmethod
     def duplicate_degenerate_axis_value(x0):
         """Create a second axis value for degenerate axes to enable gradient calculations.
-
+        
         When an axis has only one value, numpy.gradient cannot compute gradients.
         This function creates a second value with positive spacing from the original.
-
+        
         Args:
             x0: The original axis value
-
+            
         Returns:
             The second axis value (x1) such that x1 > x0
-
+            
         Examples:
             >>> ReactorLibrary.duplicate_degenerate_axis_value(0.723)
             0.773
@@ -2188,10 +2201,8 @@ class ReactorLibrary:
         self.arc = None
         if self.file.name == "arpdata.txt":
             blocks = ArpInfo.parse_arpdata(file)
-            if name == "":
-                raise ValueError(
-                    f"The `name` argument must be provided with arpdata.txt file formats, e.g. 'w17x17'."
-                )
+            if name=="":
+                raise ValueError(f"The `name` argument must be provided with arpdata.txt file formats, e.g. 'w17x17'.")
             self.arc = file.with_suffix(".arc.h5")
             self.name = name
             self.arpinfo = ArpInfo()
@@ -2209,7 +2220,7 @@ class ReactorLibrary:
             self.ncoeff,
             self.nvec,
         ) = ReactorLibrary.extract_axes(h5)
-
+        
         # Get nuclides and coefficient names.
         self.nuclide_ids, self.transitions = ReactorLibrary._extract_transitions(h5)
 
@@ -2221,7 +2232,7 @@ class ReactorLibrary:
                 d = ReactorLibrary.get_indices(
                     self.axes_names, self.axes_values, data[i]["tags"]["continuous"]
                 )
-                dn = (*d, slice(None), slice(None))  # state,time,transition
+                dn = (*d, slice(None), slice(None)) #state,time,transition
                 self.coeff[dn] = data[i]["matrix"]
 
         # Add another point if the dimension only has one so that we can make it easier
@@ -2241,7 +2252,6 @@ class ReactorLibrary:
     def restrict(self, axis_name, keep_values):
         """Restrict the data set returning a new one."""
         import copy
-
         new = copy.deepcopy(self)
 
         # Get the axis index.
@@ -2251,14 +2261,14 @@ class ReactorLibrary:
 
         # Restrict `self.axes_values` to the specified indices along the `axis_idx`
         axis_values = self.axes_values[axis_idx]
-        keep_indices = ArpInfo._find_closest(axis_values, keep_values)
+        keep_indices = ArpInfo._find_closest(axis_values,keep_values)
 
         new.axes_values[axis_idx] = axis_values[keep_indices]
         new.axes_shape[axis_idx] = len(new.axes_values[axis_idx])
 
         # Restrict `self.coeff` data along the specified axis
         # Always keep last index for coefficients, hence the +1.
-        slicer = [slice(None)] * (len(self.axes_shape) + 1)
+        slicer = [slice(None)] * (len(self.axes_shape)+1)
         slicer[axis_idx] = keep_indices  # Apply restriction along `axis_idx`
         new.coeff = self.coeff[tuple(slicer)]
 
@@ -2269,8 +2279,9 @@ class ReactorLibrary:
         return new
 
     def save(self):
+
         # Write new arpdata.txt.
-        if self.arpinfo != None:
+        if self.arpinfo!=None:
             self.arpinfo.get_arpdata
             with open(self.file, "w") as f:
                 f.write(self.arpinfo.get_arpdata())
@@ -2279,21 +2290,12 @@ class ReactorLibrary:
         with h5py.File(self.arc, "r+") as h5:
             data = h5["incident"]["neutron"]
             old_burnups = data["lib1"]["burnups"]
-            new_burnups = self.axes_values[-1]  # time is always last
-            keep_burnup_indices = ArpInfo._find_closest(old_burnups, new_burnups)
+            new_burnups = self.axes_values[-1] # time is always last
+            keep_burnup_indices = ArpInfo._find_closest(old_burnups,new_burnups)
 
             for i in data.keys():
                 if i.startswith("lib"):
-                    for s in [
-                        "burnups",
-                        "fission_xs",
-                        "flux",
-                        "kappa_capture",
-                        "kappa_fission",
-                        "loss_xs",
-                        "matrix",
-                        "neutron_yields",
-                    ]:
+                    for s in ["burnups","fission_xs","flux","kappa_capture","kappa_fission","loss_xs","matrix","neutron_yields"]:
                         filtered = data[i][s][keep_burnup_indices]
                         del data[i][s]
                         data[i].create_dataset(s, data=filtered)
@@ -2372,7 +2374,7 @@ class RelAbsHistogram:
         x, image="", xlabel=r"$\log \tilde{h}_{ijk}$", ylabel=r"$\log h_{ijk}$"
     ):
         """Plot histograms from relative and absolute histogram data (rhist,ahist)."""
-        from matplotlib.ticker import MaxNLocator, MultipleLocator
+        from matplotlib.ticker import MaxNLocator,MultipleLocator
 
         plt.figure()
         eps = 1e-10
@@ -2382,9 +2384,10 @@ class RelAbsHistogram:
 
         min_lim = int(np.log10(eps))
         max_lim = max(
-            int(np.amax([np.log10(eps + x.rhist), np.log10(eps + x.ahist)])), -min_lim
+            int(np.amax([np.log10(eps + x.rhist), np.log10(eps + x.ahist)])),
+            -min_lim
         )
-        nbins = max_lim - min_lim + 1
+        nbins = max_lim-min_lim+1
         bins = np.linspace(min_lim, max_lim, nbins)
 
         h = plt.hist2d(
@@ -2404,22 +2407,10 @@ class RelAbsHistogram:
         plt.gca().set_yticks(bins)  # Set y-axis ticks to match bin edges
 
         # Limit the number of tick labels to at most 5 without removing gridlines
-        plt.gca().xaxis.set_major_locator(
-            MultipleLocator(1)
-        )  # Ensure integer grid lines
-        plt.gca().xaxis.set_major_formatter(
-            plt.FuncFormatter(
-                lambda val, pos: f"{int(val)}" if int(val) % 5 == 0 else ""
-            )
-        )
-        plt.gca().yaxis.set_major_locator(
-            MultipleLocator(1)
-        )  # Ensure integer grid lines
-        plt.gca().yaxis.set_major_formatter(
-            plt.FuncFormatter(
-                lambda val, pos: f"{int(val)}" if int(val) % 5 == 0 else ""
-            )
-        )
+        plt.gca().xaxis.set_major_locator(MultipleLocator(1))  # Ensure integer grid lines
+        plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda val, pos: f"{int(val)}" if int(val) % 5 == 0 else ""))
+        plt.gca().yaxis.set_major_locator(MultipleLocator(1))  # Ensure integer grid lines
+        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda val, pos: f"{int(val)}" if int(val) % 5 == 0 else ""))
         plt.grid(True)
 
         if image == "":
@@ -2541,7 +2532,7 @@ class NuclideInventory:
         c = time_conv[units.upper()]
         return self.time * c
 
-    def get_nuclides(self, nice_label=False):
+    def get_nuclides(self,nice_label=False):
         """Return the nuclides in this system"""
         nuclides = list(self.nuclide_amount.keys())
         if nice_label:

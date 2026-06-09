@@ -61,7 +61,11 @@ def rst2pdf(
         json.dump(data, f, indent=4)
 
     # Expand template.
-    filled_text = core.TemplateManager.expand_text(template_text, data)
+    filled_text = core.TemplateManager.expand_text(
+        template_text,
+        data,
+        src_path=str(template_path),
+    )
     with open(rst, "w") as f:
         internal.logger.info("Writing report content", rst_file=str(rst))
         f.write(filled_text)
