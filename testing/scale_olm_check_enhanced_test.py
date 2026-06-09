@@ -268,6 +268,170 @@ class TestLowOrderConsistency:
             if os.path.exists(image_path):
                 os.unlink(image_path)
 
+    @patch('scale.olm.core.RelAbsHistogram.plot_hist')
+    @patch.object(check.LowOrderConsistency, 'make_time_quality_plot')
+    def test_time_quality_failure_fails_check(
+        self, mock_time_quality_plot, mock_hist_plot, tmp_path
+    ):
+        """Test every high-order time point must satisfy q1/q2 targets."""
+        loc = check.LowOrderConsistency(
+            metric='atom_fraction',
+            target_q1=0.7,
+            target_q2=0.7,
+            nuclide_compare=[],
+            _dry_run=True,
+        )
+        hi = np.full((1, 4, 10), 0.1)
+        lo = hi.copy()
+        lo[0, 1, :] = 0.0
+        lo[0, 1, 0] = 1.0
+        loc.hi_list = hi
+        loc.lo_list = lo
+        loc.time_list = [0.0, 86400.0, 172800.0, 259200.0]
+        loc.burnup_list = [0.0, 10000.0, 20000.0, 30000.0]
+        loc.work_path = tmp_path
+        loc.check_path = tmp_path
+        loc.run_success = True
+
+        info = loc.info()
+
+        assert info.q1 == pytest.approx(0.75)
+        assert info.q2 == pytest.approx(0.75)
+        assert info.test_pass_q1 is True
+        assert info.test_pass_q2 is True
+        assert info.test_pass_time is False
+        assert info.test_pass is False
+        assert info.time_quality[1]['q1'] == pytest.approx(0.0)
+        assert info.time_quality[1]['q2'] == pytest.approx(0.0)
+        assert info.time_quality[1]['burnup_gwd_per_mtihm'] == pytest.approx(10.0)
+        assert info.worst_time_quality['index'] == 1
+        assert info.worst_time_quality['time_days'] == pytest.approx(1.0)
+        assert info.worst_time_quality['burnup'] == pytest.approx(10000.0)
+        assert info.worst_time_quality['limiting_score'] == 'q1'
+        assert info.worst_time_quality['limiting_score_shortfall'] == pytest.approx(
+            0.7
+        )
+        mock_time_quality_plot.assert_called_once()
+        mock_hist_plot.assert_called_once()
+
+    @patch.object(check.LowOrderConsistency, 'make_time_quality_plot')
+    def test_time_quality_plot_includes_convergence_history(
+        self, mock_time_quality_plot, tmp_path
+    ):
+        """Test convergence diagnostics are added as shaded q1/q2 time curves."""
+        loc = check.LowOrderConsistency(
+            target_q1=0.7,
+            target_q2=0.95,
+            _dry_run=True,
+        )
+        final_time_quality = [
+            {'time': 0.0, 'time_days': 0.0, 'q1': 1.0, 'q2': 1.0},
+            {'time': 86400.0, 'time_days': 1.0, 'q1': 0.9, 'q2': 0.97},
+        ]
+        background_time_quality = [
+            {'time': 0.0, 'time_days': 0.0, 'q1': 1.0, 'q2': 1.0},
+            {'time': 86400.0, 'time_days': 1.0, 'q1': 0.8, 'q2': 0.96},
+        ]
+        info = check.CheckInfo()
+        info.time_quality = final_time_quality
+        info.time_quality_image = str(tmp_path / 'q1-q2-by-time.png')
+        info.nlib = 2
+        info.nburn = 1
+        info.nlib_history = [
+            {'nlib': 1, 'nburn': 1, 'time_quality': background_time_quality},
+            {'nlib': 2, 'nburn': 1, 'time_quality': final_time_quality},
+        ]
+        info.nburn_history = []
+
+        loc._write_time_quality_plot(info)
+
+        mock_time_quality_plot.assert_called_once()
+        assert mock_time_quality_plot.call_args.kwargs['background'] == [
+            {'label': 'nlib_history', 'time_quality': background_time_quality}
+        ]
+
+    @patch.object(check.LowOrderConsistency, 'make_convergence_time_quality_plot')
+    def test_convergence_time_quality_uses_worst_scores_over_time(
+        self, mock_convergence_plot, tmp_path
+    ):
+        """Test convergence rows summarize minimum q1/q2 across time."""
+        loc = check.LowOrderConsistency(
+            target_q1=0.7,
+            target_q2=0.95,
+            convergence={},
+            _dry_run=True,
+        )
+        loc.work_path = tmp_path
+        loc.base_check_path = tmp_path / 'check' / 'loc'
+        loc.base_check_path.mkdir(parents=True)
+        info = check.CheckInfo()
+        info.nlib_history = [
+            {
+                'nlib': 1,
+                'nburn': 1,
+                'time_quality': [
+                    {
+                        'time': 0.0,
+                        'time_days': 0.0,
+                        'burnup_gwd_per_mtu': 0.0,
+                        'q1': 1.0,
+                        'q2': 1.0,
+                        'target_q1': 0.7,
+                        'target_q2': 0.95,
+                        'limiting_score': 'q1',
+                        'limiting_score_value': 1.0,
+                        'limiting_score_target': 0.7,
+                        'limiting_score_shortfall': 0.0,
+                    },
+                    {
+                        'time': 86400.0,
+                        'time_days': 1.0,
+                        'burnup_gwd_per_mtu': 10.0,
+                        'q1': 0.69,
+                        'q2': 0.98,
+                        'target_q1': 0.7,
+                        'target_q2': 0.95,
+                        'limiting_score': 'q1',
+                        'limiting_score_value': 0.69,
+                        'limiting_score_target': 0.7,
+                        'limiting_score_shortfall': 0.01,
+                    },
+                    {
+                        'time': 172800.0,
+                        'time_days': 2.0,
+                        'burnup_gwd_per_mtu': 20.0,
+                        'q1': 0.8,
+                        'q2': 0.94,
+                        'target_q1': 0.7,
+                        'target_q2': 0.95,
+                        'limiting_score': 'q2',
+                        'limiting_score_value': 0.94,
+                        'limiting_score_target': 0.95,
+                        'limiting_score_shortfall': 0.01,
+                    },
+                ],
+            },
+        ]
+        info.nburn_history = []
+
+        loc._write_convergence_time_quality(info)
+
+        row = info.convergence_time_quality[0]
+        assert row['nlib'] == 1
+        assert row['nburn'] == 1
+        assert row['q1'] == pytest.approx(0.69)
+        assert row['q2'] == pytest.approx(0.94)
+        assert row['pass'] == 'fail q1/q2'
+        assert row['failed_scores'] == ['q1', 'q2']
+        assert row['time_days'] == pytest.approx(1.0)
+        assert row['burnup_gwd_per_mtu'] == pytest.approx(10.0)
+        mock_convergence_plot.assert_called_once_with(
+            loc.base_check_path / 'q1-q2-by-convergence.png',
+            info.convergence_time_quality,
+            loc.target_q1,
+            loc.target_q2,
+        )
+
     def test_amounts_to_grams_per_initial_hm(self):
         """Test conversion from inventory amounts to g/gIHM."""
         amounts = np.array([
