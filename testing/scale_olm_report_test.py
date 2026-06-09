@@ -431,10 +431,11 @@ class TestReportIntegration:
 
         assert "time_quality_image" not in rendered
         assert "/tmp/example/work/perms/hash/model_abcdef.out" not in rendered
-        assert "model_abcdef.out" in rendered
+        assert ":code:`model_abcdef.out`" in rendered
         assert ":code:`model_abcdef.inp`" in rendered
         assert "0.681243" not in rendered
         assert "0.681" in rendered
         assert "0.966" in rendered
-        assert "first fail" in rendered
-        assert "Q-score by high-order time::" in rendered
+        assert "first q1" in rendered
+        assert ".. class:: right" in rendered
+        assert ".. list-table:: Q-score by high-order time" in rendered

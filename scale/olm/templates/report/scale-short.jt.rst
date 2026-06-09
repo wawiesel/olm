@@ -3,12 +3,6 @@
 {% macro percent(value) -%}{{"{:.3g}".format(value)}}{%- endmacro %}
 {% macro sci(value) -%}{{"{:.3e}".format(value)}}{%- endmacro %}
 {% macro count(value) -%}{{"{:.0f}".format(value)}}{%- endmacro %}
-{% macro summary_row(name, value) -%}{{"{:<20} {:>21}".format(name, value)}}{%- endmacro %}
-{% macro location_row(name, days, burnup, q1, q2, limit) -%}{{"{:<14} {:>8.4g} {:>11} {:>7.3f} {:>7.3f} {:>5}".format(name, days, burnup, q1, q2, limit)}}{%- endmacro %}
-{% macro time_quality_row(days, burnup, q1, q2, passed) -%}{{"{:>8.4g} {:>11} {:>7.3f} {:>7.3f} {:>6}".format(days, burnup, q1, q2, pass_text(passed))}}{%- endmacro %}
-{% macro convergence_row(nlib, nburn, q1, q2, passed, days, burnup) -%}{{"{:>5.0f} {:>6.0f} {:>7.3f} {:>7.3f} {:>10} {:>8.4g} {:>10}".format(nlib, nburn, q1, q2, passed, days, burnup)}}{%- endmacro %}
-{% macro static_row(name, value) -%}{{"{:<12} {:>17}".format(name, value)}}{%- endmacro %}
-{% macro run_row(output, success, runtime) -%}{{"{:<18} {:>7} {:>12.4g}".format(output, success, runtime)}}{%- endmacro %}
 {% macro pass_text(value) -%}{{"pass" if value else "fail"}}{%- endmacro %}
 {{"" if check.test_pass else "FAILING "}}{{model.name}}
 ------------------------------------------------------------------------------------------
@@ -51,25 +45,56 @@
 Consistency Check
 ~~~~~~~~~~~~~~~~~
 
-Consistency check summary::
+.. list-table:: Consistency check summary
+    :widths: 58 42
+    :header-rows: 1
 
-    {{summary_row("name", "value")}}
-    {{summary_row("overall", pass_text(check.sequence[0].test_pass))}}
-    {{summary_row("q1", "{:>6.3f} / {:>6.3f}".format(check.sequence[0].q1, check.sequence[0].target_q1))}}
-    {{summary_row("q2", "{:>6.3f} / {:>6.3f}".format(check.sequence[0].q2, check.sequence[0].target_q2))}}
-{% if check.sequence[0].test_pass_time is defined %}
-    {{summary_row("time q-scores", pass_text(check.sequence[0].test_pass_time))}}
-{% endif %}
-    {{summary_row("metric", check.sequence[0].metric)}}
-{% if check.sequence[0].units is defined %}
-    {{summary_row("units", check.sequence[0].units)}}
-{% endif %}
-    {{summary_row("eps0", "{:>10.3e}".format(check.sequence[0].eps0))}}
-    {{summary_row("epsa", "{:>10.3e}".format(check.sequence[0].epsa))}}
-    {{summary_row("epsr", "{:>10.3e}".format(check.sequence[0].epsr))}}
-    {{summary_row("values", "{:>8.0f}".format(check.sequence[0].m))}}
-    {{summary_row("relative failures", "{:>8.0f} ({:>5.3g}%)".format(check.sequence[0].wr, 100.0 * check.sequence[0].fr))}}
-    {{summary_row("absolute failures", "{:>8.0f} ({:>5.3g}%)".format(check.sequence[0].wa, 100.0 * check.sequence[0].fa))}}
+    *   - name
+        - value
+    *   - overall
+        - {{pass_text(check.sequence[0].test_pass)}}
+    *   - q1
+        - .. class:: right
+
+          {{qscore(check.sequence[0].q1)}} / {{qscore(check.sequence[0].target_q1)}}
+    *   - q2
+        - .. class:: right
+
+          {{qscore(check.sequence[0].q2)}} / {{qscore(check.sequence[0].target_q2)}}
+    {% if check.sequence[0].test_pass_time is defined %}
+    *   - time q-scores
+        - {{pass_text(check.sequence[0].test_pass_time)}}
+    {% endif %}
+    *   - metric
+        - {{check.sequence[0].metric}}
+    {% if check.sequence[0].units is defined %}
+    *   - units
+        - {{check.sequence[0].units}}
+    {% endif %}
+    *   - eps0
+        - .. class:: right
+
+          {{sci(check.sequence[0].eps0)}}
+    *   - epsa
+        - .. class:: right
+
+          {{sci(check.sequence[0].epsa)}}
+    *   - epsr
+        - .. class:: right
+
+          {{sci(check.sequence[0].epsr)}}
+    *   - values
+        - .. class:: right
+
+          {{count(check.sequence[0].m)}}
+    *   - relative failures
+        - .. class:: right
+
+          {{count(check.sequence[0].wr)}} ({{percent(100.0 * check.sequence[0].fr)}}%)
+    *   - absolute failures
+        - .. class:: right
+
+          {{count(check.sequence[0].wa)}} ({{percent(100.0 * check.sequence[0].fa)}}%)
 
 {% if check.sequence[0].hist_image is defined %}
 Histogram of relative versus absolute errors for all nuclides at all states and times.
@@ -100,21 +125,69 @@ The q1 and q2 scores are recalculated independently at each high-order time poin
 {% endfor %}
 {% endif %}
 
-Time-quality locations::
+.. list-table:: Time-quality locations
+    :widths: 24 18 24 17 17
+    :header-rows: 1
 
-    {{"{:<14} {:>8} {:>11} {:>7} {:>7} {:>5}".format("statistic", "days", "GWd/MTIHM", "q1", "q2", "limit")}}
-{% if first_failed_time.row %}
-    {{location_row("first fail", first_failed_time.row.time_days, compact(first_failed_time.row.burnup_gwd_per_mtihm) if first_failed_time.row.burnup_gwd_per_mtihm is defined else "", first_failed_time.row.q1, first_failed_time.row.q2, first_failed_time.row.limiting_score)}}
+    *   - statistic
+        - days
+        - GWd/MTIHM
+        - q1
+        - q2
+    {% if first_failed_time.row %}
+    *   - first {{first_failed_time.row.limiting_score}}
+        - .. class:: right
+
+          {{compact(first_failed_time.row.time_days)}}
+        - .. class:: right
+
+          {% if first_failed_time.row.burnup_gwd_per_mtihm is defined %}{{compact(first_failed_time.row.burnup_gwd_per_mtihm)}}{% endif %}
+        - .. class:: right
+
+          {{qscore(first_failed_time.row.q1)}}
+        - .. class:: right
+
+          {{qscore(first_failed_time.row.q2)}}
+    {% endif %}
+    *   - worst {{worst_time.limiting_score}}
+        - .. class:: right
+
+          {{compact(worst_time.time_days)}}
+        - .. class:: right
+
+          {% if worst_time.burnup_gwd_per_mtihm is defined %}{{compact(worst_time.burnup_gwd_per_mtihm)}}{% endif %}
+        - .. class:: right
+
+          {{qscore(worst_time.q1)}}
+        - .. class:: right
+
+          {{qscore(worst_time.q2)}}
 {% endif %}
-    {{location_row("worst", worst_time.time_days, compact(worst_time.burnup_gwd_per_mtihm) if worst_time.burnup_gwd_per_mtihm is defined else "", worst_time.q1, worst_time.q2, worst_time.limiting_score)}}
-{% endif %}
 
-Q-score by high-order time::
+.. list-table:: Q-score by high-order time
+    :widths: 16 23 14 14 13
+    :header-rows: 1
 
-    {{"{:>8} {:>11} {:>7} {:>7} {:>6}".format("days", "GWd/MTIHM", "q1", "q2", "pass")}}
-{% for row in check.sequence[0].time_quality %}
-    {{time_quality_row(row.time_days, compact(row.burnup_gwd_per_mtihm) if row.burnup_gwd_per_mtihm is defined else "", row.q1, row.q2, row.test_pass)}}
-{% endfor %}
+    *   - days
+        - GWd/MTIHM
+        - q1
+        - q2
+        - pass
+    {% for row in check.sequence[0].time_quality %}
+    *   - .. class:: right
+
+          {{compact(row.time_days)}}
+        - .. class:: right
+
+          {% if row.burnup_gwd_per_mtihm is defined %}{{compact(row.burnup_gwd_per_mtihm)}}{% endif %}
+        - .. class:: right
+
+          {{qscore(row.q1)}}
+        - .. class:: right
+
+          {{qscore(row.q2)}}
+        - {{pass_text(row.test_pass)}}
+    {% endfor %}
 {% endif %}
 
 {% if check.sequence[0].convergence_time_quality is defined %}
@@ -127,12 +200,34 @@ time points.
 ..  image:: {{check.sequence[0].convergence_time_quality_image}}
     :width: 90%
 
-Worst q-score by convergence run::
+.. list-table:: Worst q-score by convergence run
+    :widths: 11 13 13 13 16 34
+    :header-rows: 1
 
-    {{"{:>5} {:>6} {:>7} {:>7} {:>10} {:>8} {:>10}".format("nlib", "nburn", "q1", "q2", "pass", "days", "GWd/MTU")}}
-{% for row in check.sequence[0].convergence_time_quality %}
-    {{convergence_row(row.nlib, row.nburn, row.q1, row.q2, row.pass, row.time_days, compact(row.burnup_gwd_per_mtu) if row.burnup_gwd_per_mtu is defined else "")}}
-{% endfor %}
+    *   - nlib
+        - nburn
+        - q1
+        - q2
+        - pass
+        - time/burnup
+    {% for row in check.sequence[0].convergence_time_quality %}
+    *   - .. class:: right
+
+          {{row.nlib}}
+        - .. class:: right
+
+          {{row.nburn}}
+        - .. class:: right
+
+          {{qscore(row.q1)}}
+        - .. class:: right
+
+          {{qscore(row.q2)}}
+        - {{row.pass}}
+        - .. class:: right
+
+          {{compact(row.time_days)}} d{% if row.burnup_gwd_per_mtu is defined %}, {{compact(row.burnup_gwd_per_mtu)}} GWd/MTU{% endif %}
+    {% endfor %}
 {% endif %}
 
 
@@ -164,19 +259,33 @@ This model is based on the following information.
 This model introduces the following static parameters: {{generate.static.keys()|list}},
 with values shown in the table below.
 
-Static model parameters::
+.. list-table:: Static model parameters
+    :widths: 50 50
+    :header-rows: 1
 
-    {{static_row("name", "value")}}
-{% for k,v in generate.static.items() %}
-    {{static_row(k, compact(v) if v is number else v)}}
-{% endfor %}
+    *   - name
+        - value
+    {% for k,v in generate.static.items() %}
+    *   - {{k}}
+        - {% if v is number %}.. class:: right
 
-Run summary data::
+          {{compact(v)}}{% else %}{{v-}}{% endif %}
+    {% endfor %}
 
-    {{"{:<18} {:>7} {:>12}".format("output", "success", "runtime")}}
-{% for row in run.runs %}
-    {{run_row(row.output_file.split('/')[-1], pass_text(row.success), row.runtime_hrs if row.runtime_hrs is number else row.runtime_hrs|float)}}
-{% endfor %}
+.. list-table:: Run summary data
+    :widths: 58 14 28
+    :header-rows: 1
+
+    *   - output
+        - pass
+        - runtime (hrs)
+    {%- for row in run.runs %}
+    *   - :code:`{{row.output_file.split('/')[-1]}}`
+        - {{pass_text(row.success)}}
+        - .. class:: right
+
+          {% if row.runtime_hrs is number %}{{compact(row.runtime_hrs)}}{% else %}{{row.runtime_hrs}}{% endif %}
+    {%- endfor %}
 
 
 .. raw:: pdf
