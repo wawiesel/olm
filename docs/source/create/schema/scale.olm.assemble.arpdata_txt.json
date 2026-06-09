@@ -12,6 +12,11 @@
             "title": "Keep Every",
             "type": "integer"
         },
+        "material_lumping": {
+            "default": null,
+            "title": "Material Lumping",
+            "type": "string"
+        },
         "dry_run": {
             "default": null,
             "title": "Dry Run",
@@ -45,7 +50,8 @@
         "            \"dim_map\": {",
         "                \"mod_dens\": \"mod_dens\",",
         "                \"enrichment\": \"enrichment\"",
-        "            }",
+        "            },",
+        "            \"material_lumping\": \"BASIS\"",
         "        }",
         "",
         ".. only::latex",

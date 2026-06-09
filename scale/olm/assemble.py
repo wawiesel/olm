@@ -27,6 +27,7 @@ def _test_args_arpdata_txt(with_state: bool = False):
         "dry_run": False,
         "fuel_type": "UOX",
         "dim_map": {"mod_dens": "mod_dens", "enrichment": "enrichment"},
+        "material_lumping": "BASIS",
     }
 
 
@@ -34,6 +35,7 @@ def arpdata_txt(
     fuel_type: str,
     dim_map: dict,
     keep_every: int,
+    material_lumping: str = "BASIS",
     _model: dict = {},
     _env: dict = {},
     dry_run: bool = False,
@@ -50,6 +52,10 @@ def arpdata_txt(
                  if fuel_type=='UOX', enrichment, mod_dens must be mapped to state variables
                  if fuel_type=='MOX', pu239_frac, pu_frac, mod_dens must be mapped to state variables
 
+        material_lumping: TRITON material used to assemble libraries and history.
+                         Accepts BASIS, SYSTEM, or MIX<N>. BASIS and SYSTEM use
+                         TRITON's system library and case -2. MIX<N> uses
+                         .mixNNNN.f33 and F71 case N.
 
     """
 
@@ -58,16 +64,19 @@ def arpdata_txt(
 
     # Get working directory.
     work_path = Path(_env["work_dir"])
+    material_lumping = _normalize_triton_material_lumping(material_lumping)
 
     # Get library info data structure.
-    arpinfo = _get_arpinfo(_env["obiwan"], work_path, _model["name"], fuel_type, dim_map)
+    arpinfo = _get_arpinfo(
+        _env["obiwan"], work_path, _model["name"], fuel_type, dim_map, material_lumping
+    )
 
     # Generate thinned burnup list.
     thinned_burnup_list = _generate_thinned_burnup_list(keep_every, arpinfo.burnup_list)
 
     # Process libraries into their final places.
     archive_file, points = _process_libraries(
-        _env["obiwan"], work_path, arpinfo, thinned_burnup_list
+        _env["obiwan"], work_path, arpinfo, thinned_burnup_list, material_lumping
     )
 
     return {
@@ -76,6 +85,7 @@ def arpdata_txt(
         "work_dir": str(work_path),
         "date": datetime.datetime.utcnow().isoformat(" ", "minutes"),
         "space": arpinfo.get_space(),
+        "material_lumping": material_lumping,
     }
 
 
@@ -206,6 +216,34 @@ def _get_files(work_dir, suffix, perms):
     return file_list
 
 
+def _normalize_triton_material_lumping(material_lumping):
+    label = str(material_lumping).strip().upper()
+    if label in ("BASIS", "SYSTEM"):
+        return label
+    if label.startswith("MIX"):
+        mixid = label[3:]
+        if mixid.isdigit() and int(mixid) > 0:
+            return f"MIX{int(mixid)}"
+    raise ValueError(
+        "TRITON material_lumping must be BASIS, SYSTEM, or MIX<N>; "
+        f"got {material_lumping!r}"
+    )
+
+
+def _triton_material_lumping_caseid(material_lumping):
+    material_lumping = _normalize_triton_material_lumping(material_lumping)
+    if material_lumping in ("BASIS", "SYSTEM"):
+        return -2
+    return int(material_lumping[3:])
+
+
+def _triton_material_lumping_suffix(material_lumping):
+    material_lumping = _normalize_triton_material_lumping(material_lumping)
+    if material_lumping in ("BASIS", "SYSTEM"):
+        return ".system.f33"
+    return f".mix{int(material_lumping[3:]):04d}.f33"
+
+
 def _burnup_lists_match(reference, candidate, burnup_rtol):
     reference = np.asarray(reference)
     candidate = np.asarray(candidate)
@@ -214,13 +252,13 @@ def _burnup_lists_match(reference, candidate, burnup_rtol):
     return np.allclose(reference, candidate, rtol=burnup_rtol, atol=1.0e-6)
 
 
-def _get_burnup_list(obiwan, file_list, burnup_rtol=2.0e-2):
+def _get_burnup_list(obiwan, file_list, burnup_rtol=2.0e-2, caseid=-2):
     """Extract burnups from F71 info and verify that all permutations match."""
     burnup_list = list()
     previous_output_file = ""
     for i in range(len(file_list)):
         output_file = file_list[i]["output"]
-        bu = core.Obiwan.get_burnups_from_f71(obiwan, file_list[i]["f71"], -2)
+        bu = core.Obiwan.get_burnups_from_f71(obiwan, file_list[i]["f71"], caseid)
 
         if len(burnup_list) == 0:
             burnup_list = bu
@@ -293,8 +331,9 @@ def _get_arpinfo_mox(name, perms, file_list, dim_map):
     return arpinfo
 
 
-def _get_arpinfo(obiwan, work_dir, name, fuel_type, dim_map):
+def _get_arpinfo(obiwan, work_dir, name, fuel_type, dim_map, material_lumping="BASIS"):
     """Populate the ArpInfo data."""
+    material_lumping = _normalize_triton_material_lumping(material_lumping)
 
     # Get generate data which has permutations list with file names.
     generate_json = work_dir / "generate.olm.json"
@@ -303,7 +342,7 @@ def _get_arpinfo(obiwan, work_dir, name, fuel_type, dim_map):
     perms = generate["perms"]
 
     # Get library,input,output in one place.
-    suffix = ".system.f33"
+    suffix = _triton_material_lumping_suffix(material_lumping)
     file_list = _get_files(work_dir, suffix, perms)
 
     # Initialize info based on fuel type.
@@ -317,10 +356,13 @@ def _get_arpinfo(obiwan, work_dir, name, fuel_type, dim_map):
         )
 
     # Get the burnups.
-    arpinfo.burnup_list = _get_burnup_list(obiwan, file_list)
+    caseid = _triton_material_lumping_caseid(material_lumping)
+    arpinfo.burnup_list = _get_burnup_list(obiwan, file_list, caseid=caseid)
 
     # Set new canonical file names.
     arpinfo.set_canonical_filenames(".h5")
+    arpinfo.material_lumping = material_lumping
+    arpinfo.caseid = caseid
 
     return arpinfo
 
@@ -364,8 +406,11 @@ def _get_comp_system(ii_data):
     return comp
 
 
-def _process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
+def _process_libraries(
+    obiwan, work_dir, arpinfo, thinned_burnup_list, material_lumping="BASIS"
+):
     """Process libraries with OBIWAN, including copying, thinning, setting tags, etc."""
+    material_lumping = _normalize_triton_material_lumping(material_lumping)
 
     # Create the arplibs directory and clear data files inside.
     d = work_dir / "arplibs"
@@ -394,8 +439,7 @@ def _process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
         generate = json.load(f)
     perms = generate["perms"]
 
-    # The case for the "system" in the f71.
-    caseid = -2
+    caseid = _triton_material_lumping_caseid(material_lumping)
 
     # Use obiwan to perform most of the processes.
     points = list()
@@ -476,6 +520,7 @@ def _process_libraries(obiwan, work_dir, arpinfo, thinned_burnup_list):
                 "comp": {
                     "system": comp_system,
                 },
+                "material_lumping": material_lumping,
                 "history": core.Obiwan.get_history_from_f71(obiwan, f71, caseid),
                 "_": {"perm": perm},
                 "_arpinfo": {

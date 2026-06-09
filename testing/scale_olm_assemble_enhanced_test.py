@@ -135,6 +135,24 @@ class TestFileHandling:
 
 class TestBurnupListExtraction:
     """Test burnup list extraction from files."""
+
+    def test_triton_material_lumping_labels(self):
+        """Test TRITON assemble labels map to library suffixes and F71 cases."""
+        assert assemble._normalize_triton_material_lumping("basis") == "BASIS"
+        assert assemble._normalize_triton_material_lumping("system") == "SYSTEM"
+        assert assemble._normalize_triton_material_lumping("mix0010") == "MIX10"
+        assert assemble._triton_material_lumping_caseid("BASIS") == -2
+        assert assemble._triton_material_lumping_caseid("SYSTEM") == -2
+        assert assemble._triton_material_lumping_caseid("MIX10") == 10
+        assert assemble._triton_material_lumping_suffix("BASIS") == ".system.f33"
+        assert assemble._triton_material_lumping_suffix("SYSTEM") == ".system.f33"
+        assert assemble._triton_material_lumping_suffix("MIX10") == ".mix0010.f33"
+
+        with pytest.raises(ValueError, match="BASIS, SYSTEM, or MIX<N>"):
+            assemble._normalize_triton_material_lumping("FUEL")
+
+        with pytest.raises(ValueError, match="BASIS, SYSTEM, or MIX<N>"):
+            assemble._normalize_triton_material_lumping("MIX0")
     
     @patch('scale.olm.core.Obiwan.get_burnups_from_f71')
     def test_get_burnup_list_basic(self, mock_get_burnups):
@@ -153,6 +171,18 @@ class TestBurnupListExtraction:
         assert mock_get_burnups.call_count == 2
         mock_get_burnups.assert_any_call("obiwan", Path('perm_000.f71'), -2)
         mock_get_burnups.assert_any_call("obiwan", Path('perm_001.f71'), -2)
+
+    @patch('scale.olm.core.Obiwan.get_burnups_from_f71')
+    def test_get_burnup_list_uses_requested_case(self, mock_get_burnups):
+        """Test burnup extraction uses the selected TRITON case id."""
+        mock_get_burnups.return_value = np.array([0.0, 10.0])
+        file_list = [
+            {'output': Path('perm_000.out'), 'f71': Path('perm_000.f71')},
+        ]
+
+        assemble._get_burnup_list("obiwan", file_list, caseid=10)
+
+        mock_get_burnups.assert_called_once_with("obiwan", Path('perm_000.f71'), 10)
     
     @patch('scale.olm.core.Obiwan.get_burnups_from_f71')
     def test_get_burnup_list_inconsistent_burnups(self, mock_get_burnups):
@@ -295,12 +325,56 @@ class TestArpInfoMaster:
         # Verify the full workflow
         mock_get_files.assert_called_once_with(work_dir, ".system.f33", mock_generate_data["perms"])
         mock_get_arpinfo_uox.assert_called_once_with(name, mock_generate_data["perms"], mock_file_list, dim_map)
-        mock_get_burnup_list.assert_called_once_with("obiwan", mock_file_list)
+        mock_get_burnup_list.assert_called_once_with(
+            "obiwan", mock_file_list, caseid=-2
+        )
         
         # Verify result
         assert result == mock_arpinfo
         assert result.burnup_list is mock_burnup_list
         mock_arpinfo.set_canonical_filenames.assert_called_once_with(".h5")
+        assert result.material_lumping == "BASIS"
+        assert result.caseid == -2
+
+    @patch('scale.olm.assemble._get_burnup_list')
+    @patch('scale.olm.assemble._get_arpinfo_uox')
+    @patch('scale.olm.assemble._get_files')
+    def test_get_arpinfo_uses_mix_material_lumping(
+        self, mock_get_files, mock_get_arpinfo_uox, mock_get_burnup_list
+    ):
+        """Test MIX<N> assemble selection uses matching library suffix and F71 case."""
+        work_dir = Path('/work')
+        mock_generate_data = {"perms": [{"input_file": "perm_000.inp", "state": {}}]}
+        mock_file_list = [
+            {
+                "lib": Path("/work/perm_000.mix0010.f33"),
+                "output": Path("/work/perm_000.out"),
+                "f71": Path("/work/perm_000.f71"),
+            },
+        ]
+        mock_get_files.return_value = mock_file_list
+        mock_arpinfo = Mock()
+        mock_get_arpinfo_uox.return_value = mock_arpinfo
+        mock_get_burnup_list.return_value = np.array([0.0, 10.0])
+
+        with patch('builtins.open', mock_open(read_data=json.dumps(mock_generate_data))):
+            result = assemble._get_arpinfo(
+                "obiwan",
+                work_dir,
+                "test_reactor",
+                "UOX",
+                {"enrichment": "enrichment", "mod_dens": "mod_dens"},
+                "MIX10",
+            )
+
+        mock_get_files.assert_called_once_with(
+            work_dir, ".mix0010.f33", mock_generate_data["perms"]
+        )
+        mock_get_burnup_list.assert_called_once_with(
+            "obiwan", mock_file_list, caseid=10
+        )
+        assert result.material_lumping == "MIX10"
+        assert result.caseid == 10
     
     def test_get_arpinfo_invalid_fuel_type(self):
         """Test error handling for invalid fuel type."""

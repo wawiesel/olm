@@ -78,7 +78,8 @@
             "pu239_frac": "pu239_frac",
             "mod_dens": "coolant_density"
         },
-        "keep_every": 1
+        "keep_every": 1,
+        "material_lumping": "BASIS"
     },
     "check": {
         "_type": "scale.olm.check:sequencer",
