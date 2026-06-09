@@ -4,6 +4,7 @@
 {% macro sci(value) -%}{{"{:.3e}".format(value)}}{%- endmacro %}
 {% macro count(value) -%}{{"{:.0f}".format(value)}}{%- endmacro %}
 {% macro pass_text(value) -%}{{"pass" if value else "fail"}}{%- endmacro %}
+{% macro metric_text(value) -%}{{"g/gIHM" if value == "grams_per_initial_hm" else value}}{%- endmacro %}
 {{"" if check.test_pass else "FAILING "}}{{model.name}}
 ------------------------------------------------------------------------------------------
 
@@ -66,11 +67,7 @@ Consistency Check
         - {{pass_text(check.sequence[0].test_pass_time)}}
     {% endif %}
     *   - metric
-        - {{check.sequence[0].metric}}
-    {% if check.sequence[0].units is defined %}
-    *   - units
-        - {{check.sequence[0].units}}
-    {% endif %}
+        - {{metric_text(check.sequence[0].metric)}}
     *   - eps0
         - .. class:: right
 
@@ -108,6 +105,7 @@ Q Scores By Time
 ^^^^^^^^^^^^^^^^
 
 The q1 and q2 scores are recalculated independently at each high-order time point.
+Burnup values are GWd/MTIHM.
 
 ..  image:: {{check.sequence[0].time_quality_image}}
     :width: 90%
@@ -131,7 +129,7 @@ The q1 and q2 scores are recalculated independently at each high-order time poin
 
     *   - statistic
         - days
-        - GWd/MTIHM
+        - burnup
         - q1
         - q2
     {% if first_failed_time.row %}
@@ -169,7 +167,7 @@ The q1 and q2 scores are recalculated independently at each high-order time poin
     :header-rows: 1
 
     *   - days
-        - GWd/MTIHM
+        - burnup
         - q1
         - q2
         - pass
@@ -189,47 +187,6 @@ The q1 and q2 scores are recalculated independently at each high-order time poin
         - {{pass_text(row.test_pass)}}
     {% endfor %}
 {% endif %}
-
-{% if check.sequence[0].convergence_time_quality is defined %}
-Convergence Q Scores
-^^^^^^^^^^^^^^^^^^^^
-
-For each convergence run, q1 and q2 are the minimum values over all high-order
-time points.
-
-..  image:: {{check.sequence[0].convergence_time_quality_image}}
-    :width: 90%
-
-.. list-table:: Worst q-score by convergence run
-    :widths: 11 13 13 13 16 34
-    :header-rows: 1
-
-    *   - nlib
-        - nburn
-        - q1
-        - q2
-        - pass
-        - time/burnup
-    {% for row in check.sequence[0].convergence_time_quality %}
-    *   - .. class:: right
-
-          {{row.nlib}}
-        - .. class:: right
-
-          {{row.nburn}}
-        - .. class:: right
-
-          {{qscore(row.q1)}}
-        - .. class:: right
-
-          {{qscore(row.q2)}}
-        - {{row.pass}}
-        - .. class:: right
-
-          {{compact(row.time_days)}} d{% if row.burnup_gwd_per_mtu is defined %}, {{compact(row.burnup_gwd_per_mtu)}} GWd/MTU{% endif %}
-    {% endfor %}
-{% endif %}
-
 
 {% if check.sequence[0].nuclide_compare is defined %}
 Nuclide checks

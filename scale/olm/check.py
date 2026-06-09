@@ -609,7 +609,6 @@ class LowOrderConsistency:
         q2,
         target_q1,
         target_q2,
-        background=None,
     ):
         """Make the q1/q2-by-time plot."""
         import matplotlib.pyplot as plt
@@ -617,23 +616,6 @@ class LowOrderConsistency:
         days = np.asarray(time, dtype=float) / 86400.0
         plt.rcParams.update({"font.size": 18})
         plt.figure()
-        for run in background or []:
-            time_quality = run["time_quality"]
-            background_days = [float(row["time_days"]) for row in time_quality]
-            plt.plot(
-                background_days,
-                [float(row["q1"]) for row in time_quality],
-                color="C0",
-                alpha=0.18,
-                linewidth=1.0,
-            )
-            plt.plot(
-                background_days,
-                [float(row["q2"]) for row in time_quality],
-                color="C1",
-                alpha=0.18,
-                linewidth=1.0,
-            )
         plt.plot(days, q1, marker="o", label="q1")
         plt.plot(days, q2, marker="s", label="q2")
         plt.axhline(target_q1, color="C0", linestyle="--", label="target q1")
@@ -727,51 +709,24 @@ class LowOrderConsistency:
                 rows[-1]["burnup_units"] = "MWd/MTIHM"
                 rows[-1]["burnup_gwd_per_mtihm"] = burnup / 1000.0
                 rows[-1]["burnup_gwd_per_mtu"] = burnup / 1000.0
-            self._add_time_quality_shortfall(rows[-1])
+            q1_shortfall = max(0.0, rows[-1]["target_q1"] - rows[-1]["q1"])
+            q2_shortfall = max(0.0, rows[-1]["target_q2"] - rows[-1]["q2"])
+            if q1_shortfall or q2_shortfall:
+                rows[-1]["limiting_score"] = (
+                    "q1" if q1_shortfall >= q2_shortfall else "q2"
+                )
+            else:
+                q1_margin = rows[-1]["q1"] - rows[-1]["target_q1"]
+                q2_margin = rows[-1]["q2"] - rows[-1]["target_q2"]
+                rows[-1]["limiting_score"] = "q1" if q1_margin <= q2_margin else "q2"
+            rows[-1]["limiting_score_shortfall"] = max(q1_shortfall, q2_shortfall)
         return rows
-
-    @staticmethod
-    def _time_quality_pass(time_quality):
-        return all(row["test_pass"] for row in time_quality)
 
     def _burnup_for_time_index(self, index):
         burnup_list = getattr(self, "burnup_list", None)
         if burnup_list is None or len(burnup_list) != len(self.time_list):
             return None
         return float(burnup_list[index])
-
-    @staticmethod
-    def _add_time_quality_shortfall(row):
-        q1_shortfall = max(0.0, float(row["target_q1"]) - float(row["q1"]))
-        q2_shortfall = max(0.0, float(row["target_q2"]) - float(row["q2"]))
-        q1_margin = float(row["q1"]) - float(row["target_q1"])
-        q2_margin = float(row["q2"]) - float(row["target_q2"])
-
-        if q1_shortfall >= q2_shortfall and q1_shortfall > 0.0:
-            limiting_score = "q1"
-            value = float(row["q1"])
-            target = float(row["target_q1"])
-            shortfall = q1_shortfall
-        elif q2_shortfall > 0.0:
-            limiting_score = "q2"
-            value = float(row["q2"])
-            target = float(row["target_q2"])
-            shortfall = q2_shortfall
-        elif q1_margin <= q2_margin:
-            limiting_score = "q1"
-            value = float(row["q1"])
-            target = float(row["target_q1"])
-            shortfall = 0.0
-        else:
-            limiting_score = "q2"
-            value = float(row["q2"])
-            target = float(row["target_q2"])
-            shortfall = 0.0
-
-        row["limiting_score"] = limiting_score
-        row["limiting_score_value"] = value
-        row["limiting_score_target"] = target
-        row["limiting_score_shortfall"] = shortfall
 
     @staticmethod
     def _worst_time_quality(time_quality):
@@ -789,13 +744,6 @@ class LowOrderConsistency:
                 ),
             )
         )
-
-    @staticmethod
-    def _first_failed_time_quality(time_quality):
-        for row in time_quality:
-            if not row["test_pass"]:
-                return dict(row)
-        return None
 
     @staticmethod
     def _burnup_list_from_assemble(assemble_data):
@@ -851,9 +799,6 @@ class LowOrderConsistency:
             "test_pass_q1",
             "test_pass_q2",
             "test_pass_time",
-            "time_quality",
-            "worst_time_quality",
-            "first_failed_time_quality",
             "mean_abs_diff",
             "mean_rel_diff",
         ]
@@ -865,171 +810,6 @@ class LowOrderConsistency:
         dq1 = abs(current_info.q1 - previous_info.q1)
         dq2 = abs(current_info.q2 - previous_info.q2)
         return dq1 <= self.q1_stop_criteria and dq2 <= self.q2_stop_criteria
-
-    @staticmethod
-    def _time_quality_plot_background(info):
-        background = []
-        seen = set()
-        final_key = (getattr(info, "nlib", None), getattr(info, "nburn", None))
-        for history_name in ("nlib_history", "nburn_history"):
-            for row in getattr(info, history_name, []):
-                time_quality = row.get("time_quality")
-                if not time_quality:
-                    continue
-                key = (row.get("nlib"), row.get("nburn"))
-                if key == final_key or key in seen:
-                    continue
-                seen.add(key)
-                background.append({"label": history_name, "time_quality": time_quality})
-        return background
-
-    def _write_time_quality_plot(self, info):
-        if not hasattr(info, "time_quality"):
-            return
-        time_quality = info.time_quality
-        image = getattr(info, "time_quality_image", None)
-        if not image:
-            return
-        LowOrderConsistency.make_time_quality_plot(
-            image,
-            [row["time"] for row in time_quality],
-            [row["q1"] for row in time_quality],
-            [row["q2"] for row in time_quality],
-            self.target_q1,
-            self.target_q2,
-            background=self._time_quality_plot_background(info),
-        )
-
-    @staticmethod
-    def _convergence_history_rows(info):
-        rows = []
-        seen = set()
-        for history_name in ("nlib_history", "nburn_history"):
-            for row in getattr(info, history_name, []):
-                if "time_quality" not in row:
-                    continue
-                key = (row.get("nlib"), row.get("nburn"))
-                if key in seen:
-                    continue
-                seen.add(key)
-                rows.append(row)
-        return rows
-
-    @staticmethod
-    def _time_quality_limits(time_quality):
-        if not time_quality:
-            return None
-
-        min_q1_row = min(time_quality, key=lambda row: float(row["q1"]))
-        min_q2_row = min(time_quality, key=lambda row: float(row["q2"]))
-        q1 = float(min_q1_row["q1"])
-        q2 = float(min_q2_row["q2"])
-        target_q1 = float(min_q1_row["target_q1"])
-        target_q2 = float(min_q2_row["target_q2"])
-        failed_scores = []
-        if q1 < target_q1:
-            failed_scores.append("q1")
-        if q2 < target_q2:
-            failed_scores.append("q2")
-
-        limiting_row = LowOrderConsistency._worst_time_quality(time_quality)
-        row = {
-            "q1": q1,
-            "q2": q2,
-            "target_q1": target_q1,
-            "target_q2": target_q2,
-            "test_pass": not failed_scores,
-            "pass": "pass" if not failed_scores else "fail " + "/".join(failed_scores),
-            "failed_scores": failed_scores,
-            "limiting_score": limiting_row["limiting_score"],
-            "limiting_score_value": limiting_row["limiting_score_value"],
-            "limiting_score_target": limiting_row["limiting_score_target"],
-            "limiting_score_shortfall": limiting_row["limiting_score_shortfall"],
-            "time": limiting_row["time"],
-            "time_days": limiting_row["time_days"],
-        }
-        for key in (
-            "burnup",
-            "burnup_units",
-            "burnup_gwd_per_mtihm",
-            "burnup_gwd_per_mtu",
-        ):
-            if key in limiting_row:
-                row[key] = limiting_row[key]
-        return row
-
-    @staticmethod
-    def _convergence_time_quality(info):
-        rows = []
-        for history in LowOrderConsistency._convergence_history_rows(info):
-            limits = LowOrderConsistency._time_quality_limits(history["time_quality"])
-            if limits is None:
-                continue
-            rows.append(
-                {
-                    "nlib": history["nlib"],
-                    "nburn": history["nburn"],
-                    **limits,
-                }
-            )
-        return rows
-
-    @staticmethod
-    def make_convergence_time_quality_plot(
-        image,
-        convergence_time_quality,
-        target_q1,
-        target_q2,
-    ):
-        """Make the convergence plot using worst-over-time q1/q2 scores."""
-        import matplotlib.pyplot as plt
-
-        labels = [
-            f"{row['nlib']}/{row['nburn']}" for row in convergence_time_quality
-        ]
-        x = np.arange(len(labels))
-        plt.rcParams.update({"font.size": 18})
-        plt.figure()
-        plt.plot(
-            x,
-            [float(row["q1"]) for row in convergence_time_quality],
-            marker="o",
-            label="min q1 over time",
-        )
-        plt.plot(
-            x,
-            [float(row["q2"]) for row in convergence_time_quality],
-            marker="s",
-            label="min q2 over time",
-        )
-        plt.axhline(target_q1, color="C0", linestyle="--", label="target q1")
-        plt.axhline(target_q2, color="C1", linestyle="--", label="target q2")
-        plt.xticks(x, labels, rotation=30, ha="right")
-        plt.xlabel("nlib/nburn")
-        plt.ylabel("worst quality score")
-        plt.ylim(0.0, 1.02)
-        plt.legend()
-        plt.savefig(image, bbox_inches="tight")
-
-    def _write_convergence_time_quality(self, info):
-        if not self.convergence_enabled:
-            return
-        convergence_time_quality = self._convergence_time_quality(info)
-        if not convergence_time_quality:
-            return
-        image = self.base_check_path / "q1-q2-by-convergence.png"
-        internal.logger.info(
-            "creating q1/q2 by convergence",
-            image=str(image.relative_to(self.work_path)),
-        )
-        LowOrderConsistency.make_convergence_time_quality_plot(
-            image,
-            convergence_time_quality,
-            self.target_q1,
-            self.target_q2,
-        )
-        info.convergence_time_quality = convergence_time_quality
-        info.convergence_time_quality_image = str(image)
 
     @staticmethod
     def _require_initial_time(label, times):
@@ -1198,9 +978,12 @@ class LowOrderConsistency:
         )
         info.time_quality = time_quality
         info.time_quality_image = str(time_quality_image)
-        info.test_pass_time = self._time_quality_pass(time_quality)
+        info.test_pass_time = all(row["test_pass"] for row in time_quality)
         info.worst_time_quality = self._worst_time_quality(time_quality)
-        info.first_failed_time_quality = self._first_failed_time_quality(time_quality)
+        info.first_failed_time_quality = next(
+            (dict(row) for row in time_quality if not row["test_pass"]),
+            None,
+        )
 
         summary = self._quality_summary(self.ahist, self.rhist)
         for key, value in summary.items():
@@ -1553,6 +1336,4 @@ class LowOrderConsistency:
                 if hasattr(current_info, key):
                     delattr(current_info, key)
 
-        self._write_convergence_time_quality(current_info)
-        self._write_time_quality_plot(current_info)
         return current_info
