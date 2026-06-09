@@ -42,6 +42,7 @@ def _test_args_sequencer(with_state: bool = False):
                 "_type": "scale.olm.check:LowOrderConsistency",
                 "name": "loc",
                 "template": "model/origami/system-uox.jt.inp",
+                "metric": "grams_per_initial_hm",
                 "target_q1": 0.70,
                 "target_q2": 0.95,
                 "eps0": 1e-12,
@@ -377,6 +378,7 @@ class LowOrderConsistency:
     Args:
         name: Name of the test.
         template: Template file to use for the low-order calculation.
+        metric: Primary inventory metric to use for quality scores.
         nuclide_compare: List of nuclide identifiers for the detailed error plots.
         eprs: The limit for the relative gradient.
         epsa: The limit for the absolute gradient.
@@ -389,6 +391,7 @@ class LowOrderConsistency:
     @staticmethod
     def describe_params():
         return {
+            "metric": "primary inventory metric",
             "eps0": "minimum value",
             "epsa": "absolute epsilon",
             "epsr": "relative epsilon",
@@ -416,6 +419,9 @@ class LowOrderConsistency:
         self,
         name: str = "",
         template: str = "",
+        metric: Literal[
+            "grams_per_initial_hm", "atom_fraction"
+        ] = "grams_per_initial_hm",
         eps0: float = 1e-12,
         epsa: float = 1e-6,
         epsr: float = 1e-3,
@@ -431,6 +437,12 @@ class LowOrderConsistency:
         self._model = _model
         self.name = name
         self.nuclide_compare = nuclide_compare
+        if metric not in ("grams_per_initial_hm", "atom_fraction"):
+            raise ValueError(
+                "LowOrderConsistency metric must be one of "
+                "'grams_per_initial_hm' or 'atom_fraction'."
+            )
+        self.metric = metric
         self.eps0 = eps0
         self.epsa = epsa
         self.epsr = epsr
@@ -485,9 +497,103 @@ class LowOrderConsistency:
         plt.legend(["{} (max error: {:.2f} %)".format(identifier, 100 * max_diff0)])
         plt.savefig(image, bbox_inches="tight")
 
+    @staticmethod
+    def _metric_units(metric):
+        if metric == "grams_per_initial_hm":
+            return "g/gIHM"
+        if metric == "atom_fraction":
+            return "atom fraction"
+        raise ValueError(
+            "LowOrderConsistency metric must be one of "
+            "'grams_per_initial_hm' or 'atom_fraction'."
+        )
+
+    @staticmethod
+    def _nuclide_mass_vector(names, nuclide_data):
+        try:
+            return np.array([nuclide_data[name]["mass"] for name in names], dtype=float)
+        except KeyError as exc:
+            raise ValueError(
+                "LowOrderConsistency requires nuclide mass data to calculate g/gIHM."
+            ) from exc
+
+    @staticmethod
+    def _amounts_to_grams_per_initial_hm(amounts, masses, initialhm):
+        amounts = np.asarray(amounts, dtype=float)
+        masses = np.asarray(masses, dtype=float)
+        initialhm = np.asarray(initialhm, dtype=float)
+        if amounts.ndim != 3:
+            raise ValueError(
+                "LowOrderConsistency inventory amounts must have shape "
+                "(point, time, nuclide)."
+            )
+        if masses.shape != (amounts.shape[2],):
+            raise ValueError(
+                "LowOrderConsistency nuclide mass data must match the inventory "
+                "nuclide vector."
+            )
+        if initialhm.shape != (amounts.shape[0],):
+            raise ValueError(
+                "LowOrderConsistency initial heavy metal values must match the "
+                "number of inventory points."
+            )
+        if np.any(initialhm <= 0.0):
+            raise ValueError(
+                "LowOrderConsistency requires positive initial heavy metal values "
+                "to calculate g/gIHM."
+            )
+        initialhm_grams = initialhm * 1.0e6
+        return amounts * masses[None, None, :] / initialhm_grams[:, None, None]
+
+    @staticmethod
+    def _amounts_to_atom_fraction(amounts):
+        amounts = np.asarray(amounts, dtype=float)
+        if amounts.ndim != 3:
+            raise ValueError(
+                "LowOrderConsistency inventory amounts must have shape "
+                "(point, time, nuclide)."
+            )
+        totals = amounts.sum(axis=2)
+        if np.any(totals == 0.0):
+            raise ValueError("Cannot calculate atom fractions with zero total atoms.")
+        return amounts / totals[:, :, None]
+
+    @staticmethod
+    def _difference_arrays(lo, hi, eps0):
+        ahist = np.absolute(lo - hi)
+        rhist = np.absolute((lo + eps0) / (hi + eps0) - 1.0)
+        return ahist, rhist
+
+    def _metric_arrays(self):
+        hi_amount = np.asarray(self.hi_list, dtype=float)
+        lo_amount = np.asarray(self.lo_list, dtype=float)
+
+        if self.metric == "atom_fraction":
+            return (
+                self._amounts_to_atom_fraction(lo_amount),
+                self._amounts_to_atom_fraction(hi_amount),
+                r"$\log_{10} |hi-lo|$",
+            )
+
+        if self.metric == "grams_per_initial_hm":
+            masses = self._nuclide_mass_vector(self.names, self.nuclide_data)
+            return (
+                self._amounts_to_grams_per_initial_hm(
+                    lo_amount, masses, self.initialhm_list
+                ),
+                self._amounts_to_grams_per_initial_hm(
+                    hi_amount, masses, self.initialhm_list
+                ),
+                r"$\log_{10} |hi-lo|$ [g/gIHM]",
+            )
+
+        raise ValueError(
+            "LowOrderConsistency metric must be one of "
+            "'grams_per_initial_hm' or 'atom_fraction'."
+        )
+
     def info(self):
         """Recalculate test statistics."""
-        import matplotlib.pyplot as plt
         import sys
 
         # set number of permutations, timesteps, and nuclides for error array
@@ -499,6 +605,8 @@ class LowOrderConsistency:
         info.epsr = self.epsr
         info.target_q1 = self.target_q1
         info.target_q2 = self.target_q2
+        info.metric = self.metric
+        info.units = self._metric_units(self.metric)
         if not self.run_success:
             info.test_pass = False
             return info
@@ -525,26 +633,9 @@ class LowOrderConsistency:
                 "image": "",
             }
 
-        self.ahist = np.array(self.lo_list)
-        self.rhist = np.array(self.lo_list)
-        self.hi = np.array(self.hi_list)
-        self.lo = np.array(self.lo_list)
-
-        # For each permutation.
         internal.logger.info("Calculating all comparison histogram data...")
-        for k in range(len(self.lo_list)):
-            # For each time.
-            for j in range(len(self.lo_list[k])):
-                osum = self.lo_list[k][j].sum()
-                tsum = self.hi_list[k][j].sum()
-                oden = self.lo_list[k][j] / osum
-                tden = self.hi_list[k][j] / tsum
-                self.lo[k, j, :] = oden
-                self.hi[k, j, :] = tden
-                self.ahist[k, j, :] = np.absolute(oden - tden)
-                self.rhist[k, j, :] = np.absolute(
-                    (oden + self.eps0) / (tden + self.eps0) - 1.0
-                )
+        self.lo, self.hi, ylabel = self._metric_arrays()
+        self.ahist, self.rhist = self._difference_arrays(self.lo, self.hi, self.eps0)
 
         # Extract each nuclide time series.
         internal.logger.info("Calculating nuclide-wise comparisons...")
@@ -609,8 +700,8 @@ class LowOrderConsistency:
         core.RelAbsHistogram.plot_hist(
             self,
             hist_image,
-            xlabel=r"$\log_{10} |hi/lo-1|$",
-            ylabel=r"$\log_{10} |hi-lo|$",
+            xlabel=r"$\log_{10} |lo/hi-1|$",
+            ylabel=ylabel,
         )
         info.hist_image = str(hist_image)
 
@@ -651,6 +742,7 @@ class LowOrderConsistency:
         ii_json_list = list()
         f71_list = list()
         input_list = list()
+        self.initialhm_list = list()
         for point in assemble_d["points"]:
             # Create the check input path.
             lib = Path(point["files"]["lib"])
@@ -662,6 +754,19 @@ class LowOrderConsistency:
             lo_ii_json = check_input.with_suffix(".ii.json")
             f71_list.append(check_input.with_suffix(".f71"))
             ii_json_list.append((hi_ii_json, lo_ii_json))
+            try:
+                initialhm = float(point["history"]["initialhm"])
+            except KeyError as exc:
+                raise ValueError(
+                    "LowOrderConsistency requires history.initialhm "
+                    f"for point={base}"
+                ) from exc
+            if initialhm <= 0.0:
+                raise ValueError(
+                    "LowOrderConsistency requires positive initial heavy metal "
+                    f"for point={base}"
+                )
+            self.initialhm_list.append(initialhm)
 
             # Create the directory.
             check_input.parent.mkdir(parents=True, exist_ok=True)
@@ -721,6 +826,7 @@ class LowOrderConsistency:
         # Convert the f71 to ii.json and extract the relevant information into memory.
         self.hi_list = list()
         self.lo_list = list()
+        self.nuclide_data = None
         for hi_ii_json, lo_ii_json in ii_json_list:
             internal.logger.debug(f"loading HI {hi_ii_json}")
             # Load the json data into HIGH fidelity and LOWER fidelity data structures.
@@ -734,6 +840,7 @@ class LowOrderConsistency:
                     self.composition_manager = core.CompositionManager(
                         jt["data"]["nuclides"]
                     )
+                    self.nuclide_data = jt["data"]["nuclides"]
 
                 hi = np.array(case["amount"])
                 hi_vector = case["nuclideVectorHash"]

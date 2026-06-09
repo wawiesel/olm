@@ -42,6 +42,7 @@
         "                    \"_type\": \"scale.olm.check:LowOrderConsistency\",",
         "                    \"name\": \"loc\",",
         "                    \"template\": \"model/origami/system-uox.jt.inp\",",
+        "                    \"metric\": \"grams_per_initial_hm\",",
         "                    \"target_q1\": 0.7,",
         "                    \"target_q2\": 0.95,",
         "                    \"eps0\": 1e-12,",

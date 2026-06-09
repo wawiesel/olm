@@ -184,17 +184,25 @@ class TestLowOrderConsistency:
         
         # Should return a dictionary with expected parameters
         assert isinstance(params, dict)
-        expected_keys = {'eps0', 'epsa', 'epsr', 'target_q1', 'target_q2', 
-                        'nuclide_compare', 'template', 'name'}
-        
-        # May not have all keys but should be a reasonable subset
-        assert len(params) > 0
+        expected_keys = {
+            'eps0',
+            'epsa',
+            'epsr',
+            'metric',
+            'target_q1',
+            'target_q2',
+            'nuclide_compare',
+            'template',
+            'name',
+        }
+        assert set(params.keys()) == expected_keys
+        assert params['metric'] == 'grams_per_initial_hm'
         
     def test_describe_params_enhanced_loc(self):
         """Test that describe_params returns helpful descriptions."""
         descriptions = check.LowOrderConsistency.describe_params()
         
-        expected_keys = {'eps0', 'epsa', 'epsr', 'target_q1', 'target_q2',
+        expected_keys = {'eps0', 'epsa', 'epsr', 'metric', 'target_q1', 'target_q2',
                         'nuclide_compare', 'template', 'name'}
         assert set(descriptions.keys()) == expected_keys
         
@@ -243,6 +251,79 @@ class TestLowOrderConsistency:
             if os.path.exists(image_path):
                 os.unlink(image_path)
 
+    def test_amounts_to_grams_per_initial_hm(self):
+        """Test conversion from inventory amounts to g/gIHM."""
+        amounts = np.array([
+            [[2.0, 3.0], [4.0, 5.0]],
+            [[6.0, 7.0], [8.0, 9.0]],
+        ])
+        masses = np.array([10.0, 20.0])
+        initialhm = np.array([1.0, 2.0])
+
+        result = check.LowOrderConsistency._amounts_to_grams_per_initial_hm(
+            amounts, masses, initialhm
+        )
+
+        expected = amounts * masses[None, None, :] / np.array(
+            [1.0e6, 2.0e6]
+        )[:, None, None]
+        assert np.allclose(result, expected)
+
+    def test_amounts_to_grams_per_initial_hm_rejects_nonpositive_initialhm(self):
+        """Test that g/gIHM conversion requires positive initial heavy metal."""
+        amounts = np.ones((1, 1, 1))
+        masses = np.ones(1)
+
+        with pytest.raises(ValueError, match="positive initial heavy metal"):
+            check.LowOrderConsistency._amounts_to_grams_per_initial_hm(
+                amounts, masses, [0.0]
+            )
+
+    def test_amounts_to_atom_fraction(self):
+        """Test legacy atom-fraction metric conversion."""
+        amounts = np.array([[[1.0, 3.0], [2.0, 2.0]]])
+
+        result = check.LowOrderConsistency._amounts_to_atom_fraction(amounts)
+
+        expected = np.array([[[0.25, 0.75], [0.5, 0.5]]])
+        assert np.allclose(result, expected)
+
+    @patch('scale.olm.core.RelAbsHistogram.plot_hist')
+    def test_info_defaults_to_grams_per_initial_hm(self, mock_plot_hist, tmp_path):
+        """Test that LowOrderConsistency scores use g/gIHM by default."""
+        loc = check.LowOrderConsistency(_dry_run=True, nuclide_compare=[])
+        loc.run_success = True
+        loc.time_list = [0.0, 86400.0]
+        loc.hi_list = [np.array([[2.0, 3.0], [4.0, 1.0]])]
+        loc.lo_list = [np.array([[1.0, 4.0], [5.0, 2.0]])]
+        loc.names = ['u235', 'o16']
+        loc.nuclide_data = {
+            'u235': {'mass': 235.0},
+            'o16': {'mass': 16.0},
+        }
+        loc.initialhm_list = [2.0]
+        loc.ii_json_list = []
+        loc.work_path = tmp_path
+        loc.check_path = tmp_path
+
+        info = loc.info()
+
+        expected_hi = np.array([loc.hi_list[0]]) * np.array(
+            [235.0, 16.0]
+        )[None, None, :] / 2.0e6
+        expected_lo = np.array([loc.lo_list[0]]) * np.array(
+            [235.0, 16.0]
+        )[None, None, :] / 2.0e6
+        assert info.metric == 'grams_per_initial_hm'
+        assert info.units == 'g/gIHM'
+        assert np.allclose(loc.hi, expected_hi)
+        assert np.allclose(loc.lo, expected_lo)
+        assert info.m == 4
+        assert info.hist_image == str(tmp_path / 'hist.png')
+        assert mock_plot_hist.call_args.kwargs['ylabel'] == (
+            r"$\log_{10} |hi-lo|$ [g/gIHM]"
+        )
+
 
 class TestSchemaFunctions:
     """Test schema generation functions for all check types."""
@@ -273,6 +354,10 @@ class TestSchemaFunctions:
         """Test schema generation for LowOrderConsistency."""
         schema = check._schema_LowOrderConsistency()
         assert isinstance(schema, dict)
+        assert schema['properties']['metric']['enum'] == [
+            'grams_per_initial_hm',
+            'atom_fraction',
+        ]
         
         schema_with_state = check._schema_LowOrderConsistency(with_state=True)
         assert isinstance(schema_with_state, dict)
@@ -282,6 +367,7 @@ class TestSchemaFunctions:
         args = check._test_args_LowOrderConsistency()
         
         assert args['_type'] == 'scale.olm.check:LowOrderConsistency'
+        assert args['metric'] == 'grams_per_initial_hm'
         # Should be a valid dictionary (exact content depends on implementation)
         assert isinstance(args, dict)
 
@@ -361,4 +447,4 @@ class TestUtilityFunctions:
         assert info.name == "GridGradient"
         assert info.m > 0
         assert np.isfinite(info.q1)
-        assert np.isfinite(info.q2) 
+        assert np.isfinite(info.q2)
