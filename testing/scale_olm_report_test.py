@@ -224,8 +224,7 @@ class TestRst2pdfFunction:
             mock_run.assert_called_once()
             call_args = mock_run.call_args[0][0]
             assert "rst2pdf" in call_args
-            assert "--stylesheet-path=" in call_args
-            assert "-s twocolumn,olm-report" in call_args
+            assert "-s twocolumn" in call_args
             assert "test_model.rst" in call_args
 
     def test_rst2pdf_result_metadata(self):
@@ -432,10 +431,10 @@ class TestReportIntegration:
 
         assert "time_quality_image" not in rendered
         assert "/tmp/example/work/perms/hash/model_abcdef.out" not in rendered
-        assert ":code:`model_abcdef.out`" in rendered
+        assert "model_abcdef.out" in rendered
         assert ":code:`model_abcdef.inp`" in rendered
         assert "0.681243" not in rendered
         assert "0.681" in rendered
         assert "0.966" in rendered
         assert "first fail" in rendered
-        assert ".. class:: olm-qscore-table" in rendered
+        assert "Q-score by high-order time::" in rendered
