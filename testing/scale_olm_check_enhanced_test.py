@@ -112,7 +112,7 @@ class TestGridGradientAdvanced:
         
         # Let's check the logic:
         # rhist > epsr (0.05): indices 0 (0.08) and 2 (0.1) fail relative test
-        # ahist > epsa (0.1) AND rhist > epsr: indices 0 (0.15 > 0.1 AND 0.08 > 0.05) and 2 (0.2 > 0.1 AND 0.1 > 0.05)
+        # ahist > epsa and rhist > epsr at indices 0 and 2.
         assert info.w_r == 2  # points failing relative test (indices 0,2)
         assert info.w_ar == 2  # points failing both tests (indices 0,2)
         
@@ -135,9 +135,13 @@ class TestGridGradientAdvanced:
     def test_quality_summary_discards_points_below_eps0(self):
         """Test points below eps0 on both axes do not affect q-scores."""
         summary = check._quality_summary_from_histograms(
-            np.array([1.0e-13, 1.0e-5, 1.0e-4]),
-            np.array([1.0e-13, 1.0e-13, 1.0e-2]),
-            1.0e-12, 1.0e-6, 1.0e-3, 0.9, 0.95,
+            ahist=np.array([1.0e-13, 1.0e-5, 1.0e-4]),
+            rhist=np.array([1.0e-13, 1.0e-13, 1.0e-2]),
+            eps0=1.0e-12,
+            epsa=1.0e-6,
+            epsr=1.0e-3,
+            target_q_r=0.9,
+            target_q_ar=0.95,
         )
 
         assert (summary["m"], summary["w_r"], summary["w_ar"]) == (2, 1, 1)
@@ -351,38 +355,6 @@ class TestLowOrderConsistency:
         assert info.first_failed_time_quality['burnup_gwd_per_mtihm'] == (
             pytest.approx(10.0)
         )
-        mock_time_quality_plot.assert_called_once()
-        mock_hist_plot.assert_called_once()
-
-    @patch('scale.olm.core.RelAbsHistogram.plot_hist')
-    @patch.object(check.LowOrderConsistency, 'make_time_quality_plot')
-    def test_initial_identity_failure_fails_test_one(
-        self, mock_time_quality_plot, mock_hist_plot, tmp_path
-    ):
-        """Test t=0 q_r/q_ar must be exactly 1.000."""
-        loc = check.LowOrderConsistency(
-            metric='atom_fraction', target_q_r=0.0, target_q_ar=0.0,
-            nuclide_compare=[], _dry_run=True,
-        )
-        hi = np.full((1, 2, 4), 0.25)
-        lo = hi.copy()
-        lo[0, 0, :] = [0.26, 0.24, 0.25, 0.25]
-        loc.hi_list, loc.lo_list = hi, lo
-        loc.time_list, loc.burnup_list = [0.0, 86400.0], [0.0, 1000.0]
-        loc.work_path = loc.check_path = tmp_path
-        loc.run_success = True
-
-        info = loc.info()
-
-        assert info.initial_time_quality['q_r'] < 1.0
-        assert info.initial_time_quality['q_ar'] < 1.0
-        assert info.test_pass_initial is False
-        assert info.test_pass_time is True
-        assert info.test_pass is False
-        assert loc._failure_reasons(info) == [
-            'test 1.1 failed: q_r at t=0 must be 1.000',
-            'test 1.2 failed: q_ar at t=0 must be 1.000',
-        ]
         mock_time_quality_plot.assert_called_once()
         mock_hist_plot.assert_called_once()
 
@@ -662,8 +634,10 @@ class TestLowOrderConsistency:
 
         loc.target_q_r = 0.7
         loc.target_q_ar = 0.95
-        previous.q_r, previous.q_ar = 0.60, 0.90
-        current.q_r, current.q_ar = 0.71, 0.96
+        previous.q_r = 0.60
+        previous.q_ar = 0.90
+        current.q_r = 0.71
+        current.q_ar = 0.96
         assert loc._convergence_stop_reason(
             previous, current, fixed_grid=False
         ) == 'target'

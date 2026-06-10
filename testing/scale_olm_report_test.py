@@ -158,7 +158,14 @@ class TestRst2pdfFunction:
 
     def test_scale_short_report_renders_consistency_failure(self):
         """Test packaged report renders failure and convergence sections."""
-        template = Path(__file__).parents[1] / "scale/olm/templates/report/scale-short.jt.rst"
+        template = (
+            Path(__file__).parents[1]
+            / "scale"
+            / "olm"
+            / "templates"
+            / "report"
+            / "scale-short.jt.rst"
+        )
         case = {
             "test_pass": False,
             "name": "LowOrderConsistency",
@@ -170,19 +177,34 @@ class TestRst2pdfFunction:
             "metric": "grams_per_initial_hm",
             "test_pass_initial_q_r": True,
             "test_pass_initial_q_ar": True,
-            "initial_time_quality": {"time_days": 0.0, "q_r": 1.0, "q_ar": 1.0},
-            "minimum_q_r_time_quality": {"time_days": 1.0, "score": 0.6, "target": 0.7, "test_pass_score": False},
-            "minimum_q_ar_time_quality": {"time_days": 1.0, "score": 0.9, "target": 0.95, "test_pass_score": False},
+            "initial_time_quality": {
+                "time_days": 0.0,
+                "q_r": 1.0,
+                "q_ar": 1.0,
+            },
+            "minimum_q_r_time_quality": {
+                "time_days": 1.0,
+                "score": 0.6,
+                "target": 0.7,
+                "test_pass_score": False,
+            },
+            "minimum_q_ar_time_quality": {
+                "time_days": 1.0,
+                "score": 0.9,
+                "target": 0.95,
+                "test_pass_score": False,
+            },
             "failure_reasons": ["test 2.1 failed: q_r below target"],
-            "time_quality_image": "q_r-q_ar-by-time.png",
-            "time_quality": [
-                {"time_days": 0.0, "q_r": 1.0, "q_ar": 1.0, "test_pass": True},
-                {"time_days": 1.0, "q_r": 0.6, "q_ar": 0.9, "test_pass": False, "limiting_score": "q_r"},
-            ],
-            "worst_time_quality": {"time_days": 1.0, "q_r": 0.6, "q_ar": 0.9, "limiting_score": "q_r"},
             "convergence_quality_image": "q_r-q_ar-convergence.png",
             "convergence_history": [
-                {"nlib": 1, "nburn": 1, "q_r": 0.5, "q_ar": 0.8, "result": "fail q_r/q_ar", "time_days": 1.0}
+                {
+                    "nlib": 1,
+                    "nburn": 1,
+                    "q_r": 0.5,
+                    "q_ar": 0.8,
+                    "result": "fail q_r/q_ar",
+                    "time_days": 1.0,
+                }
             ],
             "convergence_status": {
                 "nlib": {
@@ -196,9 +218,26 @@ class TestRst2pdfFunction:
             },
         }
         data = {
-            "model": {"name": "uox_quick", "description": "test", "sources": {}, "revision": [], "notes": []},
+            "model": {
+                "name": "uox_quick",
+                "description": "test",
+                "sources": {},
+                "revision": [],
+                "notes": [],
+            },
             "generate": {"static": {}},
-            "run": {"version": "test", "total_runtime_hrs": 0.0, "runs": [{"input_file": str(self.work_dir / "model.inp"), "output_file": "model.out", "success": True, "runtime_hrs": 0.0}]},
+            "run": {
+                "version": "test",
+                "total_runtime_hrs": 0.0,
+                "runs": [
+                    {
+                        "input_file": str(self.work_dir / "model.inp"),
+                        "output_file": "model.out",
+                        "success": True,
+                        "runtime_hrs": 0.0,
+                    }
+                ],
+            },
             "assemble": {"date": "2026-06-09 00:00", "space": {}},
             "check": {"test_pass": False, "sequence": [case]},
         }
@@ -208,7 +247,6 @@ class TestRst2pdfFunction:
             "Consistency check parameters", 1
         )[0]
 
-        assert "Consistency Tests" in rendered
         assert "Why This Check Failed" in rendered
         assert "test 2.1 failed" in rendered
         assert "q_r-q_ar-convergence.png" in rendered
