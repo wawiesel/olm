@@ -70,12 +70,14 @@ def constpower_burndata(
     Examples:
 
         >>> import scale.olm as olm
-        >>> olm.generate.time.constpower_burndata(
+        >>> data = olm.generate.time.constpower_burndata(
         ...     state={"specific_power": 40},
         ...     gwd_burnups=[0,10,20]
         ... )
-        {'burndata': [{'power': 40.0, 'burn': 250.0},
-        {'power': 40.0, 'burn': 250.0}], 'final_burnup_padding_gwd': 0.0}
+        >>> data["burndata"]
+        [{'power': 40.0, 'burn': 250.0}, {'power': 40.0, 'burn': 250.0}]
+        >>> data["final_burnup_padding_gwd"]
+        0.0
 
     """
 
