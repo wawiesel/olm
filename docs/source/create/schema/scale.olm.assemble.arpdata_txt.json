@@ -12,6 +12,11 @@
             "title": "Keep Every",
             "type": "integer"
         },
+        "burnup_rtol": {
+            "default": null,
+            "title": "Burnup Rtol",
+            "type": "number"
+        },
         "material_lumping": {
             "default": null,
             "title": "Material Lumping",
@@ -51,6 +56,7 @@
         "                \"mod_dens\": \"mod_dens\",",
         "                \"enrichment\": \"enrichment\"",
         "            },",
+        "            \"burnup_rtol\": 0.02,",
         "            \"material_lumping\": \"BASIS\"",
         "        }",
         "",

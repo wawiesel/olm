@@ -473,57 +473,6 @@ class TestArpInfoMaster:
 class TestCompositionSystem:
     """Test composition system processing."""
 
-    def test_get_comp_system_derives_lumped0d_oxides(self):
-        """Test low-order lumping from initial high-order inventory."""
-        ii_data = {
-            "responses": {
-                "system": {
-                    "volume": 1.0,
-                    "amount": [[1.0, 5.0, 2.0]],
-                    "nuclideVectorHash": "hash123",
-                }
-            },
-            "data": {
-                "nuclides": {
-                    "u238": {
-                        "mass": 238.0,
-                        "atomicNumber": 92,
-                        "element": "U",
-                        "isomericState": 0,
-                        "massNumber": 238,
-                    },
-                    "o16": {
-                        "mass": 16.0,
-                        "atomicNumber": 8,
-                        "element": "O",
-                        "isomericState": 0,
-                        "massNumber": 16,
-                    },
-                    "gd157": {
-                        "mass": 157.0,
-                        "atomicNumber": 64,
-                        "element": "Gd",
-                        "isomericState": 0,
-                        "massNumber": 157,
-                    },
-                }
-            },
-            "definitions": {
-                "nuclideVectors": {"hash123": ["u238", "o16", "gd157"]}
-            },
-        }
-
-        result = assemble._get_comp_system(ii_data)
-        lumped0d = result["lumped0d"]
-        total_mass = 238.0 + 5.0 * 16.0 + 2.0 * 157.0
-
-        assert lumped0d["uo2_wtpt"] == pytest.approx(
-            100.0 * (238.0 + 32.0) / total_mass
-        )
-        assert lumped0d["gd2o3_wtpt"] == pytest.approx(
-            100.0 * (2.0 * 157.0 + 3.0 * 16.0) / total_mass
-        )
-    
     @patch('scale.olm.core.CompositionManager.calculate_hm_oxide_breakdown')
     @patch('scale.olm.core.CompositionManager.approximate_hm_info')
     def test_get_comp_system_basic_enhanced(self, mock_approximate_hm_info, mock_calculate_breakdown):
@@ -572,8 +521,6 @@ class TestCompositionSystem:
         assert result is mock_breakdown
         assert result["info"] == mock_hm_info
         assert "density" in result
-        assert "lumped0d" in result
-        
         # Verify density calculation - adjust expectation to match actual calculation
         # The density calculation may use different logic than simple mass/volume
         assert isinstance(result["density"], (int, float))
@@ -600,10 +547,8 @@ class TestCompositionSystem:
                 
                 result = assemble._get_comp_system(ii_data)
                 
-                # Should handle empty data gracefully
                 assert isinstance(result, dict)
                 assert result["density"] == 0.0  # no mass
-                assert result["lumped0d"] == {}
 
 
 class TestSchemaFunctions:

@@ -27,16 +27,16 @@
                     "title": "Nburn Max",
                     "type": "integer"
                 },
-                "q1_stop_criteria": {
+                "q_r_stop_criteria": {
                     "default": 0.0,
                     "minimum": 0.0,
-                    "title": "Q1 Stop Criteria",
+                    "title": "Q R Stop Criteria",
                     "type": "number"
                 },
-                "q2_stop_criteria": {
+                "q_ar_stop_criteria": {
                     "default": 0.0,
                     "minimum": 0.0,
-                    "title": "Q2 Stop Criteria",
+                    "title": "Q Ar Stop Criteria",
                     "type": "number"
                 }
             },
@@ -79,14 +79,14 @@
             "title": "Epsr",
             "type": "number"
         },
-        "target_q1": {
+        "target_q_r": {
             "default": null,
-            "title": "Target Q1",
+            "title": "Target Q R",
             "type": "number"
         },
-        "target_q2": {
+        "target_q_ar": {
             "default": null,
-            "title": "Target Q2",
+            "title": "Target Q Ar",
             "type": "number"
         },
         "convergence": {
@@ -107,6 +107,18 @@
             },
             "title": "Nuclide Compare",
             "type": "array"
+        },
+        "nuclide_scaled_difference_min_abs_ylim": {
+            "anyOf": [
+                {
+                    "type": "number"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "default": null,
+            "title": "Nuclide Scaled Difference Min Abs Ylim"
         },
         "_type": {
             "const": "scale.olm.check:LowOrderConsistency",
@@ -134,12 +146,13 @@
         "            \"eps0\": 1e-12,",
         "            \"epsa\": 1e-06,",
         "            \"epsr\": 0.001,",
-        "            \"target_q1\": 0.9,",
-        "            \"target_q2\": 0.95,",
+        "            \"target_q_r\": 0.9,",
+        "            \"target_q_ar\": 0.95,",
         "            \"nuclide_compare\": [",
         "                \"u235\",",
         "                \"pu239\"",
-        "            ]",
+        "            ],",
+        "            \"nuclide_scaled_difference_min_abs_ylim\": null",
         "        }",
         "",
         ".. only::latex",

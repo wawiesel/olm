@@ -236,7 +236,6 @@ class TestLowOrderConsistency:
             'target_q_ar',
             'nuclide_compare',
             'nuclide_scaled_difference_min_abs_ylim',
-            'lumped0d',
             'template',
             'name',
         }
@@ -258,7 +257,6 @@ class TestLowOrderConsistency:
             'target_q_ar',
             'nuclide_compare',
             'nuclide_scaled_difference_min_abs_ylim',
-            'lumped0d',
             'template',
             'name',
         }
@@ -1193,13 +1191,7 @@ class TestLowOrderConsistency:
                     'history': {
                         'initialhm': 1.0,
                     },
-                    'comp': {
-                        'system': {
-                            'lumped0d': {
-                                'uo2_wtpt': 100.0,
-                            },
-                        },
-                    },
+                    'comp': {'system': {}},
                     '_arpinfo': {
                         'interpvars': {
                             'mod_dens': 0.7,
@@ -1235,7 +1227,7 @@ class TestLowOrderConsistency:
         assert data['check']['convergence'] == {'nburn': 4, 'nlib': 2}
         assert data['convergence_control'] == {'nburn': 4, 'nlib': 2}
         assert data['_arpinfo']['name'] == 'test-model'
-        assert data['lumped0d'] == {'uo2_wtpt': 100.0}
+        assert data['lumped0d'] == {}
         assert 'libs=[ test-model ]' in rendered
         assert 'options{ nburn=4 }' in rendered
         assert 'cycle{ nlib=2 }' in rendered
@@ -1266,13 +1258,7 @@ class TestLowOrderConsistency:
                     'history': {
                         'initialhm': 1.0,
                     },
-                    'comp': {
-                        'system': {
-                            'lumped0d': {
-                                'uo2_wtpt': 100.0,
-                            },
-                        },
-                    },
+                    'comp': {'system': {}},
                     '_arpinfo': {
                         'interpvars': {
                             'mod_dens': 0.7,
@@ -1306,7 +1292,7 @@ class TestLowOrderConsistency:
         rendered = (check_dir / 'uox.arc.inp').read_text()
         assert 'convergence' not in data['check']
         assert 'convergence_control' not in data
-        assert data['lumped0d'] == {'uo2_wtpt': 100.0}
+        assert data['lumped0d'] == {}
         assert 'options{ mtu=1.000000000000e+00 }' in rendered
         assert 'nburn=' not in rendered
         assert 'nlib=' not in rendered
@@ -1338,13 +1324,7 @@ class TestLowOrderConsistency:
                             },
                         ],
                     },
-                    'comp': {
-                        'system': {
-                            'lumped0d': {
-                                'uo2_wtpt': 100.0,
-                            },
-                        },
-                    },
+                    'comp': {'system': {}},
                     '_arpinfo': {
                         'interpvars': {
                             'mod_dens': 0.7,

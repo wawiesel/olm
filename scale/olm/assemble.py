@@ -424,8 +424,6 @@ def _get_comp_system(ii_data):
     nuclide_list = ii_data["definitions"]["nuclideVectors"][vh]
 
     x = dict()
-    element_masses = dict()
-    element_amounts = dict()
     total_mass = 0.0
     for i in range(len(nuclide_list)):
         name = nuclide_list[i]
@@ -436,9 +434,6 @@ def _get_comp_system(ii_data):
         total_mass += mass
         z = data["atomicNumber"]
         e = data["element"]
-        element = e.lower()
-        element_masses[element] = element_masses.get(element, 0.0) + mass
-        element_amounts[element] = element_amounts.get(element, 0.0) + amount
         m = data["isomericState"]
         a = data["massNumber"]
         mstr = ""
@@ -453,47 +448,8 @@ def _get_comp_system(ii_data):
     comp = core.CompositionManager.calculate_hm_oxide_breakdown(x)
     comp["info"] = core.CompositionManager.approximate_hm_info(comp)
     comp["density"] = total_mass / volume
-    comp["lumped0d"] = _get_lumped0d_from_initial_elements(
-        element_masses, element_amounts
-    )
 
     return comp
-
-
-def _get_lumped0d_from_initial_elements(element_masses, element_amounts):
-    total_mass = sum(element_masses.values())
-    if total_mass <= 0.0:
-        return {}
-
-    oxygen_molar_mass = _element_molar_mass(element_masses, element_amounts, "o")
-    component_masses = {}
-
-    u_moles = element_amounts.get("u", 0.0)
-    if u_moles > 0.0:
-        u_mass = element_masses["u"]
-        oxygen_mass = 2.0 * u_moles * oxygen_molar_mass
-        component_masses["uo2_wtpt"] = u_mass + oxygen_mass
-
-    gd_moles = element_amounts.get("gd", 0.0)
-    if gd_moles > 0.0:
-        gd_mass = element_masses["gd"]
-        oxygen_mass = 1.5 * gd_moles * oxygen_molar_mass
-        component_masses["gd2o3_wtpt"] = gd_mass + oxygen_mass
-
-    return {
-        key: 100.0 * mass / total_mass
-        for key, mass in component_masses.items()
-        if mass > 0.0
-    }
-
-
-def _element_molar_mass(element_masses, element_amounts, element):
-    amount = element_amounts.get(element, 0.0)
-    if amount > 0.0:
-        return element_masses[element] / amount
-    if element == "o":
-        return 15.9994
-    raise ValueError(f"Cannot calculate molar mass for missing element={element}")
 
 
 def _get_replay_burndata_count(perm):

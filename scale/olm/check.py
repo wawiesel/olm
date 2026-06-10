@@ -514,7 +514,6 @@ class LowOrderConsistency:
                 "minimum absolute y-axis limit for nuclide scaled-difference plots; "
                 "omit to use epsr"
             ),
-            "lumped0d": "0D material-lumped low-order model data",
             "template": "template file name",
             "name": "name for test",
         }
@@ -549,7 +548,6 @@ class LowOrderConsistency:
         nuclide_scaled_difference_min_abs_ylim: Optional[
             Annotated[float, Field(ge=0.0)]
         ] = None,
-        lumped0d: Dict = None,
         _model: Model = None,
         _env: Env = None,
         _type: Literal[_TYPE_LOWORDERCONSISTENCY] = None,
@@ -580,7 +578,6 @@ class LowOrderConsistency:
         self.nburn_max = self.convergence.nburn_max
         self.q_r_stop_criteria = self.convergence.q_r_stop_criteria
         self.q_ar_stop_criteria = self.convergence.q_ar_stop_criteria
-        self.lumped0d = {} if lumped0d is None else copy.deepcopy(lumped0d)
 
         if _dry_run:
             return
@@ -1330,24 +1327,6 @@ class LowOrderConsistency:
         )
 
     @staticmethod
-    def _lumped0d_for_origami(lumped0d):
-        average = copy.deepcopy(lumped0d or {})
-
-        if "gd2o3_wtpt" in average:
-            gd2o3_wtpt = float(average["gd2o3_wtpt"])
-            average["gd2o3_wtpt"] = gd2o3_wtpt
-            if "uo2_wtpt" not in average:
-                average["uo2_wtpt"] = 100.0 - gd2o3_wtpt
-
-        return average
-
-    @staticmethod
-    def _merge_lumped0d(derived, override):
-        data = copy.deepcopy(derived or {})
-        data.update(copy.deepcopy(override or {}))
-        return data
-
-    @staticmethod
     def _mox_lumped0d_for_origami_data(comp, interpvars):
         target_pu239 = float(interpvars["pu239_frac"])
         pu_vector_scale = (100.0 - target_pu239) / (
@@ -1381,12 +1360,10 @@ class LowOrderConsistency:
             "puo2_iso": puo2_iso,
         }
 
-    def _lumped0d_for_origami_data(self, point, lumped0d):
+    def _lumped0d_for_origami_data(self, point):
         comp = point["comp"]["system"]
         interpvars = point["_arpinfo"]["interpvars"]
-        data = self._lumped0d_for_origami(
-            self._merge_lumped0d(comp.get("lumped0d", {}), lumped0d)
-        )
+        data = {}
         if "pu_frac" in interpvars and "pu239_frac" in interpvars:
             data["mox"] = self._mox_lumped0d_for_origami_data(comp, interpvars)
         return data
@@ -1691,7 +1668,6 @@ class LowOrderConsistency:
         f71_list = list()
         input_list = list()
         self.initialhm_list = list()
-        lumped0d = self._lumped0d_for_origami(self.lumped0d)
         for point in assemble_d["points"]:
             point_data = self._point_with_arpinfo_name(point)
             # Create the check input path.
@@ -1736,7 +1712,7 @@ class LowOrderConsistency:
                 **point_data,
                 "name": self.name,
                 "check": check,
-                "lumped0d": self._lumped0d_for_origami_data(point_data, lumped0d),
+                "lumped0d": self._lumped0d_for_origami_data(point_data),
                 "_": {"env": self._env, "model": self._model},
             }
             if self.convergence_enabled:
