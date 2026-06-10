@@ -21,7 +21,32 @@ jobs:
         with:
           lfs: 'true'
           clean: 'false'
-          submodules: 'true'
+          submodules: 'false'
+      - name: Fetch test data submodule
+        shell: bash
+        run: |
+          set -euo pipefail
+          git lfs install --local
+
+          for attempt in 1 2 3 4 5; do
+            echo "Fetching data submodule, attempt ${attempt}/5"
+            git submodule deinit -f data || true
+            rm -rf .git/modules/data data
+            git submodule sync -- data
+
+            if git submodule update --init --depth=1 data && git -C data lfs pull; then
+              git submodule status data
+              exit 0
+            fi
+
+            echo "data submodule fetch failed"
+            if [[ "${attempt}" != "5" ]]; then
+              sleep $((attempt * 30))
+            fi
+          done
+
+          echo "Unable to fetch data submodule after 5 attempts"
+          exit 1
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
         with:
