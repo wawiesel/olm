@@ -27,6 +27,7 @@ def _test_args_arpdata_txt(with_state: bool = False):
         "dry_run": False,
         "fuel_type": "UOX",
         "dim_map": {"mod_dens": "mod_dens", "enrichment": "enrichment"},
+        "burnup_rtol": 2.0e-2,
         "material_lumping": "BASIS",
     }
 
@@ -35,6 +36,7 @@ def arpdata_txt(
     fuel_type: str,
     dim_map: dict,
     keep_every: int,
+    burnup_rtol: float = 2.0e-2,
     material_lumping: str = "BASIS",
     _model: dict = {},
     _env: dict = {},
@@ -68,7 +70,13 @@ def arpdata_txt(
 
     # Get library info data structure.
     arpinfo = _get_arpinfo(
-        _env["obiwan"], work_path, _model["name"], fuel_type, dim_map, material_lumping
+        _env["obiwan"],
+        work_path,
+        _model["name"],
+        fuel_type,
+        dim_map,
+        material_lumping,
+        burnup_rtol,
     )
 
     # Generate thinned burnup list.
@@ -85,6 +93,7 @@ def arpdata_txt(
         "work_dir": str(work_path),
         "date": datetime.datetime.utcnow().isoformat(" ", "minutes"),
         "space": arpinfo.get_space(),
+        "burnup_rtol": burnup_rtol,
         "material_lumping": material_lumping,
     }
 
@@ -249,26 +258,54 @@ def _burnup_lists_match(reference, candidate, burnup_rtol):
     candidate = np.asarray(candidate)
     if reference.shape != candidate.shape:
         return False
-    return np.allclose(reference, candidate, rtol=burnup_rtol, atol=1.0e-6)
+    return np.allclose(reference, candidate, rtol=burnup_rtol, atol=1.0e-8)
 
 
-def _get_burnup_list(obiwan, file_list, burnup_rtol=2.0e-2, caseid=-2):
-    """Extract burnups from F71 info and verify that all permutations match."""
-    burnup_list = list()
+def _burnup_grid_mismatch_message(reference, candidate):
+    reference = np.asarray(reference, dtype=float)
+    candidate = np.asarray(candidate, dtype=float)
+    if reference.shape != candidate.shape:
+        return f"reference_shape={reference.shape} candidate_shape={candidate.shape}"
+
+    abs_delta = np.abs(candidate - reference)
+    rel_delta = abs_delta / np.maximum(np.abs(reference), 1.0e-30)
+    index = int(np.argmax(abs_delta))
+    return (
+        f"index={index} reference={reference[index]} candidate={candidate[index]} "
+        f"abs_delta={abs_delta[index]} rel_delta={rel_delta[index]}"
+    )
+
+
+def _get_burnup_list(obiwan, file_list, burnup_rtol=2.0e-2):
+    """Extract the ARPDATA burnup axis from F33 libraries."""
+    if burnup_rtol <= 0.0:
+        raise ValueError(f"burnup_rtol must be > 0.0; got {burnup_rtol}")
+
+    burnup_list = []
+    burnup_arrays = []
     previous_output_file = ""
     for i in range(len(file_list)):
         output_file = file_list[i]["output"]
-        bu = core.Obiwan.get_burnups_from_f71(obiwan, file_list[i]["f71"], caseid)
+        bu = np.asarray(
+            core.Obiwan.get_burnups_from_f33(obiwan, file_list[i]["lib"]),
+            dtype=float,
+        )
 
         if len(burnup_list) == 0:
             burnup_list = bu
         elif not _burnup_lists_match(burnup_list, bu, burnup_rtol):
             raise ValueError(
-                f"Output file={output_file} burnups deviated from previous {previous_output_file}!"
+                "F33 library burnups for output "
+                f"file={output_file} deviated from previous {previous_output_file}; "
+                "arpdata.txt requires one burnup grid for the block. "
+                + _burnup_grid_mismatch_message(burnup_list, bu)
             )
+        burnup_arrays.append(bu)
         previous_output_file = output_file
 
-    return burnup_list
+    if not burnup_arrays:
+        return []
+    return np.mean(np.stack(burnup_arrays), axis=0)
 
 
 def _get_arpinfo_uox(name, perms, file_list, dim_map):
@@ -331,7 +368,15 @@ def _get_arpinfo_mox(name, perms, file_list, dim_map):
     return arpinfo
 
 
-def _get_arpinfo(obiwan, work_dir, name, fuel_type, dim_map, material_lumping="BASIS"):
+def _get_arpinfo(
+    obiwan,
+    work_dir,
+    name,
+    fuel_type,
+    dim_map,
+    material_lumping="BASIS",
+    burnup_rtol=2.0e-2,
+):
     """Populate the ArpInfo data."""
     material_lumping = _normalize_triton_material_lumping(material_lumping)
 
@@ -355,9 +400,10 @@ def _get_arpinfo(obiwan, work_dir, name, fuel_type, dim_map, material_lumping="B
             "Unknown fuel_type={fuel_type} (only MOX/UOX is supported right now)"
         )
 
-    # Get the burnups.
+    # Get the ARPDATA burnups from the F33 libraries. The matching F71 files are
+    # read later only for inventory metadata and interval-average powers.
     caseid = _triton_material_lumping_caseid(material_lumping)
-    arpinfo.burnup_list = _get_burnup_list(obiwan, file_list, caseid=caseid)
+    arpinfo.burnup_list = _get_burnup_list(obiwan, file_list, burnup_rtol)
 
     # Set new canonical file names.
     arpinfo.set_canonical_filenames(".h5")
@@ -378,6 +424,8 @@ def _get_comp_system(ii_data):
     nuclide_list = ii_data["definitions"]["nuclideVectors"][vh]
 
     x = dict()
+    element_masses = dict()
+    element_amounts = dict()
     total_mass = 0.0
     for i in range(len(nuclide_list)):
         name = nuclide_list[i]
@@ -388,6 +436,9 @@ def _get_comp_system(ii_data):
         total_mass += mass
         z = data["atomicNumber"]
         e = data["element"]
+        element = e.lower()
+        element_masses[element] = element_masses.get(element, 0.0) + mass
+        element_amounts[element] = element_amounts.get(element, 0.0) + amount
         m = data["isomericState"]
         a = data["massNumber"]
         mstr = ""
@@ -402,8 +453,102 @@ def _get_comp_system(ii_data):
     comp = core.CompositionManager.calculate_hm_oxide_breakdown(x)
     comp["info"] = core.CompositionManager.approximate_hm_info(comp)
     comp["density"] = total_mass / volume
+    comp["lumped0d"] = _get_lumped0d_from_initial_elements(
+        element_masses, element_amounts
+    )
 
     return comp
+
+
+def _get_lumped0d_from_initial_elements(element_masses, element_amounts):
+    total_mass = sum(element_masses.values())
+    if total_mass <= 0.0:
+        return {}
+
+    oxygen_molar_mass = _element_molar_mass(element_masses, element_amounts, "o")
+    component_masses = {}
+
+    u_moles = element_amounts.get("u", 0.0)
+    if u_moles > 0.0:
+        u_mass = element_masses["u"]
+        oxygen_mass = 2.0 * u_moles * oxygen_molar_mass
+        component_masses["uo2_wtpt"] = u_mass + oxygen_mass
+
+    gd_moles = element_amounts.get("gd", 0.0)
+    if gd_moles > 0.0:
+        gd_mass = element_masses["gd"]
+        oxygen_mass = 1.5 * gd_moles * oxygen_molar_mass
+        component_masses["gd2o3_wtpt"] = gd_mass + oxygen_mass
+
+    return {
+        key: 100.0 * mass / total_mass
+        for key, mass in component_masses.items()
+        if mass > 0.0
+    }
+
+
+def _element_molar_mass(element_masses, element_amounts, element):
+    amount = element_amounts.get(element, 0.0)
+    if amount > 0.0:
+        return element_masses[element] / amount
+    if element == "o":
+        return 15.9994
+    raise ValueError(f"Cannot calculate molar mass for missing element={element}")
+
+
+def _get_replay_burndata_count(perm):
+    time = perm.get("time", {})
+    final_burnup_padding_gwd = float(time.get("final_burnup_padding_gwd", 0.0))
+    if final_burnup_padding_gwd < 0.0:
+        raise ValueError(
+            "final_burnup_padding_gwd must be >= 0.0; "
+            f"got {final_burnup_padding_gwd}"
+        )
+    if final_burnup_padding_gwd == 0.0:
+        return None
+
+    burndata = time.get("burndata")
+    if not burndata:
+        raise ValueError(
+            "final_burnup_padding_gwd > 0.0 requires generated time.burndata "
+            "so assemble can exclude the final padding interval from replay."
+        )
+    return len(burndata) - 1
+
+
+def _truncate_history_burndata(history, replay_burndata_count):
+    if replay_burndata_count is None:
+        return history
+
+    burndata = history.get("burndata", [])
+    if replay_burndata_count > len(burndata):
+        raise ValueError(
+            "Cannot truncate high-order history to more burn intervals than it has: "
+            f"requested={replay_burndata_count} available={len(burndata)}"
+        )
+
+    truncated = copy.deepcopy(history)
+    truncated["burndata"] = burndata[:replay_burndata_count]
+    return truncated
+
+
+def _truncate_ii_system_time(ii, time_count):
+    if time_count is None:
+        return ii
+
+    system = ii["responses"]["system"]
+    current_count = len(system["time"])
+    if time_count > current_count:
+        raise ValueError(
+            "Cannot truncate high-order ii.json to more time points than it has: "
+            f"requested={time_count} available={current_count}"
+        )
+
+    truncated = copy.deepcopy(ii)
+    system = truncated["responses"]["system"]
+    system["time"] = system["time"][:time_count]
+    system["amount"] = system["amount"][:time_count]
+    return truncated
 
 
 def _process_libraries(
@@ -450,14 +595,7 @@ def _process_libraries(
         internal.logger.debug(f"Copying original library {old_lib} to {tmp_lib}")
         shutil.copyfile(old_lib, tmp_lib)
 
-        # Set burnups on file using obiwan (should only be necessary in earlier SCALE versions).
-        internal.run_command(
-            f"{obiwan} convert -i -setbu='[{bu_str}]' {tmp_lib}", echo=False
-        )
         bad_local = Path(tmp_lib.with_suffix(".f33").name)
-        if bad_local.exists():
-            internal.logger.warning("Fixup: relocating local", file=str(bad_local))
-            shutil.move(bad_local, tmp_lib)
 
         # Perform burnup thinning.
         if bu_str != thin_bu_str:
@@ -489,6 +627,10 @@ def _process_libraries(
         # Generate the system composition information from the system ii.json.
         k = arpinfo.get_perm_by_index(i)
         perm = perms[k]
+        replay_burndata_count = _get_replay_burndata_count(perm)
+        replay_time_count = (
+            None if replay_burndata_count is None else replay_burndata_count + 1
+        )
         f71 = (work_dir / perm["input_file"]).with_suffix(".f71")
         text = internal.run_command(
             f"{obiwan} view -format=ii.json {f71} -cases='[{caseid}]'",
@@ -500,6 +642,7 @@ def _process_libraries(
         internal.logger.debug(f"Converting {f71} to {ii_json}")
         ii = json.loads(text)
         ii["responses"]["system"] = ii["responses"].pop(f"case({caseid})")
+        ii = _truncate_ii_system_time(ii, replay_time_count)
         with open(ii_json, "w") as f:
             f.write(json.dumps(ii, indent=4))
 
@@ -507,6 +650,8 @@ def _process_libraries(
         comp_system = _get_comp_system(ii)
 
         # Save relevant permutation data in a list.
+        history = core.Obiwan.get_history_from_f71(obiwan, f71, caseid)
+        history = _truncate_history_burndata(history, replay_burndata_count)
         points.append(
             {
                 "files": {
@@ -521,9 +666,10 @@ def _process_libraries(
                     "system": comp_system,
                 },
                 "material_lumping": material_lumping,
-                "history": core.Obiwan.get_history_from_f71(obiwan, f71, caseid),
+                "history": history,
                 "_": {"perm": perm},
                 "_arpinfo": {
+                    "name": arpinfo.name,
                     "interpvars": {**arpinfo.interpvars_by_index(i)},
                     "burnup_list": arpinfo.burnup_list,
                 },

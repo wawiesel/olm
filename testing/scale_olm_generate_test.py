@@ -70,28 +70,17 @@ def test_jt_expander_uses_model_template_float_format(tmp_path):
 
 
 def test_constpower_burndata():
-    # Test that the burnup sequence is correct.
     power = 40.0
     gwd_burnups = [0.0, 10.0, 20.0]
     time = olm.generate.time.constpower_burndata({"specific_power": power}, gwd_burnups)
 
-    # Generate output midpoint burnups.
-    bu = 0.0
-    mid_burnups = []
-    for bd in time["burndata"]:
-        dbu = bd["burn"] * bd["power"] / 1000.0
-        mid_burnups.append(bu + dbu / 2.0)
-        bu += dbu
-
-    # Double loop to look for approximate matches.
-    for t in gwd_burnups:
-        found = False
-        for b in mid_burnups:
-            if t == pytest.approx(b, 1.0):
-                found = True
-        assert found, "No approximate match found for {} in {}".format(
-            t, ",".join(str(e) for e in mid_burnups)
-        )
+    assert time == {
+        "burndata": [
+            {"power": 40.0, "burn": 250.0},
+            {"power": 40.0, "burn": 250.0},
+        ],
+        "final_burnup_padding_gwd": 0.0,
+    }
 
 
 def test_constpower_burndata_sorts_burnups_and_handles_single_point():
@@ -103,13 +92,33 @@ def test_constpower_burndata_sorts_burnups_and_handles_single_point():
         "burndata": [
             {"power": 40.0, "burn": 250.0},
             {"power": 40.0, "burn": 250.0},
-            {"power": 40.0, "burn": 250.0},
-        ]
+        ],
+        "final_burnup_padding_gwd": 0.0,
     }
 
     assert olm.generate.time.constpower_burndata(
         {"specific_power": 40.0}, [0.0]
-    ) == {"burndata": [{"power": 40.0, "burn": 0}]}
+    ) == {
+        "burndata": [{"power": 40.0, "burn": 0}],
+        "final_burnup_padding_gwd": 0.0,
+    }
+
+
+def test_constpower_burndata_adds_explicit_final_padding():
+    result = olm.generate.time.constpower_burndata(
+        {"specific_power": 40.0},
+        [0.0, 10.0, 20.0],
+        final_burnup_padding_gwd=1.0,
+    )
+
+    assert result == {
+        "burndata": [
+            {"power": 40.0, "burn": 250.0},
+            {"power": 40.0, "burn": 250.0},
+            {"power": 40.0, "burn": 25.0},
+        ],
+        "final_burnup_padding_gwd": 1.0,
+    }
 
 
 def test_constpower_burndata_requires_zero_initial_burnup():

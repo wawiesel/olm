@@ -45,8 +45,8 @@ def test_gridgradient_fast_basic():
     
     # Verify basic functionality
     assert info.name == "GridGradient"
-    assert 0 <= info.q1 <= 1, f"q1 should be between 0 and 1, got {info.q1}"
-    assert 0 <= info.q2 <= 1, f"q2 should be between 0 and 1, got {info.q2}"
+    assert 0 <= info.q_r <= 1, f"q_r should be between 0 and 1, got {info.q_r}"
+    assert 0 <= info.q_ar <= 1, f"q_ar should be between 0 and 1, got {info.q_ar}"
     assert info.m > 0, "Should have processed some gradient points"
 
 
@@ -76,8 +76,8 @@ def test_gridgradient_fast_with_duplicated_axis():
     
     # Should complete without errors and produce valid quality scores
     assert info.name == "GridGradient"
-    assert 0 <= info.q1 <= 1, f"q1 should be between 0 and 1, got {info.q1}"
-    assert 0 <= info.q2 <= 1, f"q2 should be between 0 and 1, got {info.q2}"
+    assert 0 <= info.q_r <= 1, f"q_r should be between 0 and 1, got {info.q_r}"
+    assert 0 <= info.q_ar <= 1, f"q_ar should be between 0 and 1, got {info.q_ar}"
     assert info.m > 0, "Should have processed some gradient points"
 
 
@@ -140,16 +140,16 @@ def test_gridgradient_coefficient_scaling():
         
         # Should handle all scales without errors
         assert info.name == "GridGradient", f"Failed for {description}"
-        assert np.isfinite(info.q1), f"q1 not finite for {description}"
-        assert np.isfinite(info.q2), f"q2 not finite for {description}"
-        assert 0 <= info.q1 <= 1, f"q1 out of range for {description}"
-        assert 0 <= info.q2 <= 1, f"q2 out of range for {description}"
+        assert np.isfinite(info.q_r), f"q_r not finite for {description}"
+        assert np.isfinite(info.q_ar), f"q_ar not finite for {description}"
+        assert 0 <= info.q_r <= 1, f"q_r out of range for {description}"
+        assert 0 <= info.q_ar <= 1, f"q_ar out of range for {description}"
 
 
 def test_gridgradient_quality_score_calculations():
     """Test the quality score calculation logic with known data."""
     # Create GridGradient instance
-    grid_grad = check.GridGradient(epsa=0.1, epsr=0.05, target_q1=0.7, target_q2=0.8)
+    grid_grad = check.GridGradient(epsa=0.1, epsr=0.05, target_q_r=0.7, target_q_ar=0.8)
     
     # Manually set histogram data for predictable testing
     grid_grad.ahist = np.array([0.15, 0.05, 0.2, 0.01, 0.001])
@@ -162,14 +162,14 @@ def test_gridgradient_quality_score_calculations():
     assert info.m == 5, "Should count all histogram points"
     
     # Check the basic score properties
-    assert 0 <= info.q1 <= 1, "q1 should be between 0 and 1"
-    assert 0 <= info.q2 <= 1, "q2 should be between 0 and 1"
-    assert info.q2 <= info.q1, "q2 should be less than or equal to q1 (more stringent test)"
+    assert 0 <= info.q_r <= 1, "q_r should be between 0 and 1"
+    assert 0 <= info.q_ar <= 1, "q_ar should be between 0 and 1"
+    assert info.q_ar <= info.q_r, "q_ar should be less than or equal to q_r (more stringent test)"
     
     # Check test pass logic
-    assert info.test_pass == (info.test_pass_q1 and info.test_pass_q2)
-    assert info.test_pass_q1 == (info.q1 >= info.target_q1)
-    assert info.test_pass_q2 == (info.q2 >= info.target_q2)
+    assert info.test_pass == (info.test_pass_q_r and info.test_pass_q_ar)
+    assert info.test_pass_q_r == (info.q_r >= info.target_q_r)
+    assert info.test_pass_q_ar == (info.q_ar >= info.target_q_ar)
 
 
 def test_gridgradient_parameter_validation():
@@ -181,17 +181,17 @@ def test_gridgradient_parameter_validation():
     assert c1.eps0 == defaults['eps0']
     assert c1.epsa == defaults['epsa']
     assert c1.epsr == defaults['epsr']
-    assert c1.target_q1 == defaults['target_q1']
-    assert c1.target_q2 == defaults['target_q2']
+    assert c1.target_q_r == defaults['target_q_r']
+    assert c1.target_q_ar == defaults['target_q_ar']
     
     # Test custom initialization
-    c2 = check.GridGradient(eps0=1e-5, epsa=0.01, epsr=0.02, target_q1=0.8, target_q2=0.9)
+    c2 = check.GridGradient(eps0=1e-5, epsa=0.01, epsr=0.02, target_q_r=0.8, target_q_ar=0.9)
     
     assert c2.eps0 == 1e-5
     assert c2.epsa == 0.01
     assert c2.epsr == 0.02
-    assert c2.target_q1 == 0.8
-    assert c2.target_q2 == 0.9
+    assert c2.target_q_r == 0.8
+    assert c2.target_q_ar == 0.9
     
     # Test environment parameter
     env = {'nprocs': 8}
@@ -222,10 +222,10 @@ def test_gridgradient_minimal_real_data():
     
     # Should complete very quickly and produce valid results
     assert info.name == "GridGradient"
-    assert np.isfinite(info.q1)
-    assert np.isfinite(info.q2)
-    assert 0 <= info.q1 <= 1
-    assert 0 <= info.q2 <= 1
+    assert np.isfinite(info.q_r)
+    assert np.isfinite(info.q_ar)
+    assert 0 <= info.q_r <= 1
+    assert 0 <= info.q_ar <= 1
     assert info.m > 0
 
 

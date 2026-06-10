@@ -463,6 +463,16 @@ class TestCommandExecution:
         with pytest.raises(ValueError, match="Error from child"):
             internal.run_command(command, echo=False)
 
+    def test_run_command_raises_on_nonzero_return_code(self):
+        """Test run_command raises when a child exits with nonzero status."""
+        command = (
+            f'"{sys.executable}" -c "import sys; '
+            'print(\\"child failed\\"); sys.exit(7)"'
+        )
+
+        with pytest.raises(ValueError, match="child failed"):
+            internal.run_command(command, echo=False)
+
     @patch('subprocess.Popen')
     def test_command_output_processing(self, mock_popen):
         """Test command output processing patterns."""
@@ -560,6 +570,10 @@ class TestEnvironmentLoading:
         assert config["model"]["name"] == "uox_quick"
         assert config["model"]["template_float_format"] == ".12e"
         assert config["generate"]["template"] == "model/triton/pin-uox.jt.inp"
+        assert (
+            config["check"]["sequence"][0]["template"]
+            == "model/origami/lumped0d-uox.jt.inp"
+        )
         assert config["report"]["template"] == "report/scale-short.jt.rst"
         assert not (config_dir / "model.jt.inp").exists()
         assert not (config_dir / "report.jt.rst").exists()
@@ -572,8 +586,13 @@ class TestEnvironmentLoading:
 
         config = json.loads((config_dir / "config.olm.json").read_text())
         assert config["generate"]["template"] == "model.jt.inp"
+        assert config["check"]["sequence"][0]["template"] == "check.jt.inp"
         assert config["report"]["template"] == "report.jt.rst"
         assert "t-depl" in (config_dir / "model.jt.inp").read_text()
+        assert 'extends "lumped0d-base.jt.inp"' in (
+            config_dir / "check.jt.inp"
+        ).read_text()
+        assert (config_dir / "lumped0d-base.jt.inp").exists()
         assert "{{model.name}}" in (config_dir / "report.jt.rst").read_text()
 
 

@@ -2,11 +2,26 @@ from pathlib import Path
 import scale.olm.internal as internal
 import scale.olm.core as core
 import json
+import shlex
+import shutil
+import sys
 from typing import Literal
 
 __all__ = ["rst2pdf"]
 
 _TYPE_RST2PDF = "scale.olm.report:rst2pdf"
+
+
+def _rst2pdf_executable():
+    rst2pdf = shutil.which("rst2pdf")
+    if rst2pdf is not None:
+        return Path(rst2pdf)
+
+    python_sibling = Path(sys.executable).with_name("rst2pdf")
+    if python_sibling.exists():
+        return python_sibling
+
+    return Path("rst2pdf")
 
 
 def _schema_rst2pdf(with_state: bool = False):
@@ -85,7 +100,15 @@ def rst2pdf(
         f.write(filled_text)
 
     # Generate PDF.
-    internal.run_command(f"rst2pdf -s twocolumn {rst}", check_return_code=False)
+    report_style = Path(__file__).parent / "templates" / "report" / "olm-report.yaml"
+    stylesheets = f"twocolumn,{report_style}" if report_style.exists() else "twocolumn"
+    rst2pdf = _rst2pdf_executable()
+    internal.run_command(
+        f"{shlex.quote(str(rst2pdf))} "
+        f"-s {shlex.quote(stylesheets)} "
+        f"-o {shlex.quote(str(pdf))} "
+        f"{shlex.quote(str(rst))}",
+    )
     internal.logger.info("Generated report", pdf_file=str(pdf))
 
     data["_"] = {

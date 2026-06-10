@@ -154,56 +154,142 @@ class TestBurnupListExtraction:
         with pytest.raises(ValueError, match="BASIS, SYSTEM, or MIX<N>"):
             assemble._normalize_triton_material_lumping("MIX0")
     
-    @patch('scale.olm.core.Obiwan.get_burnups_from_f71')
+    @patch('scale.olm.core.Obiwan.get_burnups_from_f33')
     def test_get_burnup_list_basic(self, mock_get_burnups):
-        """Test burnup extraction from file list."""
+        """Test burnup extraction from F33 library files."""
         mock_burnup_data = np.array([0.0, 5.0, 10.0, 15.0, 20.0])
         mock_get_burnups.return_value = mock_burnup_data
         
         file_list = [
-            {'output': Path('perm_000.out'), 'f71': Path('perm_000.f71')},
-            {'output': Path('perm_001.out'), 'f71': Path('perm_001.f71')},
+            {'output': Path('perm_000.out'), 'lib': Path('perm_000.f33')},
+            {'output': Path('perm_001.out'), 'lib': Path('perm_001.f33')},
         ]
         
         result = assemble._get_burnup_list("obiwan", file_list)
         
         np.testing.assert_array_equal(result, mock_burnup_data)
         assert mock_get_burnups.call_count == 2
-        mock_get_burnups.assert_any_call("obiwan", Path('perm_000.f71'), -2)
-        mock_get_burnups.assert_any_call("obiwan", Path('perm_001.f71'), -2)
+        mock_get_burnups.assert_any_call("obiwan", Path('perm_000.f33'))
+        mock_get_burnups.assert_any_call("obiwan", Path('perm_001.f33'))
 
-    @patch('scale.olm.core.Obiwan.get_burnups_from_f71')
-    def test_get_burnup_list_uses_requested_case(self, mock_get_burnups):
-        """Test burnup extraction uses the selected TRITON case id."""
+    @patch('scale.olm.core.Obiwan.get_burnups_from_f33')
+    def test_get_burnup_list_uses_library_path(self, mock_get_burnups):
+        """Test ARPDATA burnups come from the F33 library, not F71 cases."""
         mock_get_burnups.return_value = np.array([0.0, 10.0])
         file_list = [
-            {'output': Path('perm_000.out'), 'f71': Path('perm_000.f71')},
+            {'output': Path('perm_000.out'), 'lib': Path('perm_000.f33')},
         ]
 
-        assemble._get_burnup_list("obiwan", file_list, caseid=10)
+        assemble._get_burnup_list("obiwan", file_list)
 
-        mock_get_burnups.assert_called_once_with("obiwan", Path('perm_000.f71'), 10)
+        mock_get_burnups.assert_called_once_with("obiwan", Path('perm_000.f33'))
+
+    @patch('scale.olm.core.Obiwan.get_burnups_from_f33')
+    def test_get_burnup_list_averages_tolerated_f33_grids(self, mock_get_burnups):
+        """Test common ARPDATA grid averages F33 grids within tolerance."""
+        mock_get_burnups.side_effect = [
+            np.array([0.0, 4.93652, 98.7309]),
+            np.array([0.0, 4.99138, 99.8263]),
+        ]
+        file_list = [
+            {'output': Path('perm_000.out'), 'lib': Path('perm_000.f33')},
+            {'output': Path('perm_001.out'), 'lib': Path('perm_001.f33')},
+        ]
+
+        result = assemble._get_burnup_list("obiwan", file_list)
+
+        np.testing.assert_allclose(result, [0.0, 4.96395, 99.2786])
     
-    @patch('scale.olm.core.Obiwan.get_burnups_from_f71')
+    @patch('scale.olm.core.Obiwan.get_burnups_from_f33')
     def test_get_burnup_list_inconsistent_burnups(self, mock_get_burnups):
-        """Test burnup extraction with inconsistent burnup lists."""
+        """Test burnup extraction with inconsistent F33 burnup lists."""
         mock_get_burnups.side_effect = [
             np.array([0.0, 5.0, 10.0]),
             np.array([0.0, 5.0, 15.0])  # Different!
         ]
         
         file_list = [
-            {'output': Path('perm_000.out'), 'f71': Path('perm_000.f71')},
-            {'output': Path('perm_001.out'), 'f71': Path('perm_001.f71')},
+            {'output': Path('perm_000.out'), 'lib': Path('perm_000.f33')},
+            {'output': Path('perm_001.out'), 'lib': Path('perm_001.f33')},
         ]
         
-        with pytest.raises(ValueError, match="burnups deviated from previous"):
+        with pytest.raises(ValueError, match="F33 library burnups.*deviated"):
             assemble._get_burnup_list("obiwan", file_list)
     
     def test_get_burnup_list_empty_files(self):
         """Test burnup extraction with empty file list."""
         result = assemble._get_burnup_list("obiwan", [])
         assert result == []
+
+
+class TestReplayPaddingTruncation:
+    """Test generated padding is excluded from assembled replay artifacts."""
+
+    def test_get_replay_burndata_count_uses_only_final_padding(self):
+        assert assemble._get_replay_burndata_count(
+            {
+                "time": {
+                    "burndata": [{"burn": 1.0}, {"burn": 2.0}],
+                    "replay_burndata_count": 1,
+                }
+            }
+        ) is None
+
+        assert assemble._get_replay_burndata_count(
+            {
+                "time": {
+                    "final_burnup_padding_gwd": 1.0,
+                    "burndata": [{"burn": 1.0}, {"burn": 2.0}, {"burn": 0.1}],
+                }
+            }
+        ) == 2
+
+    def test_truncate_history_burndata_keeps_replay_intervals(self):
+        history = {
+            "initialhm": 1.0,
+            "burndata": [
+                {"power": 40.0, "burn": 1.0},
+                {"power": 40.0, "burn": 2.0},
+                {"power": 40.0, "burn": 3.0},
+            ],
+        }
+
+        result = assemble._truncate_history_burndata(history, 2)
+
+        assert result == {
+            "initialhm": 1.0,
+            "burndata": [
+                {"power": 40.0, "burn": 1.0},
+                {"power": 40.0, "burn": 2.0},
+            ],
+        }
+        assert len(history["burndata"]) == 3
+
+    def test_truncate_ii_system_time_keeps_replay_times(self):
+        ii = {
+            "responses": {
+                "system": {
+                    "time": [0.0, 1.0, 2.0, 3.0],
+                    "amount": [["a0"], ["a1"], ["a2"], ["padding"]],
+                    "volume": 1.0,
+                }
+            }
+        }
+
+        result = assemble._truncate_ii_system_time(ii, 3)
+
+        assert result["responses"]["system"]["time"] == [0.0, 1.0, 2.0]
+        assert result["responses"]["system"]["amount"] == [["a0"], ["a1"], ["a2"]]
+        assert ii["responses"]["system"]["time"] == [0.0, 1.0, 2.0, 3.0]
+
+    def test_truncate_rejects_too_many_replay_points(self):
+        history = {"burndata": [{"power": 40.0, "burn": 1.0}]}
+        with pytest.raises(ValueError, match="more burn intervals"):
+            assemble._truncate_history_burndata(history, 2)
+
+        ii = {"responses": {"system": {"time": [0.0], "amount": [[]]}}}
+        with pytest.raises(ValueError, match="more time points"):
+            assemble._truncate_ii_system_time(ii, 2)
 
 
 class TestArpInfoProcessing:
@@ -325,9 +411,7 @@ class TestArpInfoMaster:
         # Verify the full workflow
         mock_get_files.assert_called_once_with(work_dir, ".system.f33", mock_generate_data["perms"])
         mock_get_arpinfo_uox.assert_called_once_with(name, mock_generate_data["perms"], mock_file_list, dim_map)
-        mock_get_burnup_list.assert_called_once_with(
-            "obiwan", mock_file_list, caseid=-2
-        )
+        mock_get_burnup_list.assert_called_once_with("obiwan", mock_file_list, 2.0e-2)
         
         # Verify result
         assert result == mock_arpinfo
@@ -370,9 +454,7 @@ class TestArpInfoMaster:
         mock_get_files.assert_called_once_with(
             work_dir, ".mix0010.f33", mock_generate_data["perms"]
         )
-        mock_get_burnup_list.assert_called_once_with(
-            "obiwan", mock_file_list, caseid=10
-        )
+        mock_get_burnup_list.assert_called_once_with("obiwan", mock_file_list, 2.0e-2)
         assert result.material_lumping == "MIX10"
         assert result.caseid == 10
     
@@ -390,6 +472,57 @@ class TestArpInfoMaster:
 
 class TestCompositionSystem:
     """Test composition system processing."""
+
+    def test_get_comp_system_derives_lumped0d_oxides(self):
+        """Test low-order lumping from initial high-order inventory."""
+        ii_data = {
+            "responses": {
+                "system": {
+                    "volume": 1.0,
+                    "amount": [[1.0, 5.0, 2.0]],
+                    "nuclideVectorHash": "hash123",
+                }
+            },
+            "data": {
+                "nuclides": {
+                    "u238": {
+                        "mass": 238.0,
+                        "atomicNumber": 92,
+                        "element": "U",
+                        "isomericState": 0,
+                        "massNumber": 238,
+                    },
+                    "o16": {
+                        "mass": 16.0,
+                        "atomicNumber": 8,
+                        "element": "O",
+                        "isomericState": 0,
+                        "massNumber": 16,
+                    },
+                    "gd157": {
+                        "mass": 157.0,
+                        "atomicNumber": 64,
+                        "element": "Gd",
+                        "isomericState": 0,
+                        "massNumber": 157,
+                    },
+                }
+            },
+            "definitions": {
+                "nuclideVectors": {"hash123": ["u238", "o16", "gd157"]}
+            },
+        }
+
+        result = assemble._get_comp_system(ii_data)
+        lumped0d = result["lumped0d"]
+        total_mass = 238.0 + 5.0 * 16.0 + 2.0 * 157.0
+
+        assert lumped0d["uo2_wtpt"] == pytest.approx(
+            100.0 * (238.0 + 32.0) / total_mass
+        )
+        assert lumped0d["gd2o3_wtpt"] == pytest.approx(
+            100.0 * (2.0 * 157.0 + 3.0 * 16.0) / total_mass
+        )
     
     @patch('scale.olm.core.CompositionManager.calculate_hm_oxide_breakdown')
     @patch('scale.olm.core.CompositionManager.approximate_hm_info')
@@ -436,9 +569,10 @@ class TestCompositionSystem:
         mock_approximate_hm_info.assert_called_once_with(mock_breakdown)
         
         # Should include the calculated info and density
-        assert result == mock_breakdown
+        assert result is mock_breakdown
         assert result["info"] == mock_hm_info
         assert "density" in result
+        assert "lumped0d" in result
         
         # Verify density calculation - adjust expectation to match actual calculation
         # The density calculation may use different logic than simple mass/volume
@@ -469,6 +603,7 @@ class TestCompositionSystem:
                 # Should handle empty data gracefully
                 assert isinstance(result, dict)
                 assert result["density"] == 0.0  # no mass
+                assert result["lumped0d"] == {}
 
 
 class TestSchemaFunctions:

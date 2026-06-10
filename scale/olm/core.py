@@ -1462,6 +1462,39 @@ class Obiwan:
         return Obiwan.get_info_history_from_f71(obiwan, f71, caseid0)["burnups"]
 
     @staticmethod
+    def parse_burnups_from_f33_text(text, source):
+        """Parse an OBIWAN F33 burnup table into MWd/MTIHM values."""
+        burnups = []
+        expected_position = 1
+        for line in text.splitlines():
+            columns = line.split()
+            if len(columns) != 2:
+                continue
+            try:
+                position = int(columns[0])
+                burnup = float(columns[1])
+            except ValueError:
+                continue
+            if position != expected_position:
+                raise ValueError(
+                    "OBIWAN F33 burnup positions must be contiguous for "
+                    f"f33={source}; expected={expected_position} found={position}"
+                )
+            burnups.append(burnup)
+            expected_position += 1
+
+        if not burnups:
+            raise ValueError(f"Could not find OBIWAN F33 burnup table in f33={source}")
+        return burnups
+
+    @staticmethod
+    def get_burnups_from_f33(obiwan, f33):
+        text0 = run_command(
+            f"{obiwan} view -type=f33 -format=burnups {f33}", echo=False
+        )
+        return Obiwan.parse_burnups_from_f33_text(text0, f33)
+
+    @staticmethod
     def get_initialhm_from_f71(obiwan, f71, caseid0):
         return Obiwan.get_info_history_from_f71(obiwan, f71, caseid0)["initialhm"]
 
@@ -2423,47 +2456,168 @@ class RelAbsHistogram:
 
     @staticmethod
     def plot_hist(
-        x, image="", xlabel=r"$\log \tilde{h}_{ijk}$", ylabel=r"$\log h_{ijk}$"
+        x,
+        image="",
+        xlabel=r"$\log \tilde{h}_{ijk}$",
+        ylabel=r"$\log h_{ijk}$",
+        eps0=None,
+        epsr=None,
+        epsa=None,
     ):
         """Plot histograms from relative and absolute histogram data (rhist,ahist)."""
-        from matplotlib.ticker import MaxNLocator,MultipleLocator
+        from matplotlib.colors import LogNorm
 
         plt.figure()
-        eps = 1e-10
-        vmin = 0
-        vmax = 1
-        cmin = 1e-5
+        eps = eps0 if eps0 is not None and eps0 > 0.0 else 1e-10
+        cmin = 1e-12
 
-        min_lim = int(np.log10(eps))
-        max_lim = max(
-            int(np.amax([np.log10(eps + x.rhist), np.log10(eps + x.ahist)])),
-            -min_lim
-        )
-        nbins = max_lim-min_lim+1
+        min_lim = int(np.floor(np.log10(eps)))
+        max_lim = 0
+        nbins = max_lim - min_lim + 1
         bins = np.linspace(min_lim, max_lim, nbins)
+        rhist = np.asarray(x.rhist, dtype=float)
+        ahist = np.asarray(x.ahist, dtype=float)
+        keep = np.logical_or(ahist >= eps, rhist >= eps)
+        rhist = np.clip(rhist[keep], eps, 1.0)
+        ahist = np.clip(ahist[keep], eps, 1.0)
+        rhist = np.log10(rhist)
+        ahist = np.log10(ahist)
+        if len(rhist) > 0:
+            hist_counts, _, _ = np.histogram2d(rhist, ahist, bins=bins)
+            max_count = np.amax(hist_counts)
+            weights = (
+                np.full_like(rhist, 1.0 / max_count, dtype=float)
+                if max_count > 0.0
+                else np.ones_like(rhist, dtype=float)
+            )
+            log_vmin = 1.0 / max_count if max_count > 1.0 else 0.1
+            color_norm = LogNorm(vmin=log_vmin, vmax=1.0)
+        else:
+            weights = np.asarray([], dtype=float)
+            color_norm = None
 
         h = plt.hist2d(
-            np.log10(eps + x.rhist),
-            np.log10(eps + x.ahist),
+            rhist,
+            ahist,
             bins=bins,
+            weights=weights,
             alpha=1.0,
             cmin=cmin,
-            vmin=vmin,
-            vmax=vmax,
-            density=True,
+            norm=color_norm,
+            density=False,
         )
         plt.colorbar(h[3])
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
-        plt.gca().set_xticks(bins)  # Set x-axis ticks to match bin edges
-        plt.gca().set_yticks(bins)  # Set y-axis ticks to match bin edges
+        plt.xlim(min_lim, max_lim)
+        plt.ylim(min_lim, max_lim)
+        epsr_log = None
+        epsa_log = None
+        if epsr is not None and epsr > 0.0:
+            epsr_log = float(np.log10(epsr))
+        if epsa is not None and epsa > 0.0:
+            epsa_log = float(np.log10(epsa))
 
-        # Limit the number of tick labels to at most 5 without removing gridlines
-        plt.gca().xaxis.set_major_locator(MultipleLocator(1))  # Ensure integer grid lines
-        plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(lambda val, pos: f"{int(val)}" if int(val) % 5 == 0 else ""))
-        plt.gca().yaxis.set_major_locator(MultipleLocator(1))  # Ensure integer grid lines
-        plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda val, pos: f"{int(val)}" if int(val) % 5 == 0 else ""))
+        def ticks_with_threshold(base_ticks, threshold):
+            ticks = list(base_ticks)
+            if threshold is not None and min_lim <= threshold <= max_lim:
+                if not np.any(np.isclose(ticks, threshold, rtol=0.0, atol=1.0e-10)):
+                    ticks.append(threshold)
+            return np.asarray(sorted(ticks), dtype=float)
+
+        x_ticks = ticks_with_threshold(bins, epsr_log)
+        y_ticks = ticks_with_threshold(bins, epsa_log)
+        plt.gca().set_xticks(x_ticks)  # Set x-axis ticks to match bin edges.
+        plt.gca().set_yticks(y_ticks)  # Set y-axis ticks to match bin edges.
+
+        def axis_tick_label(value, *thresholds):
+            is_threshold = (
+                threshold is not None
+                and min_lim <= threshold <= max_lim
+                and np.isclose(value, threshold, rtol=0.0, atol=1.0e-10)
+                for threshold in thresholds
+            )
+            return sparse_log_label(value) if any(is_threshold) else sparse_decade_label(value)
+
+        def sparse_log_label(value):
+            rounded = int(round(value))
+            is_integer = np.isclose(value, rounded, rtol=0.0, atol=1.0e-10)
+            if is_integer:
+                return f"{rounded}"
+            return f"{value:.2f}".rstrip("0").rstrip(".")
+
+        def sparse_decade_label(value):
+            rounded = int(round(value))
+            is_integer = np.isclose(value, rounded, rtol=0.0, atol=1.0e-10)
+            return f"{rounded}" if is_integer and rounded % 5 == 0 else ""
+
+        plt.gca().xaxis.set_major_formatter(
+            plt.FuncFormatter(
+                lambda value, position: axis_tick_label(value, min_lim, epsr_log)
+            )
+        )
+        plt.gca().yaxis.set_major_formatter(
+            plt.FuncFormatter(
+                lambda value, position: axis_tick_label(value, min_lim, epsa_log)
+            )
+        )
+        for tick_value, label in zip(plt.gca().get_xticks(), plt.gca().get_xticklabels()):
+            if (
+                np.isclose(tick_value, min_lim, rtol=0.0, atol=1.0e-10)
+                or (
+                    epsr_log is not None
+                    and np.isclose(tick_value, epsr_log, rtol=0.0, atol=1.0e-10)
+                )
+            ):
+                label.set_color("red")
+        for tick_value, label in zip(plt.gca().get_yticks(), plt.gca().get_yticklabels()):
+            if (
+                np.isclose(tick_value, min_lim, rtol=0.0, atol=1.0e-10)
+                or (
+                    epsa_log is not None
+                    and np.isclose(tick_value, epsa_log, rtol=0.0, atol=1.0e-10)
+                )
+            ):
+                label.set_color("red")
         plt.grid(True)
+        label_offset = 0.25
+        label_min = min_lim + label_offset
+        plt.plot(
+            [min_lim],
+            [min_lim],
+            color="red",
+            marker="o",
+            linestyle="None",
+            clip_on=False,
+        )
+        plt.text(
+            label_min,
+            label_min,
+            r"$\epsilon_0$",
+            color="red",
+            ha="left",
+            va="bottom",
+        )
+        if epsr_log is not None and min_lim <= epsr_log <= max_lim:
+            plt.axvline(epsr_log, color="red", linestyle="--", linewidth=1.2)
+            plt.text(
+                epsr_log,
+                label_min,
+                r"$\epsilon_r$",
+                color="red",
+                ha="left",
+                va="bottom",
+            )
+        if epsa_log is not None and min_lim <= epsa_log <= max_lim:
+            plt.axhline(epsa_log, color="red", linestyle="--", linewidth=1.2)
+            plt.text(
+                label_min,
+                epsa_log,
+                r"$\epsilon_a$",
+                color="red",
+                ha="left",
+                va="bottom",
+            )
 
         if image == "":
             plt.show()

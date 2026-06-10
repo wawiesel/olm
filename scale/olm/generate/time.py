@@ -42,7 +42,8 @@ def _test_args_constpower_burndata(with_state: bool = False):
 @validate_call
 def constpower_burndata(
     state: StateWithSpecificPower,
-    gwd_burnups: Annotated[List[float],Field(min_length=1)],
+    gwd_burnups: Annotated[List[float], Field(min_length=1)],
+    final_burnup_padding_gwd: Annotated[float, Field(ge=0.0)] = 0.0,
     _type: Literal[_TYPE_CONSTPOWER_BURNDATA] = None,
 ):
     """Return a list of powers and times assuming constant burnup.
@@ -57,10 +58,14 @@ def constpower_burndata(
 
         gwd_burnups: list of cumulative burnups in GWd/MTIHM
 
+        final_burnup_padding_gwd: final burnup increment in GWd/MTIHM added
+                                  only to generated high-order libraries
+
     Returns:
 
-        dictionary with single "burndata" key with values a list of power/burn pairs
-        as TRITON would expect for its burndata block
+        dictionary with "burndata" values as TRITON would expect for its
+        burndata block. If "final_burnup_padding_gwd" is positive, the final
+        burndata row is padding for high-order library generation only.
 
     Examples:
 
@@ -69,12 +74,13 @@ def constpower_burndata(
         ...     state={"specific_power": 40},
         ...     gwd_burnups=[0,10,20]
         ... )
-        {'burndata': [{'power': 40.0, 'burn': 250.0}, {'power': 40.0, 'burn': 250.0}, {'power': 40.0, 'burn': 250.0}]}
+        {'burndata': [{'power': 40.0, 'burn': 250.0},
+        {'power': 40.0, 'burn': 250.0}], 'final_burnup_padding_gwd': 0.0}
 
     """
 
     # Calculate cumulative time to achieve each burnup.
-    gwd_burnups.sort()
+    gwd_burnups = sorted(gwd_burnups)
     burnups = [float(x) * 1e3 for x in gwd_burnups]
     days = [burnup / state.specific_power for burnup in burnups]
 
@@ -86,11 +92,21 @@ def constpower_burndata(
     burndata = []
     if len(days) > 1:
         for i in range(len(days) - 1):
-            burndata.append({"power": state.specific_power, "burn": (days[i + 1] - days[i])})
-
-        # Add one final step so that we can interpolate to the final requested burnup.
-        burndata.append({"power": state.specific_power, "burn": (days[-1] - days[-2])})
+            burndata.append(
+                {"power": state.specific_power, "burn": (days[i + 1] - days[i])}
+            )
     else:
         burndata.append({"power": state.specific_power, "burn": 0})
 
-    return {"burndata": burndata}
+    if final_burnup_padding_gwd > 0.0:
+        burndata.append(
+            {
+                "power": state.specific_power,
+                "burn": final_burnup_padding_gwd * 1e3 / state.specific_power,
+            }
+        )
+
+    return {
+        "burndata": burndata,
+        "final_burnup_padding_gwd": final_burnup_padding_gwd,
+    }

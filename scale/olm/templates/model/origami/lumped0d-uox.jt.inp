@@ -1,0 +1,9 @@
+{% extends "lumped0d-base.jt.inp" %}
+{% block fuelcomp %}
+fuelcomp{
+    stdcomp(fuel){ base=uo2
+        iso[ 92234={{comp.system.uo2.iso.u234}} 92235={{comp.system.uo2.iso.u235}} 92236={{comp.system.uo2.iso.u236}} 92238={{comp.system.uo2.iso.u238}} ]
+    }
+    mix(1){ comps[fuel=100] }
+}
+{% endblock %}

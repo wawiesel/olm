@@ -25,21 +25,21 @@ class TestGridGradientMath:
         params = check.GridGradient.default_params()
         
         # Check that all expected parameters are present
-        expected_keys = ['eps0', 'epsa', 'epsr', 'target_q1', 'target_q2']
+        expected_keys = ['eps0', 'epsa', 'epsr', 'target_q_r', 'target_q_ar']
         assert all(key in params for key in expected_keys)
         
         # Check reasonable default values
         assert params['eps0'] > 0
         assert params['epsa'] > 0
         assert params['epsr'] > 0
-        assert 0 <= params['target_q1'] <= 1
-        assert 0 <= params['target_q2'] <= 1
+        assert 0 <= params['target_q_r'] <= 1
+        assert 0 <= params['target_q_ar'] <= 1
         
     def test_describe_params_advanced(self):
         """Test parameter descriptions are provided."""
         descriptions = check.GridGradient.describe_params()
         
-        expected_keys = ['eps0', 'epsa', 'epsr', 'target_q1', 'target_q2']
+        expected_keys = ['eps0', 'epsa', 'epsr', 'target_q_r', 'target_q_ar']
         assert all(key in descriptions for key in expected_keys)
         assert all(isinstance(desc, str) for desc in descriptions.values())
         assert all(len(desc) > 0 for desc in descriptions.values())
@@ -51,43 +51,43 @@ class TestGridGradientMath:
         assert gg1.eps0 == 1e-20
         assert gg1.epsa == 1e-1
         assert gg1.epsr == 1e-1
-        assert gg1.target_q1 == 0.5  # Actual default value
-        assert gg1.target_q2 == 0.7  # Corrected actual default value
+        assert gg1.target_q_r == 0.5  # Actual default value
+        assert gg1.target_q_ar == 0.7  # Corrected actual default value
         
         # Test with custom parameters
         gg2 = check.GridGradient(
             eps0=1e-15,
             epsa=1e-2,
             epsr=1e-2,
-            target_q1=0.8,
-            target_q2=0.9
+            target_q_r=0.8,
+            target_q_ar=0.9
         )
         assert gg2.eps0 == 1e-15
         assert gg2.epsa == 1e-2
         assert gg2.epsr == 1e-2
-        assert gg2.target_q1 == 0.8
-        assert gg2.target_q2 == 0.9
+        assert gg2.target_q_r == 0.8
+        assert gg2.target_q_ar == 0.9
 
-    @pytest.mark.parametrize("eps0,epsa,epsr,target_q1,target_q2", [
+    @pytest.mark.parametrize("eps0,epsa,epsr,target_q_r,target_q_ar", [
         (1e-20, 1e-1, 1e-1, 0.5, 0.7),   # Actual default values (corrected)
         (1e-15, 1e-2, 1e-2, 0.8, 0.9),   # Custom values
         (1e-10, 1e-3, 1e-3, 0.6, 0.85),  # Different values
     ])
-    def test_grid_gradient_parameter_variations(self, eps0, epsa, epsr, target_q1, target_q2):
+    def test_grid_gradient_parameter_variations(self, eps0, epsa, epsr, target_q_r, target_q_ar):
         """Test GridGradient with various parameter combinations."""
         gg = check.GridGradient(
             eps0=eps0,
             epsa=epsa,
             epsr=epsr,
-            target_q1=target_q1,
-            target_q2=target_q2
+            target_q_r=target_q_r,
+            target_q_ar=target_q_ar
         )
         
         assert gg.eps0 == eps0
         assert gg.epsa == epsa
         assert gg.epsr == epsr
-        assert gg.target_q1 == target_q1
-        assert gg.target_q2 == target_q2
+        assert gg.target_q_r == target_q_r
+        assert gg.target_q_ar == target_q_ar
 
 
 class TestLowOrderConsistencyUtils:
@@ -204,13 +204,13 @@ class TestCheckInfoClass:
         
         # Test setting various attributes
         info.test_pass = True
-        info.q1 = 0.85
-        info.q2 = 0.92
+        info.q_r = 0.85
+        info.q_ar = 0.92
         info.name = "TestCheck"
         
         assert info.test_pass is True
-        assert info.q1 == 0.85
-        assert info.q2 == 0.92
+        assert info.q_r == 0.85
+        assert info.q_ar == 0.92
         assert info.name == "TestCheck"
 
 
@@ -232,7 +232,7 @@ class TestSchemaFunctions:
         assert args['_type'] == 'scale.olm.check:GridGradient'
         
         # Should contain all default parameters from GridGradient
-        expected_keys = ['eps0', 'epsa', 'epsr', 'target_q1', 'target_q2']
+        expected_keys = ['eps0', 'epsa', 'epsr', 'target_q_r', 'target_q_ar']
         assert all(key in args for key in expected_keys)
 
 
@@ -250,9 +250,9 @@ class TestErrorHandling:
         assert gg_large.eps0 == 1.0
         
         # Test with target values at boundaries
-        gg_bounds = check.GridGradient(target_q1=0.0, target_q2=1.0)
-        assert gg_bounds.target_q1 == 0.0
-        assert gg_bounds.target_q2 == 1.0
+        gg_bounds = check.GridGradient(target_q_r=0.0, target_q_ar=1.0)
+        assert gg_bounds.target_q_r == 0.0
+        assert gg_bounds.target_q_ar == 1.0
 
 
 class TestIntegrationWithMocks:
@@ -359,29 +359,29 @@ class TestMathematicalCalculations:
         failed_relative = 50  # 5% failure
         failed_absolute_and_relative = 10  # 1% failure
         
-        fr = float(failed_relative) / total_points
-        fa = float(failed_absolute_and_relative) / total_points
+        f_r = float(failed_relative) / total_points
+        f_ar = float(failed_absolute_and_relative) / total_points
         
-        q1 = 1.0 - fr
-        q2 = 1.0 - 0.9 * fa - 0.1 * fr
+        q_r = 1.0 - f_r
+        q_ar = 1.0 - 0.9 * f_ar - 0.1 * f_r
         
-        assert q1 == 0.95  # 95% pass rate for relative only
-        assert abs(q2 - 0.986) < 1e-10  # Use actual calculated value
-        # Note: q2 considers both absolute and relative thresholds
+        assert q_r == 0.95  # 95% pass rate for relative only
+        assert abs(q_ar - 0.986) < 1e-10  # Use actual calculated value
+        # Note: q_ar considers both absolute and relative thresholds
     
-    @pytest.mark.parametrize("total,failed_rel,failed_abs_rel,expected_q1,expected_q2", [
+    @pytest.mark.parametrize("total,failed_rel,failed_abs_rel,expected_q_r,expected_q_ar", [
         (100, 5, 1, 0.95, 0.986),    # 5% rel failure, 1% abs+rel failure (corrected value)
         (100, 10, 2, 0.90, 0.972),   # 10% rel failure, 2% abs+rel failure (corrected value)  
         (1000, 50, 10, 0.95, 0.986), # 5% rel failure, 1% abs+rel failure (corrected value)
         (100, 0, 0, 1.0, 1.0),       # Perfect scores
     ])
-    def test_quality_score_variations(self, total, failed_rel, failed_abs_rel, expected_q1, expected_q2):
+    def test_quality_score_variations(self, total, failed_rel, failed_abs_rel, expected_q_r, expected_q_ar):
         """Test quality score calculations with various scenarios."""
-        fr = float(failed_rel) / total
-        fa = float(failed_abs_rel) / total
+        f_r = float(failed_rel) / total
+        f_ar = float(failed_abs_rel) / total
         
-        q1 = 1.0 - fr
-        q2 = 1.0 - 0.9 * fa - 0.1 * fr
+        q_r = 1.0 - f_r
+        q_ar = 1.0 - 0.9 * f_ar - 0.1 * f_r
         
-        assert abs(q1 - expected_q1) < 1e-10
-        assert abs(q2 - expected_q2) < 1e-10
+        assert abs(q_r - expected_q_r) < 1e-10
+        assert abs(q_ar - expected_q_ar) < 1e-10

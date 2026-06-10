@@ -108,13 +108,13 @@ class TestBurnupListProcessing:
         """Test burnup list extraction with consistent data."""
         mock_burnup = np.array([0.0, 1.0, 5.0, 10.0, 25.0, 50.0])
         file_list = [
-            {"output": "file1.out", "f71": "file1.f71"},
-            {"output": "file2.out", "f71": "file2.f71"},
-            {"output": "file3.out", "f71": "file3.f71"},
+            {"output": "file1.out", "lib": "file1.f33"},
+            {"output": "file2.out", "lib": "file2.f33"},
+            {"output": "file3.out", "lib": "file3.f33"},
         ]
 
         with patch.object(
-            core.Obiwan, "get_burnups_from_f71", return_value=mock_burnup
+            core.Obiwan, "get_burnups_from_f33", return_value=mock_burnup
         ) as mock_get_burnups:
             result = assemble._get_burnup_list("obiwan", file_list)
 
@@ -126,23 +126,23 @@ class TestBurnupListProcessing:
         burnup1 = np.array([0.0, 1.0, 5.0, 10.0])
         burnup2 = np.array([0.0, 2.0, 6.0, 12.0])  # Different values
         file_list = [
-            {"output": "file1.out", "f71": "file1.f71"},
-            {"output": "file2.out", "f71": "file2.f71"},
+            {"output": "file1.out", "lib": "file1.f33"},
+            {"output": "file2.out", "lib": "file2.f33"},
         ]
 
         with patch.object(
-            core.Obiwan, "get_burnups_from_f71", side_effect=[burnup1, burnup2]
+            core.Obiwan, "get_burnups_from_f33", side_effect=[burnup1, burnup2]
         ):
-            with pytest.raises(ValueError, match="burnups deviated from previous"):
+            with pytest.raises(ValueError, match="F33 library burnups.*deviated"):
                 assemble._get_burnup_list("obiwan", file_list)
     
     def test_get_burnup_list_single_file_advanced(self):
         """Test burnup list extraction with single file."""
         mock_burnup = np.array([0.0, 5.0, 15.0, 30.0])
-        file_list = [{"output": "single_file.out", "f71": "single_file.f71"}]
+        file_list = [{"output": "single_file.out", "lib": "single_file.f33"}]
 
         with patch.object(
-            core.Obiwan, "get_burnups_from_f71", return_value=mock_burnup
+            core.Obiwan, "get_burnups_from_f33", return_value=mock_burnup
         ):
             result = assemble._get_burnup_list("obiwan", file_list)
 

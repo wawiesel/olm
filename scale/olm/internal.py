@@ -345,20 +345,20 @@ def _update_registry(registry, path):
     logger.debug("Searching path={}".format(p))
 
     # Look for arpdata.txt version.
-    q1 = p / "arpdata.txt"
-    q1.resolve()
-    if q1.exists():
+    arpdata_txt = p / "arpdata.txt"
+    arpdata_txt.resolve()
+    if arpdata_txt.exists():
         r = p / "arplibs"
         r.resolve()
         if not r.exists():
             logger.warning(
                 "{} exists but the paired arplibs/ directory at {} does not--ignoring libraries listed".format(
-                    q1, r
+                    arpdata_txt, r
                 )
             )
         else:
             logger.debug("Found arpdata.txt!")
-            blocks = core.ArpInfo.parse_arpdata(q1)
+            blocks = core.ArpInfo.parse_arpdata(arpdata_txt)
             for n in blocks:
                 if n in registry:
                     logger.warning(
@@ -367,10 +367,12 @@ def _update_registry(registry, path):
                         )
                     )
                 else:
-                    logger.debug("Found library name {} in {}!".format(n, q1))
+                    logger.debug(
+                        "Found library name {} in {}!".format(n, arpdata_txt)
+                    )
                     arpinfo = core.ArpInfo()
                     arpinfo.init_block(n, blocks[n])
-                    arpinfo.path = q1
+                    arpinfo.path = arpdata_txt
                     arpinfo.arplibs_dir = r
                     registry[n] = arpinfo
 
@@ -788,24 +790,21 @@ def run_command(
         if not line:
             break
 
-    if not p.returncode:
-        retcode = 1
-    else:
-        retcode = p.returncode
+    stderr = p.stderr.read()
+    retcode = p.wait()
 
     if check_return_code:
         if retcode != 0:
             if text.strip() == "":
                 raise ValueError(
-                    f"command line='{command_line}' failed to run in the shell. Check this is a valid path or recognized executable."
+                    stderr.strip()
+                    or f"command line='{command_line}' failed to run in the shell. Check this is a valid path or recognized executable."
                 )
             else:
-                msg = p.stderr.read().strip()
-                if retcode < 0:
-                    logger.info(
-                        f"Negative return code {retcode} on last command:\n{command_line}\n"
-                    )
+                msg = stderr.strip()
+                if msg:
                     raise ValueError(str(msg))
+                raise ValueError(text.strip())
 
     return text
 

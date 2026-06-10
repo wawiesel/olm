@@ -9,6 +9,8 @@ import pytest
 import numpy as np
 import tempfile
 import os
+import warnings
+from matplotlib.colors import LogNorm
 from unittest.mock import patch
 
 import scale.olm.core as core
@@ -338,6 +340,51 @@ More output text...
 class TestObiwan:
     """Test OBIWAN F71 metadata parsing."""
 
+    def test_parse_burnups_from_f33_text(self):
+        """Read burnup points from an OBIWAN F33 burnup table."""
+        burnup_text = """
+         pos   MWd/MTIHM
+           1  0.0000e+00
+           2  2.4958e+00
+           3  7.4873e+00
+"""
+
+        burnups = core.Obiwan.parse_burnups_from_f33_text(
+            burnup_text, "sample.f33"
+        )
+
+        np.testing.assert_allclose(burnups, [0.0, 2.4958, 7.4873])
+
+    def test_get_burnups_from_f33_runs_obiwan_burnup_view(self):
+        """Request the F33 burnup table from OBIWAN."""
+        burnup_text = """
+         pos   MWd/MTIHM
+           1  0.0000e+00
+           2  5.0000e+00
+"""
+
+        with patch("scale.olm.core.run_command", return_value=burnup_text) as run:
+            burnups = core.Obiwan.get_burnups_from_f33(
+                "/path/to/obiwan", "sample.f33"
+            )
+
+        run.assert_called_once_with(
+            "/path/to/obiwan view -type=f33 -format=burnups sample.f33",
+            echo=False,
+        )
+        np.testing.assert_allclose(burnups, [0.0, 5.0])
+
+    def test_parse_burnups_from_f33_text_requires_contiguous_positions(self):
+        """Reject malformed F33 burnup tables."""
+        burnup_text = """
+         pos   MWd/MTIHM
+           1  0.0000e+00
+           3  7.4873e+00
+"""
+
+        with pytest.raises(ValueError, match="positions must be contiguous"):
+            core.Obiwan.parse_burnups_from_f33_text(burnup_text, "sample.f33")
+
     def test_get_info_history_from_f71_scale_7_table(self):
         """Read burnups and interval history from SCALE 7 OBIWAN info text."""
         info_text = """
@@ -559,3 +606,175 @@ class TestMathematicalAlgorithms:
                 mass_str = re.sub("m[0-9]*$", "", mass_str)  # Remove metastable indicators
                 mass_number = float(mass_str)
                 assert molar_mass == pytest.approx(mass_number, rel=0.01)
+
+
+class TestRelAbsHistogram:
+    """Test relative/absolute histogram plotting."""
+
+    def test_plot_hist_clips_values_above_display_range_to_edge_bins(self):
+        """Test histogram values above log10(error)=0 stay in edge bins."""
+        histogram = core.RelAbsHistogram(
+            rhist=np.array([1.0e-3, 1.0e1]),
+            ahist=np.array([1.0e-6, 1.0e2]),
+        )
+
+        with patch.object(core.plt, "hist2d") as mock_hist2d, patch.object(
+            core.plt, "colorbar"
+        ), patch.object(core.plt, "savefig"):
+            mock_hist2d.return_value = (None, None, None, object())
+
+            core.RelAbsHistogram.plot_hist(histogram, image="hist.png")
+
+        x_values = mock_hist2d.call_args.args[0]
+        y_values = mock_hist2d.call_args.args[1]
+        bins = mock_hist2d.call_args.kwargs["bins"]
+        assert bins[0] == pytest.approx(-10.0)
+        assert bins[-1] == pytest.approx(0.0)
+        assert x_values[-1] == pytest.approx(0.0)
+        assert y_values[-1] == pytest.approx(0.0)
+        assert np.all(x_values <= 0.0)
+        assert np.all(y_values <= 0.0)
+
+        core.plt.close("all")
+
+    def test_plot_hist_uses_eps0_limit_and_discards_small_points(self):
+        """Test points below eps0 on both axes are not histogrammed."""
+        histogram = core.RelAbsHistogram(
+            rhist=np.array([1.0e-9, 1.0e-5, 1.0e1]),
+            ahist=np.array([1.0e-9, 1.0e-8, 1.0e2]),
+        )
+
+        with patch.object(core.plt, "hist2d") as mock_hist2d, patch.object(
+            core.plt, "colorbar"
+        ), patch.object(core.plt, "savefig"):
+            mock_hist2d.return_value = (None, None, None, object())
+
+            core.RelAbsHistogram.plot_hist(
+                histogram,
+                image="hist.png",
+                eps0=1.0e-6,
+            )
+
+        x_values = mock_hist2d.call_args.args[0]
+        y_values = mock_hist2d.call_args.args[1]
+        bins = mock_hist2d.call_args.kwargs["bins"]
+        assert bins[0] == pytest.approx(-6.0)
+        assert bins[-1] == pytest.approx(0.0)
+        assert len(x_values) == 2
+        assert len(y_values) == 2
+        assert x_values[0] == pytest.approx(-5.0)
+        assert y_values[0] == pytest.approx(-6.0)
+        assert x_values[1] == pytest.approx(0.0)
+        assert y_values[1] == pytest.approx(0.0)
+
+        core.plt.close("all")
+
+    def test_plot_hist_all_discarded_points_does_not_warn(self):
+        """Test all-discarded histograms still render without density warnings."""
+        histogram = core.RelAbsHistogram(
+            rhist=np.array([1.0e-9, 2.0e-9]),
+            ahist=np.array([1.0e-9, 2.0e-9]),
+        )
+
+        with patch.object(core.plt, "savefig"):
+            with warnings.catch_warnings():
+                warnings.simplefilter("error", RuntimeWarning)
+                core.RelAbsHistogram.plot_hist(
+                    histogram,
+                    image="hist.png",
+                    eps0=1.0e-6,
+                )
+
+        core.plt.close("all")
+
+    def test_plot_hist_normalizes_to_maximum_occupied_bin(self):
+        """Test the busiest histogram bin maps to the color range maximum."""
+        histogram = core.RelAbsHistogram(
+            rhist=np.array([1.0e-3, 1.2e-3, 1.0e-1]),
+            ahist=np.array([1.0e-3, 1.2e-3, 1.0e-1]),
+        )
+
+        with patch.object(core.plt, "hist2d") as mock_hist2d, patch.object(
+            core.plt, "colorbar"
+        ), patch.object(core.plt, "savefig"):
+            mock_hist2d.return_value = (None, None, None, object())
+
+            core.RelAbsHistogram.plot_hist(histogram, image="hist.png")
+
+        assert mock_hist2d.call_args.kwargs["density"] is False
+        norm = mock_hist2d.call_args.kwargs["norm"]
+        assert isinstance(norm, LogNorm)
+        assert norm.vmin == pytest.approx(0.5)
+        assert norm.vmax == pytest.approx(1.0)
+        np.testing.assert_allclose(
+            mock_hist2d.call_args.kwargs["weights"],
+            [0.5, 0.5, 0.5],
+        )
+
+        core.plt.close("all")
+
+    def test_plot_hist_draws_epsilon_threshold_lines(self):
+        """Test histogram plots mark epsr and epsa with red dashed lines."""
+        histogram = core.RelAbsHistogram(
+            rhist=np.array([1.0e-4, 1.0e-2]),
+            ahist=np.array([1.0e-7, 1.0e-5]),
+        )
+
+        with patch.object(core.plt, "axvline") as mock_axvline, patch.object(
+            core.plt, "axhline"
+        ) as mock_axhline, patch.object(core.plt, "text") as mock_text, patch.object(
+            core.plt, "plot"
+        ) as mock_plot, patch.object(
+            core.plt, "savefig"
+        ):
+            core.RelAbsHistogram.plot_hist(
+                histogram,
+                image="hist.png",
+                epsr=1.0e-3,
+                epsa=1.0e-6,
+            )
+
+        core.plt.gcf().canvas.draw()
+        x_tick_labels = {
+            label.get_text(): label.get_color()
+            for label in core.plt.gca().get_xticklabels()
+        }
+        y_tick_labels = {
+            label.get_text(): label.get_color()
+            for label in core.plt.gca().get_yticklabels()
+        }
+        assert mock_axvline.call_args.args[0] == pytest.approx(-3.0)
+        assert mock_axvline.call_args.kwargs["color"] == "red"
+        assert mock_axvline.call_args.kwargs["linestyle"] == "--"
+        assert mock_axhline.call_args.args[0] == pytest.approx(-6.0)
+        assert mock_axhline.call_args.kwargs["color"] == "red"
+        assert mock_axhline.call_args.kwargs["linestyle"] == "--"
+        labels = [call.args[2] for call in mock_text.call_args_list]
+        assert r"$\epsilon_0$" in labels
+        assert r"$\epsilon_r$" in labels
+        assert r"$\epsilon_a$" in labels
+        label_positions = {
+            call.args[2]: (call.args[0], call.args[1])
+            for call in mock_text.call_args_list
+        }
+        assert label_positions[r"$\epsilon_0$"] == pytest.approx((-9.75, -9.75))
+        assert label_positions[r"$\epsilon_r$"] == pytest.approx((-3.0, -9.75))
+        assert label_positions[r"$\epsilon_a$"] == pytest.approx((-9.75, -6.0))
+        eps_r_call = next(
+            call for call in mock_text.call_args_list if call.args[2] == r"$\epsilon_r$"
+        )
+        assert "rotation" not in eps_r_call.kwargs
+        mock_plot.assert_called_once_with(
+            [-10],
+            [-10],
+            color="red",
+            marker="o",
+            linestyle="None",
+            clip_on=False,
+        )
+        assert x_tick_labels["-10"] == "red"
+        assert x_tick_labels["-3"] == "red"
+        assert y_tick_labels["-10"] == "red"
+        assert y_tick_labels["-6"] == "red"
+
+        core.plt.close("all")

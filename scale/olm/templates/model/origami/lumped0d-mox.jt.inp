@@ -1,0 +1,20 @@
+{% extends "lumped0d-base.jt.inp" %}
+{% block fuelcomp %}
+fuelcomp{
+    stdcomp(c_uo2){ base=uo2 dens={{lumped0d.mox.density}}
+        iso[ 92234={{comp.system.uo2.iso.u234}} 92235={{comp.system.uo2.iso.u235}} 92236={{comp.system.uo2.iso.u236}} 92238={{comp.system.uo2.iso.u238}} ]
+    }
+    stdcomp(c_puo2){ base=puo2 dens={{lumped0d.mox.density}}
+        iso[ 94238={{lumped0d.mox.puo2_iso.pu238}} 94239={{lumped0d.mox.puo2_iso.pu239}} 94240={{lumped0d.mox.puo2_iso.pu240}} 94241={{lumped0d.mox.puo2_iso.pu241}} 94242={{lumped0d.mox.puo2_iso.pu242}} ]
+    }
+    stdcomp(c_am){ base=am  dens={{lumped0d.mox.density}} iso[ 95241={{comp.system.amo2.iso.am241}} ] }
+    stdcomp(c_o2){ base=o  dens={{lumped0d.mox.density}}
+    }
+    mix(1){ comps[
+        c_uo2 = {{lumped0d.mox.uo2_component}}
+        c_puo2 = {{lumped0d.mox.puo2_component}}
+        c_am = {{lumped0d.mox.am_component}}
+        c_o2 = {{lumped0d.mox.oxygen_component}}
+    ] }
+}
+{% endblock %}

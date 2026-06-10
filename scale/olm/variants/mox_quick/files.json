@@ -1,4 +1,6 @@
 {
     "model.jt.inp": "model/triton/pin-mox.jt.inp",
+    "check.jt.inp": "model/origami/lumped0d-mox.jt.inp",
+    "lumped0d-base.jt.inp": "model/origami/lumped0d-base.jt.inp",
     "report.jt.rst": "report/scale-short.jt.rst"
 }

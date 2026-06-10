@@ -1,0 +1,18 @@
+styles:
+  right:
+    parent: bodytext
+    alignment: right
+  center:
+    parent: bodytext
+    alignment: center
+  convergence-table-body:
+    parent: bodytext
+    fontSize: 10
+    leading: 12
+  convergence-table-body-right:
+    parent: convergence-table-body
+    alignment: right
+  appendix-code:
+    parent: code
+    fontSize: 7
+    leading: 7.2

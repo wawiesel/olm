@@ -63,8 +63,8 @@ def test_gradient_calculation_with_duplicated_axis():
     
     # Should complete without errors and produce valid quality scores
     assert info.name == "GridGradient"
-    assert 0 <= info.q1 <= 1, f"q1 should be between 0 and 1, got {info.q1}"
-    assert 0 <= info.q2 <= 1, f"q2 should be between 0 and 1, got {info.q2}"
+    assert 0 <= info.q_r <= 1, f"q_r should be between 0 and 1, got {info.q_r}"
+    assert 0 <= info.q_ar <= 1, f"q_ar should be between 0 and 1, got {info.q_ar}"
     assert info.m > 0, "Should have processed some gradient points"
 
 
@@ -115,5 +115,5 @@ def test_gridgradient_basic():
     c.eps0 = c.default_params()["eps0"]
     i = c.run(a)
     assert i.name == "GridGradient"
-    assert i.q1 == pytest.approx(0.779, 1e-3)
-    assert i.q2 == pytest.approx(0.98, 1e-2)
+    assert i.q_r == pytest.approx(0.225, abs=1e-3)
+    assert i.q_ar == pytest.approx(0.92, 1e-2)

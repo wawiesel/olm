@@ -1,0 +1,15 @@
+=shell
+olm link -p {{_.env.work_dir}} {{_arpinfo.name}}
+end
+=origami
+libs=[ {{_arpinfo.name}} ]
+options{ ft71=all mtu={{history.initialhm}}{% if convergence_control is defined %} nburn={{convergence_control.nburn}}{% endif %} }
+{% block fuelcomp %}{% endblock %}
+modz = [ {{_arpinfo.interpvars.mod_dens}} ]
+pz = [ 1.0 ]
+hist[
+  {%- for pb in history.burndata %}
+  cycle{ power={{pb.power}} burn={{pb.burn}}{% if convergence_control is defined %} nlib={{convergence_control.nlib}}{% endif %} }
+  {%- endfor %}
+]
+end
