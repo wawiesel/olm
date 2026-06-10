@@ -7,8 +7,8 @@
             "eps0": 1e-12,
             "epsa": 1e-06,
             "epsr": 0.001,
-            "target_q1": 0.7,
-            "target_q2": 0.95,
+            "target_q_r": 0.7,
+            "target_q_ar": 0.95,
             "nuclide_compare": {
                 "u235": {
                     "nuclide_index": 1597,
