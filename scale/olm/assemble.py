@@ -249,6 +249,7 @@ def _triton_material_lumping_caseid(material_lumping):
 def _triton_material_lumping_suffix(material_lumping):
     material_lumping = _normalize_triton_material_lumping(material_lumping)
     if material_lumping in ("BASIS", "SYSTEM"):
+        # TODO: Read TRITON BASIS libraries when SCALE writes them distinctly.
         return ".system.f33"
     return f".mix{int(material_lumping[3:]):04d}.f33"
 
@@ -277,17 +278,18 @@ def _burnup_grid_mismatch_message(reference, candidate):
 
 
 def _get_burnup_list(obiwan, file_list, burnup_rtol=2.0e-2):
-    """Extract the ARPDATA burnup axis from F33 libraries."""
+    """Extract the ARPDATA burnup axis from the selected F33 library files."""
     if burnup_rtol <= 0.0:
         raise ValueError(f"burnup_rtol must be > 0.0; got {burnup_rtol}")
 
     burnup_list = []
     burnup_arrays = []
-    previous_output_file = ""
+    previous_library_file = ""
     for i in range(len(file_list)):
+        library_file = file_list[i]["lib"]
         output_file = file_list[i]["output"]
         bu = np.asarray(
-            core.Obiwan.get_burnups_from_f33(obiwan, file_list[i]["lib"]),
+            core.Obiwan.get_burnups_from_f33(obiwan, library_file),
             dtype=float,
         )
 
@@ -295,13 +297,14 @@ def _get_burnup_list(obiwan, file_list, burnup_rtol=2.0e-2):
             burnup_list = bu
         elif not _burnup_lists_match(burnup_list, bu, burnup_rtol):
             raise ValueError(
-                "F33 library burnups for output "
-                f"file={output_file} deviated from previous {previous_output_file}; "
+                "F33 library burnups for "
+                f"library file={library_file} from output file={output_file} "
+                f"deviated from previous library file={previous_library_file}; "
                 "arpdata.txt requires one burnup grid for the block. "
                 + _burnup_grid_mismatch_message(burnup_list, bu)
             )
         burnup_arrays.append(bu)
-        previous_output_file = output_file
+        previous_library_file = library_file
 
     if not burnup_arrays:
         return []
@@ -454,13 +457,13 @@ def _get_comp_system(ii_data):
 
 def _get_replay_burndata_count(perm):
     time = perm.get("time", {})
-    final_burnup_padding_gwd = float(time.get("final_burnup_padding_gwd", 0.0))
-    if final_burnup_padding_gwd < 0.0:
+    padding_gwd = float(time.get("final_burnup_padding_gwd", 0.0))
+    if padding_gwd < 0.0:
         raise ValueError(
             "final_burnup_padding_gwd must be >= 0.0; "
-            f"got {final_burnup_padding_gwd}"
+            f"got {padding_gwd}"
         )
-    if final_burnup_padding_gwd == 0.0:
+    if padding_gwd == 0.0:
         return None
 
     burndata = time.get("burndata")

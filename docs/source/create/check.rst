@@ -7,10 +7,12 @@ Check templates may be local files beside ``config.olm.json`` or packaged templa
 under ``scale/olm/templates``. Packaged template names are relative to that root,
 for example ``model/origami/lumped0d-uox.jt.inp``.
 
-When a ``LowOrderConsistency`` check uses a ``convergence`` block, its configured
-low-order template must use ``convergence_control.nlib`` and
-``convergence_control.nburn`` where ORIGAMI requires those values. Those fields
-are not provided when the ``convergence`` block is omitted.
+``LowOrderConsistency`` can include an optional ``convergence`` block inside the
+check sequence item. When that block is present, the configured low-order
+template receives ``convergence_control.nlib`` and
+``convergence_control.nburn``. Templates that use convergence must render those
+values where ORIGAMI requires them. When the ``convergence`` block is omitted,
+those fields are not provided and the template should not reference them.
 
 .. toctree::
 

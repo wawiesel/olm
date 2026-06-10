@@ -1201,45 +1201,50 @@ class LowOrderConsistency:
             abs(current_q_ar - previous_q_ar),
         )
 
+    def _convergence_status_row(self, info, name, default_value, max_value):
+        delta_q_r = getattr(info, f"{name}_delta_q_r", None)
+        delta_q_ar = getattr(info, f"{name}_delta_q_ar", None)
+        stop_reason = getattr(info, f"{name}_convergence_stop", "")
+        if getattr(info, "run_error", ""):
+            result = "error"
+            reason = "check did not complete"
+        elif stop_reason == "delta":
+            result = "selected"
+            reason = "q_r/q_ar change is within the stop criteria"
+        elif stop_reason == "target":
+            result = "selected"
+            reason = "q_r/q_ar increased and crossed the pass targets"
+        elif stop_reason == "fixed":
+            result = "selected"
+            reason = f"single configured {name} value"
+        elif stop_reason == "max":
+            result = "max"
+            reason = f"reached {name}_max before another stop criterion"
+        else:
+            result = "selected"
+            reason = ""
+        return {
+            "result": result,
+            "value": int(getattr(info, name, default_value)),
+            "max": int(max_value),
+            "delta_q_r": delta_q_r,
+            "delta_q_ar": delta_q_ar,
+            "delta_scope": "minimum time q-score",
+            "delta_q_r_text": self._format_convergence_delta(
+                delta_q_r, self.q_r_stop_criteria
+            ),
+            "delta_q_ar_text": self._format_convergence_delta(
+                delta_q_ar, self.q_ar_stop_criteria
+            ),
+            "reason": reason,
+        }
+
     def _convergence_status(self, info):
         status = {}
         if self.nlib_max > self.nlib_start:
-            delta_q_r = getattr(info, "nlib_delta_q_r", None)
-            delta_q_ar = getattr(info, "nlib_delta_q_ar", None)
-            stop_reason = getattr(info, "nlib_convergence_stop", "")
-            if getattr(info, "run_error", ""):
-                result = "error"
-                reason = "check did not complete"
-            elif stop_reason == "delta":
-                result = "selected"
-                reason = "q_r/q_ar change is within the stop criteria"
-            elif stop_reason == "target":
-                result = "selected"
-                reason = "q_r/q_ar increased and crossed the pass targets"
-            elif stop_reason == "fixed":
-                result = "selected"
-                reason = "single configured nlib value"
-            elif stop_reason == "max":
-                result = "max"
-                reason = "reached nlib_max before another stop criterion"
-            else:
-                result = "selected"
-                reason = ""
-            status["nlib"] = {
-                "result": result,
-                "value": int(getattr(info, "nlib", self.nlib_start)),
-                "max": int(self.nlib_max),
-                "delta_q_r": delta_q_r,
-                "delta_q_ar": delta_q_ar,
-                "delta_scope": "minimum time q-score",
-                "delta_q_r_text": self._format_convergence_delta(
-                    delta_q_r, self.q_r_stop_criteria
-                ),
-                "delta_q_ar_text": self._format_convergence_delta(
-                    delta_q_ar, self.q_ar_stop_criteria
-                ),
-                "reason": reason,
-            }
+            status["nlib"] = self._convergence_status_row(
+                info, "nlib", self.nlib_start, self.nlib_max
+            )
 
         if self.nburn_max > self.nburn_start:
             if status.get("nlib", {}).get("result") == "error":
@@ -1252,42 +1257,9 @@ class LowOrderConsistency:
                     "reason": "skipped because nlib search did not complete",
                 }
             else:
-                delta_q_r = getattr(info, "nburn_delta_q_r", None)
-                delta_q_ar = getattr(info, "nburn_delta_q_ar", None)
-                stop_reason = getattr(info, "nburn_convergence_stop", "")
-                if getattr(info, "run_error", ""):
-                    result = "error"
-                    reason = "check did not complete"
-                elif stop_reason == "delta":
-                    result = "selected"
-                    reason = "q_r/q_ar change is within the stop criteria"
-                elif stop_reason == "target":
-                    result = "selected"
-                    reason = "q_r/q_ar increased and crossed the pass targets"
-                elif stop_reason == "fixed":
-                    result = "selected"
-                    reason = "single configured nburn value"
-                elif stop_reason == "max":
-                    result = "max"
-                    reason = "reached nburn_max before another stop criterion"
-                else:
-                    result = "selected"
-                    reason = ""
-                status["nburn"] = {
-                    "result": result,
-                    "value": int(getattr(info, "nburn", self.nburn_start)),
-                    "max": int(self.nburn_max),
-                    "delta_q_r": delta_q_r,
-                    "delta_q_ar": delta_q_ar,
-                    "delta_scope": "minimum time q-score",
-                    "delta_q_r_text": self._format_convergence_delta(
-                        delta_q_r, self.q_r_stop_criteria
-                    ),
-                    "delta_q_ar_text": self._format_convergence_delta(
-                        delta_q_ar, self.q_ar_stop_criteria
-                    ),
-                    "reason": reason,
-                }
+                status["nburn"] = self._convergence_status_row(
+                    info, "nburn", self.nburn_start, self.nburn_max
+                )
         return status
 
     def _failure_reasons(self, info):

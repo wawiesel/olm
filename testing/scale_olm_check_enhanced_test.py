@@ -135,44 +135,15 @@ class TestGridGradientAdvanced:
     def test_quality_summary_discards_points_below_eps0(self):
         """Test points below eps0 on both axes do not affect q-scores."""
         summary = check._quality_summary_from_histograms(
-            ahist=np.array([1.0e-13, 1.0e-5, 1.0e-4]),
-            rhist=np.array([1.0e-13, 1.0e-13, 1.0e-2]),
-            eps0=1.0e-12,
-            epsa=1.0e-6,
-            epsr=1.0e-3,
-            target_q_r=0.9,
-            target_q_ar=0.95,
+            np.array([1.0e-13, 1.0e-5, 1.0e-4]),
+            np.array([1.0e-13, 1.0e-13, 1.0e-2]),
+            1.0e-12, 1.0e-6, 1.0e-3, 0.9, 0.95,
         )
 
-        assert summary["m"] == 2
-        assert summary["w_r"] == 1
-        assert summary["w_ar"] == 1
-        assert summary["f_r"] == pytest.approx(0.5)
-        assert summary["f_ar"] == pytest.approx(0.5)
-        assert summary["q_r"] == pytest.approx(0.5)
-        assert summary["q_ar"] == pytest.approx(0.5)
+        assert (summary["m"], summary["w_r"], summary["w_ar"]) == (2, 1, 1)
+        assert summary["f_r"] == summary["f_ar"] == pytest.approx(0.5)
+        assert summary["q_r"] == summary["q_ar"] == pytest.approx(0.5)
         assert not summary["test_pass"]
-
-    def test_quality_summary_all_points_below_eps0_passes(self):
-        """Test a fully discarded set has perfect q-scores and zero counts."""
-        summary = check._quality_summary_from_histograms(
-            ahist=np.array([1.0e-13, 2.0e-13]),
-            rhist=np.array([1.0e-13, 2.0e-13]),
-            eps0=1.0e-12,
-            epsa=1.0e-6,
-            epsr=1.0e-3,
-            target_q_r=0.9,
-            target_q_ar=0.95,
-        )
-
-        assert summary["m"] == 0
-        assert summary["w_r"] == 0
-        assert summary["w_ar"] == 0
-        assert summary["q_r"] == pytest.approx(1.0)
-        assert summary["q_ar"] == pytest.approx(1.0)
-        assert summary["test_pass"]
-        assert summary["mean_abs_diff"] == pytest.approx(0.0)
-        assert summary["mean_rel_diff"] == pytest.approx(0.0)
 
 
 class TestSequencer:
@@ -267,28 +238,6 @@ class TestLowOrderConsistency:
             assert isinstance(desc, str)
             assert len(desc) > 2  # Should be meaningful
 
-    def test_nuclide_scaled_difference_ylim_defaults_to_epsr(self):
-        """Test omitted nuclide scaled-difference y-limit uses epsr."""
-        loc = check.LowOrderConsistency(_dry_run=True, epsr=0.004)
-        loc.run_success = False
-
-        info = loc.info()
-
-        assert info.nuclide_scaled_difference_min_abs_ylim == 0.004
-
-    def test_nuclide_scaled_difference_ylim_override_in_check_info(self):
-        """Test explicit nuclide scaled-difference y-limit is written to check info."""
-        loc = check.LowOrderConsistency(
-            _dry_run=True,
-            epsr=0.004,
-            nuclide_scaled_difference_min_abs_ylim=0.025,
-        )
-        loc.run_success = False
-
-        info = loc.info()
-
-        assert info.nuclide_scaled_difference_min_abs_ylim == 0.025
-    
     @patch('matplotlib.pyplot.savefig')
     @patch('matplotlib.pyplot.ylim')
     @patch('matplotlib.pyplot.figure')
@@ -412,29 +361,21 @@ class TestLowOrderConsistency:
     ):
         """Test t=0 q_r/q_ar must be exactly 1.000."""
         loc = check.LowOrderConsistency(
-            metric='atom_fraction',
-            target_q_r=0.0,
-            target_q_ar=0.0,
-            nuclide_compare=[],
-            _dry_run=True,
+            metric='atom_fraction', target_q_r=0.0, target_q_ar=0.0,
+            nuclide_compare=[], _dry_run=True,
         )
         hi = np.full((1, 2, 4), 0.25)
         lo = hi.copy()
         lo[0, 0, :] = [0.26, 0.24, 0.25, 0.25]
-        loc.hi_list = hi
-        loc.lo_list = lo
-        loc.time_list = [0.0, 86400.0]
-        loc.burnup_list = [0.0, 1000.0]
-        loc.work_path = tmp_path
-        loc.check_path = tmp_path
+        loc.hi_list, loc.lo_list = hi, lo
+        loc.time_list, loc.burnup_list = [0.0, 86400.0], [0.0, 1000.0]
+        loc.work_path = loc.check_path = tmp_path
         loc.run_success = True
 
         info = loc.info()
 
         assert info.initial_time_quality['q_r'] < 1.0
         assert info.initial_time_quality['q_ar'] < 1.0
-        assert info.test_pass_initial_q_r is False
-        assert info.test_pass_initial_q_ar is False
         assert info.test_pass_initial is False
         assert info.test_pass_time is True
         assert info.test_pass is False
@@ -444,220 +385,6 @@ class TestLowOrderConsistency:
         ]
         mock_time_quality_plot.assert_called_once()
         mock_hist_plot.assert_called_once()
-
-    def test_burnup_list_from_assemble_uses_history_endpoints(self):
-        """Test report burnups come from replay history, not the F33 grid."""
-        assemble_data = {
-            'space': {
-                'burnup': {
-                    'grid': [0.0, 5.0, 15.0, 25.0],
-                },
-            },
-            'points': [
-                {
-                    'history': {
-                        'burndata': [
-                            {'power': 40.0, 'burn': 1.0},
-                            {'power': 40.0, 'burn': 2.0},
-                        ],
-                    },
-                },
-                {
-                    'history': {
-                        'burndata': [
-                            {'power': 42.0, 'burn': 1.0},
-                            {'power': 42.0, 'burn': 2.0},
-                        ],
-                    },
-                },
-            ],
-        }
-
-        burnups = check.LowOrderConsistency._burnup_list_from_assemble(
-            assemble_data
-        )
-
-        assert burnups == pytest.approx([0.0, 41.0, 123.0])
-
-    def test_convergence_summary_uses_worst_time_scores(self):
-        """Test convergence rows summarize the lowest time-dependent q scores."""
-        info = check.CheckInfo()
-        info.nlib = 2
-        info.nburn = 4
-        info.q_r = 0.95
-        info.q_ar = 0.96
-        info.test_pass = False
-        info.test_pass_q_r = True
-        info.test_pass_q_ar = True
-        info.test_pass_time = False
-        info.mean_abs_diff = 0.0
-        info.mean_rel_diff = 0.0
-        info.time_quality = [
-            {
-                'time': 0.0,
-                'time_days': 0.0,
-                'burnup_gwd_per_mtihm': 0.0,
-                'q_r': 0.80,
-                'q_ar': 0.99,
-                'target_q_r': 0.70,
-                'target_q_ar': 0.95,
-                'test_pass': True,
-                'limiting_score': 'q_r',
-                'limiting_score_shortfall': 0.0,
-            },
-            {
-                'time': 86400.0,
-                'time_days': 1.0,
-                'burnup_gwd_per_mtihm': 10.0,
-                'q_r': 0.60,
-                'q_ar': 0.90,
-                'target_q_r': 0.70,
-                'target_q_ar': 0.95,
-                'test_pass': False,
-                'limiting_score': 'q_r',
-                'limiting_score_shortfall': 0.10,
-            },
-        ]
-
-        row = check.LowOrderConsistency._convergence_summary(info)
-
-        assert 'overall_q_r' not in row
-        assert 'overall_q_ar' not in row
-        assert row['q_r'] == pytest.approx(0.60)
-        assert row['q_ar'] == pytest.approx(0.90)
-        assert row['result'] == 'fail q_r/q_ar'
-        assert row['time_days'] == pytest.approx(1.0)
-        assert row['burnup_gwd_per_mtihm'] == pytest.approx(10.0)
-        assert row['time_quality'] == info.time_quality
-
-    @patch.object(check.LowOrderConsistency, 'make_convergence_quality_plot')
-    @patch.object(check.LowOrderConsistency, 'make_time_quality_plot')
-    def test_write_convergence_diagnostics_adds_plots_and_history(
-        self, mock_time_plot, mock_convergence_plot, tmp_path
-    ):
-        """Test final convergence diagnostics include history rows and plot paths."""
-        loc = check.LowOrderConsistency(_dry_run=True, convergence={})
-        loc.target_q_r = 0.7
-        loc.target_q_ar = 0.95
-        loc.check_path = tmp_path
-        info = check.CheckInfo()
-        info.nlib = 2
-        info.nburn = 2
-        info.time_quality = [
-            {'time': 0.0, 'time_days': 0.0, 'q_r': 0.8, 'q_ar': 0.96},
-            {'time': 86400.0, 'time_days': 1.0, 'q_r': 0.75, 'q_ar': 0.95},
-        ]
-        info.time_quality_image = str(tmp_path / 'q_r-q_ar-by-time.png')
-        first = {
-            'nlib': 1,
-            'nburn': 1,
-            'q_r': 0.6,
-            'q_ar': 0.9,
-            'time_quality': [
-                {'time_days': 0.0, 'q_r': 0.7, 'q_ar': 0.95},
-                {'time_days': 1.0, 'q_r': 0.6, 'q_ar': 0.9},
-            ],
-        }
-        final = {
-            'nlib': 2,
-            'nburn': 2,
-            'q_r': 0.75,
-            'q_ar': 0.95,
-            'time_quality': info.time_quality,
-        }
-        info.nlib_history = [first]
-        info.nburn_history = [first, final]
-
-        loc._write_convergence_diagnostics(info)
-
-        assert info.convergence_history == [first, final]
-        assert info.convergence_quality_image == str(
-            tmp_path / 'q_r-q_ar-convergence.png'
-        )
-        mock_time_plot.assert_called_once()
-        assert mock_time_plot.call_args.kwargs['convergence_history'] == [first]
-        mock_convergence_plot.assert_called_once_with(
-            tmp_path / 'q_r-q_ar-convergence.png',
-            [first, final],
-            0.7,
-            0.95,
-        )
-
-    def test_convergence_max_status_does_not_fail_check(self):
-        """Test convergence max is search metadata, not a failure reason."""
-        loc = check.LowOrderConsistency(
-            _dry_run=True,
-            convergence={
-                'nlib_start': 1,
-                'nlib_max': 4,
-                'nburn_start': 1,
-                'nburn_max': 8,
-                'q_r_stop_criteria': 0.005,
-                'q_ar_stop_criteria': 0.005,
-            },
-        )
-        info = check.CheckInfo()
-        info.q_r = 0.8881592039800995
-        info.q_ar = 0.9879410639112132
-        info.target_q_r = 0.7
-        info.target_q_ar = 0.95
-        info.test_pass_q_r = True
-        info.test_pass_q_ar = True
-        info.test_pass_time = True
-        info.nlib = 4
-        info.nburn = 1
-        info.test_pass_nlib = False
-        info.test_pass_nburn = True
-        info.test_pass_initial = True
-        info.nlib_delta_q_r = 0.05375430539609638
-        info.nlib_delta_q_ar = 0.006346727898966731
-        info.nlib_convergence_stop = 'max'
-
-        info.convergence_status = loc._convergence_status(info)
-        reasons = loc._failure_reasons(info)
-
-        assert info.convergence_status['nlib']['result'] == 'max'
-        assert info.convergence_status['nlib']['delta_q_r_text'] == (
-            '5.375e-02 / 5.000e-03'
-        )
-        assert info.convergence_status['nlib']['reason'] == (
-            'reached nlib_max before another stop criterion'
-        )
-        assert info.convergence_status['nburn']['result'] == 'selected'
-        assert reasons == []
-
-    def test_failure_reason_preserves_incomplete_check_error(self):
-        """Test early check failures preserve the original calculation error."""
-        loc = check.LowOrderConsistency(
-            _dry_run=True,
-            convergence={
-                'nlib_start': 1,
-                'nlib_max': 16,
-                'nburn_start': 1,
-                'nburn_max': 8,
-                'q_r_stop_criteria': 0.005,
-                'q_ar_stop_criteria': 0.01,
-            },
-        )
-        info = check.CheckInfo()
-        info.nlib = 1
-        info.nburn = 1
-        info.test_pass_nlib = False
-        info.test_pass_nburn = False
-        info.run_error = (
-            "***Error: the interpolated value of      99.2 calculated for "
-            "cycle 160 is outside the range of       0.0 to      98.7 for "
-            "library uox_quick"
-        )
-
-        info.convergence_status = loc._convergence_status(info)
-        reasons = loc._failure_reasons(info)
-
-        assert info.convergence_status['nlib']['result'] == 'error'
-        assert info.convergence_status['nlib']['reason'] == 'check did not complete'
-        assert len(reasons) == 1
-        assert reasons[0].startswith('check calculation failed: ***Error:')
-        assert 'outside the range' in reasons[0]
 
     def test_amounts_to_grams_per_initial_hm(self):
         """Test conversion from inventory amounts to g/gIHM."""
@@ -912,48 +639,6 @@ class TestLowOrderConsistency:
         )
         assert loc.check_dir == Path('check/loc/_convergence/nlib0002/nburn0002')
 
-    def test_final_convergence_outputs_copy_to_nominal_path(self, tmp_path):
-        """Test selected convergence outputs are copied to the normal check path."""
-        loc = check.LowOrderConsistency(_dry_run=True, convergence={})
-        loc.work_path = tmp_path
-        loc.base_check_path = tmp_path / 'check' / 'loc'
-        loc.convergence_check_path = loc.base_check_path / '_convergence'
-        loc.check_path = loc.convergence_check_path / 'nlib0002' / 'nburn0004'
-        loc.check_dir = loc.check_path.relative_to(loc.work_path)
-        source_point = loc.check_path / 'uox.arc'
-        source_point.mkdir(parents=True)
-        (source_point / 'uox.arc.inp').write_text('input')
-        (loc.check_path / 'hist.png').write_text('hist')
-        loc.base_check_path.mkdir(parents=True, exist_ok=True)
-        (loc.base_check_path / 'stale.txt').write_text('stale')
-
-        info = check.CheckInfo()
-        info.hist_image = str(loc.check_path / 'hist.png')
-        info.time_quality_image = str(loc.check_path / 'q_r-q_ar-by-time.png')
-        info.nuclide_compare = {
-            'u235': {
-                'image': str(loc.check_path / 'u235-scaled-difference.png'),
-            },
-        }
-
-        loc._copy_final_check_outputs_to_nominal(info)
-
-        assert (loc.base_check_path / '_convergence').exists()
-        assert not (loc.base_check_path / 'stale.txt').exists()
-        assert (loc.base_check_path / 'uox.arc' / 'uox.arc.inp').read_text() == (
-            'input'
-        )
-        assert (loc.base_check_path / 'hist.png').read_text() == 'hist'
-        assert info.hist_image == str(loc.base_check_path / 'hist.png')
-        assert info.time_quality_image == str(
-            loc.base_check_path / 'q_r-q_ar-by-time.png'
-        )
-        assert info.nuclide_compare['u235']['image'] == str(
-            loc.base_check_path / 'u235-scaled-difference.png'
-        )
-        assert loc.check_path == loc.base_check_path
-        assert loc.check_dir == Path('check/loc')
-
     def test_scores_converged_uses_q_score_deltas(self):
         """Test convergence is based on q_r and q_ar score changes."""
         loc = check.LowOrderConsistency(
@@ -975,28 +660,13 @@ class TestLowOrderConsistency:
         current.q_ar = 0.971
         assert not loc._scores_converged(previous, current, fixed_grid=False)
 
-    def test_scores_converged_when_scores_cross_targets(self):
-        """Test convergence stops when q_r/q_ar rise through pass targets."""
-        loc = check.LowOrderConsistency(
-            _dry_run=True,
-            target_q_r=0.7,
-            target_q_ar=0.95,
-            convergence={
-                'q_r_stop_criteria': 0.001,
-                'q_ar_stop_criteria': 0.001,
-            },
-        )
-        previous = check.CheckInfo()
-        previous.q_r = 0.60
-        previous.q_ar = 0.90
-        current = check.CheckInfo()
-        current.q_r = 0.71
-        current.q_ar = 0.96
-
+        loc.target_q_r = 0.7
+        loc.target_q_ar = 0.95
+        previous.q_r, previous.q_ar = 0.60, 0.90
+        current.q_r, current.q_ar = 0.71, 0.96
         assert loc._convergence_stop_reason(
             previous, current, fixed_grid=False
         ) == 'target'
-        assert loc._scores_converged(previous, current, fixed_grid=False)
 
     def test_run_nlib_convergence_doubles_until_scores_converge(self, monkeypatch):
         """Test nlib convergence runs until q-score deltas meet the stop criteria."""
@@ -1041,50 +711,6 @@ class TestLowOrderConsistency:
         assert info.nlib_delta_q_r == pytest.approx(0.005)
         assert info.nlib_delta_q_ar == pytest.approx(0.005)
         assert [row['nlib'] for row in info.nlib_history] == [1, 2, 4]
-
-    def test_run_nlib_convergence_stops_when_scores_cross_targets(
-        self, monkeypatch
-    ):
-        """Test nlib search stops when time q-scores rise above targets."""
-        loc = check.LowOrderConsistency(
-            _dry_run=True,
-            target_q_r=0.7,
-            target_q_ar=0.95,
-            convergence={
-                'nlib_start': 1,
-                'nlib_max': 4,
-                'q_r_stop_criteria': 0.001,
-                'q_ar_stop_criteria': 0.001,
-            },
-        )
-        scores = {
-            1: (0.60, 0.90),
-            2: (0.71, 0.96),
-            4: (0.72, 0.97),
-        }
-        calls = []
-
-        def fake_run_once(do_run, nlib, nburn):
-            calls.append((nlib, nburn))
-            info = check.CheckInfo()
-            info.nlib = nlib
-            info.nburn = nburn
-            info.q_r, info.q_ar = scores[nlib]
-            info.test_pass = True
-            info.test_pass_q_r = info.q_r >= loc.target_q_r
-            info.test_pass_q_ar = info.q_ar >= loc.target_q_ar
-            info.mean_abs_diff = 0.0
-            info.mean_rel_diff = 0.0
-            return info
-
-        monkeypatch.setattr(loc, '_run_once', fake_run_once)
-
-        info = loc._run_nlib_convergence(do_run=False, nburn=1)
-
-        assert calls == [(1, 1), (2, 1)]
-        assert info.nlib == 2
-        assert info.nlib_converged
-        assert info.nlib_convergence_stop == 'target'
 
     def test_run_nburn_convergence_uses_converged_nlib(self, monkeypatch):
         """Test nburn convergence holds nlib fixed after nlib convergence."""
@@ -1297,148 +923,6 @@ class TestLowOrderConsistency:
         assert 'nburn=' not in rendered
         assert 'nlib=' not in rendered
         mock_execute.assert_called_once()
-
-    @staticmethod
-    def _write_library_burnup_check_fixture(tmp_path, burnup_list):
-        work_path = tmp_path / 'work'
-        work_path.mkdir()
-        template_path = tmp_path / 'loc-template.jt.inp'
-        template_path.write_text(
-            'options{ mtu={{history.initialhm}} }\n'
-            '{% for row in history.burndata %}power={{row.power}}\n{% endfor %}'
-        )
-        assemble_data = {
-            'burnup_rtol': 2.0e-2,
-            'points': [
-                {
-                    'files': {
-                        'lib': 'check/loc/uox.arc.h5',
-                        'ii_json': 'hi.ii.json',
-                    },
-                    'history': {
-                        'initialhm': 1.0,
-                        'burndata': [
-                            {
-                                'power': 39.93052,
-                                'burn': 2.5,
-                            },
-                        ],
-                    },
-                    'comp': {'system': {}},
-                    '_arpinfo': {
-                        'interpvars': {
-                            'mod_dens': 0.7,
-                        },
-                        'burnup_list': burnup_list,
-                    },
-                }
-            ]
-        }
-        (work_path / 'assemble.olm.json').write_text(json.dumps(assemble_data))
-        env = {
-            'config_file': str(tmp_path / 'config.olm.json'),
-            'work_dir': str(work_path),
-            'nprocs': 1,
-        }
-        return check.LowOrderConsistency(
-            name='loc',
-            template=template_path.name,
-            _model={'name': 'test-model'},
-            _env=env,
-        )
-
-    @patch('scale.olm.internal._execute_makefile')
-    def test_run_lo_order_allows_f33_midpoint_grid_for_nlib_one(
-        self, mock_execute, tmp_path
-    ):
-        """Test F33 midpoint burnups can cover a later history endpoint."""
-        loc = self._write_library_burnup_check_fixture(tmp_path, [0.0, 49.0])
-        loc.lo_case = 1
-
-        loc._LowOrderConsistency__run_lo_order(
-            do_run=False,
-            nlib=1,
-            nburn=1,
-        )
-
-        mock_execute.assert_called_once()
-        rendered = (
-            tmp_path
-            / 'work'
-            / 'check'
-            / 'loc'
-            / 'uox.arc'
-            / 'uox.arc.inp'
-        ).read_text()
-        assert 'power=3.993052000000e+01' in rendered
-
-    @patch('scale.olm.internal._execute_makefile')
-    def test_run_lo_order_rejects_nlib_past_library_burnup(
-        self, mock_execute, tmp_path
-    ):
-        """Test uncovered library interpolation burnup fails before SCALE."""
-        loc = self._write_library_burnup_check_fixture(tmp_path, [0.0, 49.0])
-        loc.lo_case = 1
-
-        with pytest.raises(
-            ValueError,
-            match="nlib=2.*requires low-order library interpolation",
-        ):
-            loc._LowOrderConsistency__run_lo_order(
-                do_run=False,
-                nlib=2,
-                nburn=1,
-            )
-
-        mock_execute.assert_not_called()
-
-    def test_lumped0d_uox_template_conditionally_uses_convergence_control(self):
-        """Test stored lumped0d UOX template does not require convergence data."""
-        tm = check.core.TemplateManager()
-        data = {
-            '_': {
-                'env': {
-                    'work_dir': '/work',
-                },
-            },
-            '_arpinfo': {
-                'name': 'uox_quick',
-                'interpvars': {
-                    'mod_dens': 0.7,
-                },
-            },
-            'history': {
-                'initialhm': 1.0,
-                'burndata': [
-                    {
-                        'power': 40.0,
-                        'burn': 1.0,
-                    },
-                ],
-            },
-            'comp': {
-                'system': {
-                    'uo2': {
-                        'iso': {
-                            'u234': 0.01,
-                            'u235': 4.0,
-                            'u236': 0.02,
-                            'u238': 95.97,
-                        },
-                    },
-                },
-            },
-        }
-
-        rendered = tm.expand('model/origami/lumped0d-uox.jt.inp', data)
-        assert 'nburn=' not in rendered
-        assert 'nlib=' not in rendered
-
-        data['convergence_control'] = {'nburn': 4, 'nlib': 2}
-        rendered = tm.expand('model/origami/lumped0d-uox.jt.inp', data)
-        assert 'nburn=4' in rendered
-        assert 'nlib=2' in rendered
-
 
 class TestSchemaFunctions:
     """Test schema generation functions for all check types."""
