@@ -324,7 +324,9 @@ def jt_expander(
 
         data["_scale"] = core.ScaleInput.classify_text(filled_text)
         if artifact_contract is not None:
-            artifact_contract = core.ScaleArtifactContract(artifact_contract).value
+            artifact_contract = core.ScaleArtifactContract.from_value(
+                artifact_contract
+            ).value
             rendered_contract = data["_scale"]["artifact_contract"]
             if rendered_contract != artifact_contract:
                 raise ValueError(

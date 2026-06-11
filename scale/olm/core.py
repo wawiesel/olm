@@ -39,6 +39,17 @@ class ScaleArtifactContract(str, Enum):
     def values(cls):
         return tuple(contract.value for contract in cls)
 
+    @classmethod
+    def from_value(cls, value):
+        try:
+            return cls(value)
+        except ValueError:
+            expected = ", ".join(cls.values())
+            raise ValueError(
+                f"Unsupported SCALE artifact_contract={value}; "
+                f"expected one of: {expected}"
+            ) from None
+
 
 class TemplateManager:
     """Manage jinja templates.
