@@ -10,6 +10,7 @@
     "generate": {
         "_type": "scale.olm.generate.root:jt_expander",
         "template": "model/triton/pin-mox.jt.inp",
+        "artifact_contract": "TRITON",
         "comp": {
             "inner":
             {

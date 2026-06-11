@@ -20,6 +20,7 @@
     "generate": {
         "_type": "scale.olm.generate.root:jt_expander",
         "template": "model/polaris/bwr7x7-uox.jt.inp",
+        "artifact_contract": "Polaris",
         "comp": {
             "_type": "scale.olm.generate.comp:uo2_simple",
             "density": 10.4

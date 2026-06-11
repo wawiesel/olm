@@ -20,6 +20,7 @@ import copy
 import subprocess
 import shutil
 import re
+from enum import Enum
 import h5py
 import numpy as np
 from tqdm import tqdm, tqdm_notebook
@@ -28,6 +29,15 @@ import matplotlib.pyplot as plt
 
 # TODO: remove this dependency ASAP.
 from scale.olm.internal import run_command
+
+
+class ScaleArtifactContract(str, Enum):
+    TRITON = "TRITON"
+    POLARIS = "Polaris"
+
+    @classmethod
+    def values(cls):
+        return tuple(contract.value for contract in cls)
 
 
 class TemplateManager:
@@ -1174,9 +1184,9 @@ class ThreadPoolExecutor:
 def _scale_product_name(sequence: str) -> str:
     sequence = sequence.strip().lower()
     if sequence.startswith(("t-depl", "t5-depl", "t6-depl")):
-        return "TRITON"
+        return ScaleArtifactContract.TRITON.value
     if sequence.startswith("polaris"):
-        return "Polaris"
+        return ScaleArtifactContract.POLARIS.value
     return "UNKNOWN"
 
 
@@ -1207,7 +1217,7 @@ class ScaleInput:
             "sequences": sequences,
             "artifact_contract": artifact_contract,
             "material_lumping": "BASIS"
-            if artifact_contract in ("TRITON", "Polaris")
+            if artifact_contract in ScaleArtifactContract.values()
             else None,
         }
 

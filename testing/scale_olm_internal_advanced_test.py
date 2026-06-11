@@ -553,9 +553,9 @@ class TestEnvironmentLoading:
         """Test init uses the variant name as the output directory by default."""
         monkeypatch.chdir(tmp_path)
 
-        internal.init(config_dir="", variant="uox_quick", list_=False)
+        internal.init(config_dir="", variant="triton_pin_uox_quick", list_=False)
 
-        output_dir = tmp_path / "uox_quick"
+        output_dir = tmp_path / "triton_pin_uox_quick"
         assert (output_dir / "config.olm.json").exists()
         assert not (output_dir / "model.jt.inp").exists()
         assert not (output_dir / "report.jt.rst").exists()
