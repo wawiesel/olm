@@ -1171,6 +1171,47 @@ class ThreadPoolExecutor:
         return results
 
 
+def _scale_product_name(sequence: str) -> str:
+    sequence = sequence.strip().lower()
+    if sequence.startswith(("t-depl", "t5-depl", "t6-depl")):
+        return "TRITON"
+    if sequence.startswith("polaris"):
+        return "Polaris"
+    return "UNKNOWN"
+
+
+class ScaleInput:
+    """Extract basic product metadata from a SCALE input file."""
+
+    @staticmethod
+    def parse_sequence_records(text: str) -> list[str]:
+        sequences = []
+        for line in text.splitlines():
+            stripped = line.strip()
+            if not stripped.startswith("="):
+                continue
+            sequence = stripped[1:].split(maxsplit=1)[0].lower()
+            sequences.append(sequence)
+        return sequences
+
+    @staticmethod
+    def classify_text(text: str) -> dict:
+        sequences = ScaleInput.parse_sequence_records(text)
+        products = [_scale_product_name(sequence) for sequence in sequences]
+        known_products = [product for product in products if product != "UNKNOWN"]
+        artifact_contract = "UNKNOWN"
+        if known_products and len(set(known_products)) == 1:
+            artifact_contract = known_products[0]
+
+        return {
+            "sequences": sequences,
+            "artifact_contract": artifact_contract,
+            "material_lumping": "BASIS"
+            if artifact_contract in ("TRITON", "Polaris")
+            else None,
+        }
+
+
 class ScaleOutfile:
     """Extracts basic information from a SCALE main output file.
 
@@ -1218,8 +1259,7 @@ class ScaleOutfile:
             'TRITON'
 
         """
-        products = {"t-depl-1d": "TRITON", "t-depl": "TRITON", "polaris": "Polaris"}
-        return products.get(sequence, "UNKNOWN")
+        return _scale_product_name(sequence)
 
     def __init__(self, outfile: str):
         """

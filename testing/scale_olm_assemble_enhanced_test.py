@@ -94,9 +94,9 @@ class TestFileHandling:
         suffix = '.arp'
         # Correct format: perms should be list of dicts with input_file keys
         perms = [
-            {'input_file': 'perm_000.inp'},
-            {'input_file': 'perm_001.inp'},
-            {'input_file': 'perm_002.inp'},
+            {'input_file': 'perm_000.inp', '_scale': {'artifact_contract': 'UNKNOWN'}},
+            {'input_file': 'perm_001.inp', '_scale': {'artifact_contract': 'UNKNOWN'}},
+            {'input_file': 'perm_002.inp', '_scale': {'artifact_contract': 'UNKNOWN'}},
         ]
         
         result = assemble._get_files(work_dir, suffix, perms)
@@ -120,10 +120,28 @@ class TestFileHandling:
         
         work_dir = Path('/work')
         suffix = '.arp'
-        perms = [{'input_file': 'perm_000.inp'}]
+        perms = [{'input_file': 'perm_000.inp', '_scale': {'artifact_contract': 'UNKNOWN'}}]
         
         with pytest.raises(ValueError, match="library file=.* does not exist"):
             assemble._get_files(work_dir, suffix, perms)
+
+    def test_get_files_uses_polaris_basis_library_suffix(self, tmp_path):
+        """Test Polaris generated inputs use the BASIS F33 library artifact."""
+        input_file = tmp_path / "perm_000.inp"
+        input_file.write_text("=polaris\nend\n")
+        (tmp_path / "perm_000.BASIS.f33").write_text("library")
+        (tmp_path / "perm_000.out").write_text("polaris finished. used 1 seconds.\n")
+        (tmp_path / "perm_000.f71").write_text("f71")
+
+        result = assemble._get_files(
+            tmp_path,
+            ".system.f33",
+            [{"input_file": "perm_000.inp"}],
+            "BASIS",
+        )
+
+        assert result[0]["lib"] == tmp_path / "perm_000.BASIS.f33"
+        assert result[0]["artifact_contract"] == "Polaris"
     
     def test_get_files_empty_perms(self):
         """Test file collection with empty permutations."""
@@ -411,7 +429,9 @@ class TestArpInfoMaster:
         result = assemble._get_arpinfo("obiwan", work_dir, name, fuel_type, dim_map)
         
         # Verify the full workflow
-        mock_get_files.assert_called_once_with(work_dir, ".system.f33", mock_generate_data["perms"])
+        mock_get_files.assert_called_once_with(
+            work_dir, ".system.f33", mock_generate_data["perms"], "BASIS"
+        )
         mock_get_arpinfo_uox.assert_called_once_with(name, mock_generate_data["perms"], mock_file_list, dim_map)
         mock_get_burnup_list.assert_called_once_with("obiwan", mock_file_list, 2.0e-2)
         
@@ -454,7 +474,7 @@ class TestArpInfoMaster:
             )
 
         mock_get_files.assert_called_once_with(
-            work_dir, ".mix0010.f33", mock_generate_data["perms"]
+            work_dir, ".mix0010.f33", mock_generate_data["perms"], "MIX10"
         )
         mock_get_burnup_list.assert_called_once_with("obiwan", mock_file_list, 2.0e-2)
         assert result.material_lumping == "MIX10"
