@@ -9,6 +9,7 @@ import shutil
 import numpy as np
 import subprocess
 import datetime
+from dataclasses import dataclass
 from typing import Literal
 
 __all__ = ["arpdata_txt"]
@@ -66,7 +67,7 @@ def arpdata_txt(
 
     # Get working directory.
     work_path = Path(_env["work_dir"])
-    material_lumping = _normalize_triton_material_lumping(material_lumping)
+    material_lumping = _MaterialLumping.from_value(material_lumping)
 
     # Get library info data structure.
     arpinfo = _get_arpinfo(
@@ -94,7 +95,7 @@ def arpdata_txt(
         "date": datetime.datetime.utcnow().isoformat(" ", "minutes"),
         "space": arpinfo.get_space(),
         "burnup_rtol": burnup_rtol,
-        "material_lumping": material_lumping,
+        "material_lumping": material_lumping.value,
     }
 
 
@@ -207,20 +208,49 @@ def _get_artifact_contract(perm):
     return core.ScaleArtifactContract.from_value(artifact_contract)
 
 
+@dataclass(frozen=True)
+class _MaterialLumping:
+    value: str
+    caseid: int
+    library_suffix: str
+
+    @classmethod
+    def from_value(cls, material_lumping):
+        label = str(material_lumping).strip().upper()
+        if label in ("BASIS", "SYSTEM"):
+            return cls(label, -2, ".system.f33")
+        if label.startswith("MIX"):
+            mixid = label[3:]
+            if mixid.isdigit() and int(mixid) > 0:
+                mixid = int(mixid)
+                return cls(f"MIX{mixid}", mixid, f".mix{mixid:04d}.f33")
+        raise ValueError(
+            "TRITON material_lumping must be BASIS, SYSTEM, or MIX<N>; "
+            f"got {material_lumping!r}"
+        )
+
+    @property
+    def is_system_lumping(self):
+        return self.value in ("BASIS", "SYSTEM")
+
+
+_DEFAULT_MATERIAL_LUMPING = _MaterialLumping.from_value("BASIS")
+
+
 def _library_suffix_for_artifact(artifact_contract, material_lumping):
     if artifact_contract == core.ScaleArtifactContract.TRITON:
-        return _triton_material_lumping_suffix(material_lumping)
+        return material_lumping.library_suffix
 
     if artifact_contract == core.ScaleArtifactContract.POLARIS:
-        if material_lumping in ("BASIS", "SYSTEM"):
+        if material_lumping.is_system_lumping:
             return ".system.f33"
         raise ValueError(
             "Polaris material_lumping currently supports BASIS or SYSTEM; "
-            f"got {material_lumping}"
+            f"got {material_lumping.value}"
         )
 
 
-def _get_files(work_dir, perms, material_lumping="BASIS"):
+def _get_files(work_dir, perms, material_lumping=_DEFAULT_MATERIAL_LUMPING):
     """Get list of files by using the generate.olm.json output and changing the suffix to the
     expected library file. Note this is in permutation order, not state space order."""
 
@@ -264,35 +294,6 @@ def _get_files(work_dir, perms, material_lumping="BASIS"):
             file_list[-1]["t16"] = t16
 
     return file_list
-
-
-def _normalize_triton_material_lumping(material_lumping):
-    label = str(material_lumping).strip().upper()
-    if label in ("BASIS", "SYSTEM"):
-        return label
-    if label.startswith("MIX"):
-        mixid = label[3:]
-        if mixid.isdigit() and int(mixid) > 0:
-            return f"MIX{int(mixid)}"
-    raise ValueError(
-        "TRITON material_lumping must be BASIS, SYSTEM, or MIX<N>; "
-        f"got {material_lumping!r}"
-    )
-
-
-def _triton_material_lumping_caseid(material_lumping):
-    material_lumping = _normalize_triton_material_lumping(material_lumping)
-    if material_lumping in ("BASIS", "SYSTEM"):
-        return -2
-    return int(material_lumping[3:])
-
-
-def _triton_material_lumping_suffix(material_lumping):
-    material_lumping = _normalize_triton_material_lumping(material_lumping)
-    if material_lumping in ("BASIS", "SYSTEM"):
-        # TODO: Read TRITON BASIS libraries when SCALE writes them distinctly.
-        return ".system.f33"
-    return f".mix{int(material_lumping[3:]):04d}.f33"
 
 
 def _burnup_lists_match(reference, candidate, burnup_rtol):
@@ -430,11 +431,10 @@ def _get_arpinfo(
     name,
     fuel_type,
     dim_map,
-    material_lumping="BASIS",
+    material_lumping=_DEFAULT_MATERIAL_LUMPING,
     burnup_rtol=2.0e-2,
 ):
     """Populate the ArpInfo data."""
-    material_lumping = _normalize_triton_material_lumping(material_lumping)
 
     # Get generate data which has permutations list with file names.
     generate_json = work_dir / "generate.olm.json"
@@ -457,12 +457,12 @@ def _get_arpinfo(
 
     # Get the ARPDATA burnups from the F33 libraries. The matching F71 files are
     # read later only for inventory metadata and interval-average powers.
-    caseid = _triton_material_lumping_caseid(material_lumping)
+    caseid = material_lumping.caseid
     arpinfo.burnup_list = _get_burnup_list(obiwan, file_list, burnup_rtol)
 
     # Set new canonical file names.
     arpinfo.set_canonical_filenames(".h5")
-    arpinfo.material_lumping = material_lumping
+    arpinfo.material_lumping = material_lumping.value
     arpinfo.caseid = caseid
 
     return arpinfo
@@ -563,10 +563,13 @@ def _truncate_ii_system_time(ii, time_count):
 
 
 def _process_libraries(
-    obiwan, work_dir, arpinfo, thinned_burnup_list, material_lumping="BASIS"
+    obiwan,
+    work_dir,
+    arpinfo,
+    thinned_burnup_list,
+    material_lumping=_DEFAULT_MATERIAL_LUMPING,
 ):
     """Process libraries with OBIWAN, including copying, thinning, setting tags, etc."""
-    material_lumping = _normalize_triton_material_lumping(material_lumping)
 
     # Create the arplibs directory and clear data files inside.
     d = work_dir / "arplibs"
@@ -595,7 +598,7 @@ def _process_libraries(
         generate = json.load(f)
     perms = generate["perms"]
 
-    triton_caseid = _triton_material_lumping_caseid(material_lumping)
+    triton_caseid = material_lumping.caseid
 
     # Use obiwan to perform most of the processes.
     points = list()
@@ -657,7 +660,7 @@ def _process_libraries(
         artifact_contract = _get_artifact_contract(perm)
         if artifact_contract == core.ScaleArtifactContract.POLARIS:
             of = core.ScaleOutfile(output_file)
-            caseid = of.parse_polaris_state_table(of.outfile, material_lumping)
+            caseid = of.parse_polaris_state_table(of.outfile, material_lumping.value)
         else:
             caseid = triton_caseid
 
@@ -665,7 +668,9 @@ def _process_libraries(
             of = core.ScaleOutfile(output_file)
             prod_name = of.sequence_list[0]["product"]
             if prod_name == "Polaris":
-                caseid = of.parse_polaris_state_table(of.outfile, material_lumping)
+                caseid = of.parse_polaris_state_table(
+                    of.outfile, material_lumping.value
+                )
             if f"case({caseid})" not in ii["responses"]:
                 raise ValueError(
                     "Cannot identify assembled material case; "
@@ -697,7 +702,7 @@ def _process_libraries(
                 "comp": {
                     "system": comp_system,
                 },
-                "material_lumping": material_lumping,
+                "material_lumping": material_lumping.value,
                 "history": history,
                 "_": {"perm": perm},
                 "_arpinfo": {

@@ -158,7 +158,7 @@ class TestFileHandling:
                     "_scale": {"artifact_contract": "Polaris"},
                 }
             ],
-            "BASIS",
+            assemble._MaterialLumping.from_value("BASIS"),
         )
 
         assert result[0]["lib"] == tmp_path / "perm_000.system.f33"
@@ -178,7 +178,7 @@ class TestFileHandling:
                         "_scale": {"artifact_contract": "Polaris"},
                     }
                 ],
-                "MIX10",
+                assemble._MaterialLumping.from_value("MIX10"),
             )
     
     def test_get_files_empty_perms(self):
@@ -194,22 +194,32 @@ class TestBurnupListExtraction:
     """Test burnup list extraction from files."""
 
     def test_triton_material_lumping_labels(self):
-        """Test TRITON assemble labels map to library suffixes and F71 cases."""
-        assert assemble._normalize_triton_material_lumping("basis") == "BASIS"
-        assert assemble._normalize_triton_material_lumping("system") == "SYSTEM"
-        assert assemble._normalize_triton_material_lumping("mix0010") == "MIX10"
-        assert assemble._triton_material_lumping_caseid("BASIS") == -2
-        assert assemble._triton_material_lumping_caseid("SYSTEM") == -2
-        assert assemble._triton_material_lumping_caseid("MIX10") == 10
-        assert assemble._triton_material_lumping_suffix("BASIS") == ".system.f33"
-        assert assemble._triton_material_lumping_suffix("SYSTEM") == ".system.f33"
-        assert assemble._triton_material_lumping_suffix("MIX10") == ".mix0010.f33"
+        """Test material_lumping parsing owns suffix and F71 case mapping."""
+        basis = assemble._MaterialLumping.from_value("basis")
+        system = assemble._MaterialLumping.from_value("system")
+        mix = assemble._MaterialLumping.from_value("mix0010")
+
+        assert (basis.value, basis.caseid, basis.library_suffix) == (
+            "BASIS",
+            -2,
+            ".system.f33",
+        )
+        assert (system.value, system.caseid, system.library_suffix) == (
+            "SYSTEM",
+            -2,
+            ".system.f33",
+        )
+        assert (mix.value, mix.caseid, mix.library_suffix) == (
+            "MIX10",
+            10,
+            ".mix0010.f33",
+        )
 
         with pytest.raises(ValueError, match="BASIS, SYSTEM, or MIX<N>"):
-            assemble._normalize_triton_material_lumping("FUEL")
+            assemble._MaterialLumping.from_value("FUEL")
 
         with pytest.raises(ValueError, match="BASIS, SYSTEM, or MIX<N>"):
-            assemble._normalize_triton_material_lumping("MIX0")
+            assemble._MaterialLumping.from_value("MIX0")
     
     @patch('scale.olm.core.Obiwan.get_burnups_from_f33')
     def test_get_burnup_list_basic(self, mock_get_burnups):
@@ -539,7 +549,9 @@ class TestArpInfoMaster:
         
         # Verify the full workflow
         mock_get_files.assert_called_once_with(
-            work_dir, mock_generate_data["perms"], "BASIS"
+            work_dir,
+            mock_generate_data["perms"],
+            assemble._MaterialLumping.from_value("BASIS"),
         )
         mock_get_arpinfo_uox.assert_called_once_with(name, mock_generate_data["perms"], mock_file_list, dim_map)
         mock_get_burnup_list.assert_called_once_with("obiwan", mock_file_list, 2.0e-2)
@@ -579,11 +591,13 @@ class TestArpInfoMaster:
                 "test_reactor",
                 "UOX",
                 {"enrichment": "enrichment", "mod_dens": "mod_dens"},
-                "MIX10",
+                assemble._MaterialLumping.from_value("MIX10"),
             )
 
         mock_get_files.assert_called_once_with(
-            work_dir, mock_generate_data["perms"], "MIX10"
+            work_dir,
+            mock_generate_data["perms"],
+            assemble._MaterialLumping.from_value("MIX10"),
         )
         mock_get_burnup_list.assert_called_once_with("obiwan", mock_file_list, 2.0e-2)
         assert result.material_lumping == "MIX10"
