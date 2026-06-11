@@ -258,7 +258,8 @@ def _get_files(work_dir, suffix, perms, material_lumping="BASIS"):
             }
         )
 
-        # Optional: if this was a Polaris run, a t16 file is also generated
+        # Polaris burnup grids are read from T16 because its F33 burnup table
+        # is not populated with the nominal library grid.
         t16 = work_dir / Path(input).with_suffix(".t16")
         if t16.exists():
             file_list[-1]["t16"] = t16
@@ -318,8 +319,21 @@ def _burnup_grid_mismatch_message(reference, candidate):
     )
 
 
+def _burnups_from_file_info(obiwan, file_info):
+    artifact_contract = file_info.get("artifact_contract", "TRITON")
+    if artifact_contract == "Polaris":
+        if "t16" not in file_info:
+            raise ValueError(
+                "Polaris burnup extraction requires a t16 file for "
+                f"library file={file_info['lib']} from output file={file_info['output']}"
+            )
+        return core.ScaleOutfile.parse_burnups_from_polaris_t16(file_info["t16"])
+
+    return core.Obiwan.get_burnups_from_f33(obiwan, file_info["lib"])
+
+
 def _get_burnup_list(obiwan, file_list, burnup_rtol=2.0e-2):
-    """Extract the ARPDATA burnup axis from the selected F33 library files."""
+    """Extract the ARPDATA burnup axis from each selected high-order library."""
     if burnup_rtol <= 0.0:
         raise ValueError(f"burnup_rtol must be > 0.0; got {burnup_rtol}")
 
@@ -329,16 +343,13 @@ def _get_burnup_list(obiwan, file_list, burnup_rtol=2.0e-2):
     for i in range(len(file_list)):
         library_file = file_list[i]["lib"]
         output_file = file_list[i]["output"]
-        bu = np.asarray(
-            core.Obiwan.get_burnups_from_f33(obiwan, library_file),
-            dtype=float,
-        )
+        bu = np.asarray(_burnups_from_file_info(obiwan, file_list[i]), dtype=float)
 
         if len(burnup_list) == 0:
             burnup_list = bu
         elif not _burnup_lists_match(burnup_list, bu, burnup_rtol):
             raise ValueError(
-                "F33 library burnups for "
+                "High-order library burnups for "
                 f"library file={library_file} from output file={output_file} "
                 f"deviated from previous library file={previous_library_file}; "
                 "arpdata.txt requires one burnup grid for the block. "
