@@ -51,6 +51,7 @@ def test_jt_expander_records_scale_artifact_contract(tmp_path):
 
     result = olm.generate.root.jt_expander(
         template=template.name,
+        artifact_contract=olm.core.ScaleArtifactContract.POLARIS,
         static={"_type": "scale.olm.generate.static:pass_through"},
         states={"_type": "scale.olm.generate.states:full_hypercube", "case": [1.0]},
         comp={"_type": "scale.olm.generate.static:pass_through"},

@@ -262,6 +262,8 @@ def jt_expander(
     i = 0
     td = core.TempDir()
     float_format = core.TemplateManager.template_float_format(_model)
+    if artifact_contract is not None:
+        artifact_contract = core.ScaleArtifactContract.from_value(artifact_contract)
     for state2 in states2:
         # For each state, generate the compositions.
         comp2 = {}
@@ -324,13 +326,10 @@ def jt_expander(
 
         data["_scale"] = core.ScaleInput.classify_text(filled_text)
         if artifact_contract is not None:
-            artifact_contract = core.ScaleArtifactContract.from_value(
-                artifact_contract
-            ).value
             rendered_contract = data["_scale"]["artifact_contract"]
-            if rendered_contract != artifact_contract:
+            if rendered_contract != artifact_contract.value:
                 raise ValueError(
-                    f"Configured artifact_contract={artifact_contract} "
+                    f"Configured artifact_contract={artifact_contract.value} "
                     "does not match rendered SCALE input "
                     f"artifact_contract={rendered_contract} for input_file={input_file}"
                 )
