@@ -425,6 +425,20 @@ def _get_arpinfo_mox(name, perms, file_list, dim_map):
     return arpinfo
 
 
+def _arpinfo_builder_for_fuel_type(fuel_type):
+    builders = {
+        "UOX": _get_arpinfo_uox,
+        "MOX": _get_arpinfo_mox,
+    }
+    try:
+        return builders[fuel_type]
+    except KeyError:
+        expected = ", ".join(builders)
+        raise ValueError(
+            f"Unknown fuel_type={fuel_type}; expected one of: {expected}"
+        ) from None
+
+
 def _get_arpinfo(
     obiwan,
     work_dir,
@@ -445,15 +459,9 @@ def _get_arpinfo(
     # Get library,input,output in one place.
     file_list = _get_files(work_dir, perms, material_lumping)
 
-    # Initialize info based on fuel type.
-    if fuel_type == "UOX":
-        arpinfo = _get_arpinfo_uox(name, perms, file_list, dim_map)
-    elif fuel_type == "MOX":
-        arpinfo = _get_arpinfo_mox(name, perms, file_list, dim_map)
-    else:
-        raise ValueError(
-            "Unknown fuel_type={fuel_type} (only MOX/UOX is supported right now)"
-        )
+    arpinfo = _arpinfo_builder_for_fuel_type(fuel_type)(
+        name, perms, file_list, dim_map
+    )
 
     # Get the ARPDATA burnups from the F33 libraries. The matching F71 files are
     # read later only for inventory metadata and interval-average powers.
