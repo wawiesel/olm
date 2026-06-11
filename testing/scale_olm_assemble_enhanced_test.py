@@ -246,7 +246,51 @@ class TestBurnupListExtraction:
             {'output': Path('perm_001.out'), 'lib': Path('perm_001.f33')},
         ]
         
-        with pytest.raises(ValueError, match="F33 library burnups.*deviated"):
+        with pytest.raises(ValueError, match="High-order library burnups.*deviated"):
+            assemble._get_burnup_list("obiwan", file_list)
+
+    @patch('scale.olm.core.Obiwan.get_burnups_from_f33')
+    def test_get_burnup_list_uses_polaris_t16_burnups(
+        self, mock_get_f33_burnups, tmp_path
+    ):
+        """Test Polaris ARPDATA burnups come from the t16 burnup record."""
+        t16_file = tmp_path / "perm_000.t16"
+        t16_file.write_text(
+            """' Record 1
+' Record 1 continued
+' Record 2
+        3         0         0
+' skip
+' skip
+' Burnups
+ 0.000000E+00 1.000000E+00 7.000000E+01
+"""
+        )
+        file_list = [
+            {
+                "artifact_contract": "Polaris",
+                "output": tmp_path / "perm_000.out",
+                "lib": tmp_path / "perm_000.system.f33",
+                "t16": t16_file,
+            }
+        ]
+
+        result = assemble._get_burnup_list("obiwan", file_list)
+
+        np.testing.assert_allclose(result, [0.0, 1000.0, 70000.0])
+        mock_get_f33_burnups.assert_not_called()
+
+    def test_get_burnup_list_requires_polaris_t16(self, tmp_path):
+        """Test Polaris burnup extraction fails clearly without the t16 file."""
+        file_list = [
+            {
+                "artifact_contract": "Polaris",
+                "output": tmp_path / "perm_000.out",
+                "lib": tmp_path / "perm_000.system.f33",
+            }
+        ]
+
+        with pytest.raises(ValueError, match="requires a t16 file"):
             assemble._get_burnup_list("obiwan", file_list)
     
     def test_get_burnup_list_empty_files(self):

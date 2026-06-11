@@ -133,7 +133,7 @@ class TestBurnupListProcessing:
         with patch.object(
             core.Obiwan, "get_burnups_from_f33", side_effect=[burnup1, burnup2]
         ):
-            with pytest.raises(ValueError, match="F33 library burnups.*deviated"):
+            with pytest.raises(ValueError, match="High-order library burnups.*deviated"):
                 assemble._get_burnup_list("obiwan", file_list)
     
     def test_get_burnup_list_single_file_advanced(self):
