@@ -15,6 +15,19 @@ class ScipyInterpMethod(str, Enum):
     LINEAR = "linear"
     PCHIP = "pchip"
 
+    @classmethod
+    def from_value(cls, value):
+        if isinstance(value, cls):
+            return value
+        try:
+            return cls(str(value).lower())
+        except ValueError:
+            expected = ", ".join(method.value for method in cls)
+            raise ValueError(
+                f"Unsupported scipy_interp method={value}; "
+                f"expected one of: {expected}"
+            ) from None
+
 
 def _schema_scipy_interp(with_state: bool = False):
     _schema = internal._infer_schema(_TYPE_SCIPY_INTERP, with_state=with_state)
@@ -62,6 +75,7 @@ def scipy_interp(
     """
     import scipy as sp
 
+    method = ScipyInterpMethod.from_value(method)
     x0 = state[state_var]
     x_list = []
     y_list = []
@@ -69,16 +83,13 @@ def scipy_interp(
         x_list.append(xy[0])
         y_list.append(xy[1])
 
-    y0 = None
-    if method.lower() == "pchip":
+    if method == ScipyInterpMethod.PCHIP:
         y0 = sp.interpolate.pchip_interpolate(x_list, y_list, x0)
-    elif method.lower() == "linear":
+    elif method == ScipyInterpMethod.LINEAR:
         y0 = sp.interpolate.interp1d(x_list, y_list)(x0)
-    else:
-        raise ValueError(f"scipy_interp method={method} must be one of: PCHIP, LINEAR")
 
     internal.logger.debug(
-        "scipy_interp for method={method}", x0=x0, y0=y0, x=x_list, y=y_list
+        "scipy_interp", method=method.value, x0=x0, y0=y0, x=x_list, y=y_list
     )
 
     return float(y0)
