@@ -375,6 +375,11 @@ Some header text...
             "material_lumping": "BASIS",
         }
 
+    def test_scale_artifact_contract_from_value_rejects_unknown(self):
+        """Test artifact contract parsing owns invalid-value failures."""
+        with pytest.raises(ValueError, match="Unsupported SCALE artifact_contract"):
+            core.ScaleArtifactContract.from_value("UNKNOWN")
+
     def test_get_runtime(self):
         """Test extracting runtime from SCALE output using real file."""
         sample_output = """

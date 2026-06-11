@@ -204,14 +204,7 @@ def _get_artifact_contract(perm):
             f"for input_file={input_file}"
         ) from None
 
-    try:
-        return core.ScaleArtifactContract(artifact_contract)
-    except ValueError:
-        expected = ", ".join(core.ScaleArtifactContract.values())
-        raise ValueError(
-            f"Unsupported SCALE artifact_contract={artifact_contract} "
-            f"for input_file={input_file}; expected one of: {expected}"
-        ) from None
+    return core.ScaleArtifactContract.from_value(artifact_contract)
 
 
 def _library_suffix_for_artifact(artifact_contract, material_lumping):
