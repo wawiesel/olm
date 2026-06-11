@@ -165,7 +165,7 @@ class TestFileHandling:
         )
 
         assert result[0]["lib"] == tmp_path / "perm_000.system.f33"
-        assert result[0]["artifact_contract"] == "Polaris"
+        assert result[0]["artifact_contract"] == core.ScaleArtifactContract.POLARIS
 
     def test_get_files_rejects_polaris_mix_lumping(self, tmp_path):
         """Test Polaris assemble fails clearly for unsupported MIX material."""
@@ -224,12 +224,12 @@ class TestBurnupListExtraction:
         
         file_list = [
             {
-                'artifact_contract': 'TRITON',
+                'artifact_contract': core.ScaleArtifactContract.TRITON,
                 'output': Path('perm_000.out'),
                 'lib': Path('perm_000.f33'),
             },
             {
-                'artifact_contract': 'TRITON',
+                'artifact_contract': core.ScaleArtifactContract.TRITON,
                 'output': Path('perm_001.out'),
                 'lib': Path('perm_001.f33'),
             },
@@ -248,7 +248,7 @@ class TestBurnupListExtraction:
         mock_get_burnups.return_value = np.array([0.0, 10.0])
         file_list = [
             {
-                'artifact_contract': 'TRITON',
+                'artifact_contract': core.ScaleArtifactContract.TRITON,
                 'output': Path('perm_000.out'),
                 'lib': Path('perm_000.f33'),
             },
@@ -267,12 +267,12 @@ class TestBurnupListExtraction:
         ]
         file_list = [
             {
-                'artifact_contract': 'TRITON',
+                'artifact_contract': core.ScaleArtifactContract.TRITON,
                 'output': Path('perm_000.out'),
                 'lib': Path('perm_000.f33'),
             },
             {
-                'artifact_contract': 'TRITON',
+                'artifact_contract': core.ScaleArtifactContract.TRITON,
                 'output': Path('perm_001.out'),
                 'lib': Path('perm_001.f33'),
             },
@@ -292,12 +292,12 @@ class TestBurnupListExtraction:
         
         file_list = [
             {
-                'artifact_contract': 'TRITON',
+                'artifact_contract': core.ScaleArtifactContract.TRITON,
                 'output': Path('perm_000.out'),
                 'lib': Path('perm_000.f33'),
             },
             {
-                'artifact_contract': 'TRITON',
+                'artifact_contract': core.ScaleArtifactContract.TRITON,
                 'output': Path('perm_001.out'),
                 'lib': Path('perm_001.f33'),
             },
@@ -325,7 +325,7 @@ class TestBurnupListExtraction:
         )
         file_list = [
             {
-                "artifact_contract": "Polaris",
+                "artifact_contract": core.ScaleArtifactContract.POLARIS,
                 "output": tmp_path / "perm_000.out",
                 "lib": tmp_path / "perm_000.system.f33",
                 "t16": t16_file,
@@ -341,7 +341,7 @@ class TestBurnupListExtraction:
         """Test Polaris burnup extraction fails clearly without the t16 file."""
         file_list = [
             {
-                "artifact_contract": "Polaris",
+                "artifact_contract": core.ScaleArtifactContract.POLARIS,
                 "output": tmp_path / "perm_000.out",
                 "lib": tmp_path / "perm_000.system.f33",
             }
