@@ -73,9 +73,12 @@ def test_jt_expander_schema_has_artifact_contract_enum():
     schema = olm.generate.root._schema_jt_expander()
 
     artifact_contract = schema["properties"]["artifact_contract"]
-    if "$ref" in artifact_contract:
-        ref_name = artifact_contract["$ref"].split("/")[-1]
-        artifact_contract = schema["$defs"][ref_name]
+    ref = artifact_contract.get("$ref")
+    if ref is None and "allOf" in artifact_contract:
+        ref = artifact_contract["allOf"][0]["$ref"]
+    if ref is not None:
+        ref_name = ref.split("/")[-1]
+        artifact_contract = (schema.get("$defs") or schema["definitions"])[ref_name]
     assert artifact_contract["enum"] == ["TRITON", "Polaris"]
 
 

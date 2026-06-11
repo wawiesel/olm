@@ -137,6 +137,13 @@ class TestFileHandling:
         with pytest.raises(ValueError, match="Unsupported SCALE artifact_contract"):
             assemble._get_files(Path('/work'), '.arp', perms)
 
+    def test_get_files_requires_artifact_contract_metadata(self):
+        """Test assemble requires generated SCALE artifact metadata."""
+        perms = [{'input_file': 'perm_000.inp'}]
+
+        with pytest.raises(ValueError, match="_scale\\.artifact_contract"):
+            assemble._get_files(Path('/work'), '.arp', perms)
+
     def test_get_files_uses_polaris_system_library_suffix(self, tmp_path):
         """Test Polaris generated inputs use the integrated system F33 artifact."""
         input_file = tmp_path / "perm_000.inp"
@@ -148,7 +155,12 @@ class TestFileHandling:
         result = assemble._get_files(
             tmp_path,
             ".system.f33",
-            [{"input_file": "perm_000.inp"}],
+            [
+                {
+                    "input_file": "perm_000.inp",
+                    "_scale": {"artifact_contract": "Polaris"},
+                }
+            ],
             "BASIS",
         )
 
@@ -164,7 +176,12 @@ class TestFileHandling:
             assemble._get_files(
                 tmp_path,
                 ".mix0010.f33",
-                [{"input_file": "perm_000.inp"}],
+                [
+                    {
+                        "input_file": "perm_000.inp",
+                        "_scale": {"artifact_contract": "Polaris"},
+                    }
+                ],
                 "MIX10",
             )
     
