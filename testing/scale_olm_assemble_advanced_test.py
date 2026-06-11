@@ -349,22 +349,6 @@ class TestErrorHandling:
         # Dry run should return empty dict
         assert result == {}
     
-    def test_invalid_fuel_type_handling_advanced(self):
-        """Test error handling for invalid fuel types in processing functions."""
-        # This would test _get_arpinfo with invalid fuel type
-        # We can test this through mocking since the function is internal
-        work_dir = Path("/tmp/test")
-        
-        with pytest.raises(ValueError, match="Unknown fuel_type"):
-            # This would normally be called by arpdata_txt, but we can test the logic
-            try:
-                if "INVALID" not in ["UOX", "MOX"]:
-                    raise ValueError("Unknown fuel_type=INVALID (only MOX/UOX is supported right now)")
-            except ValueError as e:
-                assert "Unknown fuel_type" in str(e)
-                raise
-
-
 class TestMathematicalProperties:
     """Test mathematical properties and correctness of algorithms."""
     
