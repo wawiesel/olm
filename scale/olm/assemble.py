@@ -262,7 +262,7 @@ def _get_files(work_dir, suffix, perms, material_lumping="BASIS"):
                 "lib": lib,
                 "output": output,
                 "f71": f71,
-                "artifact_contract": artifact_contract.value,
+                "artifact_contract": artifact_contract,
             }
         )
 
@@ -328,20 +328,7 @@ def _burnup_grid_mismatch_message(reference, candidate):
 
 
 def _burnups_from_file_info(obiwan, file_info):
-    output_file = file_info["output"]
-    try:
-        artifact_contract = core.ScaleArtifactContract(file_info["artifact_contract"])
-    except KeyError:
-        raise ValueError(
-            f"File info is missing artifact_contract for output_file={output_file}"
-        ) from None
-    except ValueError:
-        expected = ", ".join(core.ScaleArtifactContract.values())
-        raise ValueError(
-            "Unsupported SCALE artifact_contract="
-            f"{file_info['artifact_contract']} for output_file={output_file}; "
-            f"expected one of: {expected}"
-        ) from None
+    artifact_contract = file_info["artifact_contract"]
 
     if artifact_contract == core.ScaleArtifactContract.POLARIS:
         if "t16" not in file_info:
