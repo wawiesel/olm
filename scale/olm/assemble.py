@@ -214,7 +214,10 @@ def _get_artifact_contract(perm):
         ) from None
 
 
-def _library_suffix_for_artifact(default_suffix, artifact_contract, material_lumping):
+def _library_suffix_for_artifact(artifact_contract, material_lumping):
+    if artifact_contract == core.ScaleArtifactContract.TRITON:
+        return _triton_material_lumping_suffix(material_lumping)
+
     if artifact_contract == core.ScaleArtifactContract.POLARIS:
         if material_lumping in ("BASIS", "SYSTEM"):
             return ".system.f33"
@@ -222,12 +225,9 @@ def _library_suffix_for_artifact(default_suffix, artifact_contract, material_lum
             "Polaris material_lumping currently supports BASIS or SYSTEM; "
             f"got {material_lumping}"
         )
-    if artifact_contract == core.ScaleArtifactContract.TRITON:
-        return default_suffix
-    raise ValueError(f"Unsupported SCALE artifact_contract={artifact_contract}")
 
 
-def _get_files(work_dir, suffix, perms, material_lumping="BASIS"):
+def _get_files(work_dir, perms, material_lumping="BASIS"):
     """Get list of files by using the generate.olm.json output and changing the suffix to the
     expected library file. Note this is in permutation order, not state space order."""
 
@@ -235,9 +235,7 @@ def _get_files(work_dir, suffix, perms, material_lumping="BASIS"):
     for perm in perms:
         input = perm["input_file"]
         artifact_contract = _get_artifact_contract(perm)
-        lib_suffix = _library_suffix_for_artifact(
-            suffix, artifact_contract, material_lumping
-        )
+        lib_suffix = _library_suffix_for_artifact(artifact_contract, material_lumping)
 
         # Convert from .inp to expected suffix.
         lib = work_dir / Path(input)
@@ -340,8 +338,6 @@ def _burnups_from_file_info(obiwan, file_info):
 
     if artifact_contract == core.ScaleArtifactContract.TRITON:
         return core.Obiwan.get_burnups_from_f33(obiwan, file_info["lib"])
-
-    raise ValueError(f"Unsupported SCALE artifact_contract={artifact_contract}")
 
 
 def _get_burnup_list(obiwan, file_list, burnup_rtol=2.0e-2):
@@ -454,8 +450,7 @@ def _get_arpinfo(
     perms = generate["perms"]
 
     # Get library,input,output in one place.
-    suffix = _triton_material_lumping_suffix(material_lumping)
-    file_list = _get_files(work_dir, suffix, perms, material_lumping)
+    file_list = _get_files(work_dir, perms, material_lumping)
 
     # Initialize info based on fuel type.
     if fuel_type == "UOX":

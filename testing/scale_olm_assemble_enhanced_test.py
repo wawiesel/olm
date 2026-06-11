@@ -89,25 +89,24 @@ class TestFileHandling:
         """Test basic file collection functionality."""
         # Mock that files exist
         mock_exists.return_value = True
-        
+
         work_dir = Path('/work')
-        suffix = '.arp'
         # Correct format: perms should be list of dicts with input_file keys
         perms = [
             {'input_file': 'perm_000.inp', '_scale': {'artifact_contract': 'TRITON'}},
             {'input_file': 'perm_001.inp', '_scale': {'artifact_contract': 'TRITON'}},
             {'input_file': 'perm_002.inp', '_scale': {'artifact_contract': 'TRITON'}},
         ]
-        
-        result = assemble._get_files(work_dir, suffix, perms)
-        
+
+        result = assemble._get_files(work_dir, perms)
+
         assert len(result) == 3
         for file_info in result:
             assert 'lib' in file_info
             assert 'output' in file_info
             assert 'f71' in file_info
             assert 't16' in file_info
-            assert str(file_info['lib']).endswith('.arp')
+            assert str(file_info['lib']).endswith('.system.f33')
             assert str(file_info['output']).endswith('.out')
             assert str(file_info['f71']).endswith('.f71')
             assert str(file_info['t16']).endswith('.t16')
@@ -117,13 +116,12 @@ class TestFileHandling:
         """Test file collection with missing files."""
         # Mock that files don't exist
         mock_exists.return_value = False
-        
+
         work_dir = Path('/work')
-        suffix = '.arp'
         perms = [{'input_file': 'perm_000.inp', '_scale': {'artifact_contract': 'TRITON'}}]
-        
+
         with pytest.raises(ValueError, match="library file=.* does not exist"):
-            assemble._get_files(work_dir, suffix, perms)
+            assemble._get_files(work_dir, perms)
 
     def test_get_files_rejects_unknown_artifact_contract(self):
         """Test assemble rejects unknown SCALE artifact contracts."""
@@ -135,14 +133,14 @@ class TestFileHandling:
         ]
 
         with pytest.raises(ValueError, match="Unsupported SCALE artifact_contract"):
-            assemble._get_files(Path('/work'), '.arp', perms)
+            assemble._get_files(Path('/work'), perms)
 
     def test_get_files_requires_artifact_contract_metadata(self):
         """Test assemble requires generated SCALE artifact metadata."""
         perms = [{'input_file': 'perm_000.inp'}]
 
         with pytest.raises(ValueError, match="_scale\\.artifact_contract"):
-            assemble._get_files(Path('/work'), '.arp', perms)
+            assemble._get_files(Path('/work'), perms)
 
     def test_get_files_uses_polaris_system_library_suffix(self, tmp_path):
         """Test Polaris generated inputs use the integrated system F33 artifact."""
@@ -154,7 +152,6 @@ class TestFileHandling:
 
         result = assemble._get_files(
             tmp_path,
-            ".system.f33",
             [
                 {
                     "input_file": "perm_000.inp",
@@ -175,7 +172,6 @@ class TestFileHandling:
         with pytest.raises(ValueError, match="Polaris material_lumping"):
             assemble._get_files(
                 tmp_path,
-                ".mix0010.f33",
                 [
                     {
                         "input_file": "perm_000.inp",
@@ -188,10 +184,9 @@ class TestFileHandling:
     def test_get_files_empty_perms(self):
         """Test file collection with empty permutations."""
         work_dir = Path('/work')
-        suffix = '.arp'
         perms = []
-        
-        result = assemble._get_files(work_dir, suffix, perms)
+
+        result = assemble._get_files(work_dir, perms)
         assert result == []
 
 
@@ -544,7 +539,7 @@ class TestArpInfoMaster:
         
         # Verify the full workflow
         mock_get_files.assert_called_once_with(
-            work_dir, ".system.f33", mock_generate_data["perms"], "BASIS"
+            work_dir, mock_generate_data["perms"], "BASIS"
         )
         mock_get_arpinfo_uox.assert_called_once_with(name, mock_generate_data["perms"], mock_file_list, dim_map)
         mock_get_burnup_list.assert_called_once_with("obiwan", mock_file_list, 2.0e-2)
@@ -588,7 +583,7 @@ class TestArpInfoMaster:
             )
 
         mock_get_files.assert_called_once_with(
-            work_dir, ".mix0010.f33", mock_generate_data["perms"], "MIX10"
+            work_dir, mock_generate_data["perms"], "MIX10"
         )
         mock_get_burnup_list.assert_called_once_with("obiwan", mock_file_list, 2.0e-2)
         assert result.material_lumping == "MIX10"

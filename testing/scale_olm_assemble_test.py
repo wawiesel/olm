@@ -169,7 +169,6 @@ class TestGetFilesFunction:
     def test_get_files_with_mock_data(self):
         """Test _get_files function with mocked filesystem."""
         work_dir = Path("/tmp/test")
-        suffix = ".f33"
         perms = [
             {"input_file": "case1.inp", "_scale": {"artifact_contract": "TRITON"}},
             {"input_file": "case2.inp", "_scale": {"artifact_contract": "TRITON"}},
@@ -178,9 +177,9 @@ class TestGetFilesFunction:
         with patch('pathlib.Path.exists') as mock_exists:
             # Mock that both library and output files exist
             mock_exists.return_value = True
-            
+
             try:
-                result = assemble._get_files(work_dir, suffix, perms)
+                result = assemble._get_files(work_dir, perms)
                 
                 # Should return list of dicts with 'lib' and 'output' keys
                 assert isinstance(result, list)
