@@ -194,9 +194,18 @@ def _generate_thinned_burnup_list(keep_every, y_list, always_keep_ends=True):
     return thinned_burnup_list
 
 
-def _validate_artifact_contract(artifact_contract, input_file):
+def _get_artifact_contract(perm):
+    input_file = perm["input_file"]
     try:
-        return core.ScaleArtifactContract(artifact_contract).value
+        artifact_contract = perm["_scale"]["artifact_contract"]
+    except KeyError:
+        raise ValueError(
+            "Generated permutation is missing _scale.artifact_contract "
+            f"for input_file={input_file}"
+        ) from None
+
+    try:
+        return core.ScaleArtifactContract(artifact_contract)
     except ValueError:
         expected = ", ".join(core.ScaleArtifactContract.values())
         raise ValueError(
@@ -205,39 +214,15 @@ def _validate_artifact_contract(artifact_contract, input_file):
         ) from None
 
 
-def _get_scale_metadata(work_dir, perm):
-    if "_scale" in perm:
-        return perm["_scale"]
-
-    input_file = work_dir / Path(perm["input_file"])
-    if not input_file.is_file():
-        raise ValueError(f"SCALE input file={input_file} does not exist.")
-    return core.ScaleInput.classify_text(input_file.read_text())
-
-
-def _get_artifact_contract(work_dir, perm):
-    scale_metadata = _get_scale_metadata(work_dir, perm)
-    if "artifact_contract" not in scale_metadata:
-        raise ValueError(
-            "SCALE input classification is missing artifact_contract "
-            f"for input_file={perm['input_file']}"
-        )
-    artifact_contract = scale_metadata["artifact_contract"]
-    return _validate_artifact_contract(artifact_contract, perm["input_file"])
-
-
 def _library_suffix_for_artifact(default_suffix, artifact_contract, material_lumping):
-    artifact_contract = _validate_artifact_contract(
-        artifact_contract, "library suffix selection"
-    )
-    if artifact_contract == core.ScaleArtifactContract.POLARIS.value:
+    if artifact_contract == core.ScaleArtifactContract.POLARIS:
         if material_lumping in ("BASIS", "SYSTEM"):
             return ".system.f33"
         raise ValueError(
             "Polaris material_lumping currently supports BASIS or SYSTEM; "
             f"got {material_lumping}"
         )
-    if artifact_contract == core.ScaleArtifactContract.TRITON.value:
+    if artifact_contract == core.ScaleArtifactContract.TRITON:
         return default_suffix
     raise ValueError(f"Unsupported SCALE artifact_contract={artifact_contract}")
 
@@ -249,7 +234,7 @@ def _get_files(work_dir, suffix, perms, material_lumping="BASIS"):
     file_list = list()
     for perm in perms:
         input = perm["input_file"]
-        artifact_contract = _get_artifact_contract(work_dir, perm)
+        artifact_contract = _get_artifact_contract(perm)
         lib_suffix = _library_suffix_for_artifact(
             suffix, artifact_contract, material_lumping
         )
@@ -277,7 +262,7 @@ def _get_files(work_dir, suffix, perms, material_lumping="BASIS"):
                 "lib": lib,
                 "output": output,
                 "f71": f71,
-                "artifact_contract": artifact_contract,
+                "artifact_contract": artifact_contract.value,
             }
         )
 
@@ -343,16 +328,22 @@ def _burnup_grid_mismatch_message(reference, candidate):
 
 
 def _burnups_from_file_info(obiwan, file_info):
-    output_file = file_info.get("output", "<unknown>")
-    if "artifact_contract" not in file_info:
+    output_file = file_info["output"]
+    try:
+        artifact_contract = core.ScaleArtifactContract(file_info["artifact_contract"])
+    except KeyError:
         raise ValueError(
             f"File info is missing artifact_contract for output_file={output_file}"
-        )
+        ) from None
+    except ValueError:
+        expected = ", ".join(core.ScaleArtifactContract.values())
+        raise ValueError(
+            "Unsupported SCALE artifact_contract="
+            f"{file_info['artifact_contract']} for output_file={output_file}; "
+            f"expected one of: {expected}"
+        ) from None
 
-    artifact_contract = _validate_artifact_contract(
-        file_info["artifact_contract"], output_file
-    )
-    if artifact_contract == core.ScaleArtifactContract.POLARIS.value:
+    if artifact_contract == core.ScaleArtifactContract.POLARIS:
         if "t16" not in file_info:
             raise ValueError(
                 "Polaris burnup extraction requires a t16 file for "
@@ -360,7 +351,7 @@ def _burnups_from_file_info(obiwan, file_info):
             )
         return core.ScaleOutfile.parse_burnups_from_polaris_t16(file_info["t16"])
 
-    if artifact_contract == core.ScaleArtifactContract.TRITON.value:
+    if artifact_contract == core.ScaleArtifactContract.TRITON:
         return core.Obiwan.get_burnups_from_f33(obiwan, file_info["lib"])
 
     raise ValueError(f"Unsupported SCALE artifact_contract={artifact_contract}")
@@ -688,8 +679,8 @@ def _process_libraries(
 
         ii = json.loads(text)
         output_file = (work_dir / perm["input_file"]).with_suffix(".out")
-        artifact_contract = _get_artifact_contract(work_dir, perm)
-        if artifact_contract == core.ScaleArtifactContract.POLARIS.value:
+        artifact_contract = _get_artifact_contract(perm)
+        if artifact_contract == core.ScaleArtifactContract.POLARIS:
             of = core.ScaleOutfile(output_file)
             caseid = of.parse_polaris_state_table(of.outfile, material_lumping)
         else:
@@ -704,7 +695,7 @@ def _process_libraries(
                 raise ValueError(
                     "Cannot identify assembled material case; "
                     f"case {caseid} not found in F71 table for "
-                    f"artifact_contract={artifact_contract} product={prod_name}"
+                    f"artifact_contract={artifact_contract.value} product={prod_name}"
                 )
 
         ii["responses"]["system"] = ii["responses"].pop(f"case({caseid})")
