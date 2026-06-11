@@ -380,6 +380,18 @@ Some header text...
         with pytest.raises(ValueError, match="Unsupported SCALE artifact_contract"):
             core.ScaleArtifactContract.from_value("UNKNOWN")
 
+    def test_scale_artifact_contract_from_sequence(self):
+        """Test SCALE sequence classification is owned by the artifact contract."""
+        assert (
+            core.ScaleArtifactContract.from_sequence("t-depl-1d")
+            == core.ScaleArtifactContract.TRITON
+        )
+        assert (
+            core.ScaleArtifactContract.from_sequence("polaris")
+            == core.ScaleArtifactContract.POLARIS
+        )
+        assert core.ScaleArtifactContract.from_sequence("csas6") is None
+
     def test_get_runtime(self):
         """Test extracting runtime from SCALE output using real file."""
         sample_output = """
