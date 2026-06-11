@@ -171,8 +171,8 @@ class TestGetFilesFunction:
         work_dir = Path("/tmp/test")
         suffix = ".f33"
         perms = [
-            {"input_file": "case1.inp"},
-            {"input_file": "case2.inp"},
+            {"input_file": "case1.inp", "_scale": {"artifact_contract": "TRITON"}},
+            {"input_file": "case2.inp", "_scale": {"artifact_contract": "TRITON"}},
         ]
         
         with patch('pathlib.Path.exists') as mock_exists:
@@ -308,4 +308,4 @@ class TestDataProcessing:
         if input_list:  # Non-empty input
             assert result[0] == input_list[0]    # First element preserved
             assert result[-1] == input_list[-1]  # Last element preserved
-        assert all(val in input_list for val in result)  # All results from input 
+        assert all(val in input_list for val in result)  # All results from input

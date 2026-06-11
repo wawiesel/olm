@@ -94,9 +94,9 @@ class TestFileHandling:
         suffix = '.arp'
         # Correct format: perms should be list of dicts with input_file keys
         perms = [
-            {'input_file': 'perm_000.inp', '_scale': {'artifact_contract': 'UNKNOWN'}},
-            {'input_file': 'perm_001.inp', '_scale': {'artifact_contract': 'UNKNOWN'}},
-            {'input_file': 'perm_002.inp', '_scale': {'artifact_contract': 'UNKNOWN'}},
+            {'input_file': 'perm_000.inp', '_scale': {'artifact_contract': 'TRITON'}},
+            {'input_file': 'perm_001.inp', '_scale': {'artifact_contract': 'TRITON'}},
+            {'input_file': 'perm_002.inp', '_scale': {'artifact_contract': 'TRITON'}},
         ]
         
         result = assemble._get_files(work_dir, suffix, perms)
@@ -120,10 +120,22 @@ class TestFileHandling:
         
         work_dir = Path('/work')
         suffix = '.arp'
-        perms = [{'input_file': 'perm_000.inp', '_scale': {'artifact_contract': 'UNKNOWN'}}]
+        perms = [{'input_file': 'perm_000.inp', '_scale': {'artifact_contract': 'TRITON'}}]
         
         with pytest.raises(ValueError, match="library file=.* does not exist"):
             assemble._get_files(work_dir, suffix, perms)
+
+    def test_get_files_rejects_unknown_artifact_contract(self):
+        """Test assemble rejects unknown SCALE artifact contracts."""
+        perms = [
+            {
+                'input_file': 'perm_000.inp',
+                '_scale': {'artifact_contract': 'UNKNOWN'},
+            }
+        ]
+
+        with pytest.raises(ValueError, match="Unsupported SCALE artifact_contract"):
+            assemble._get_files(Path('/work'), '.arp', perms)
 
     def test_get_files_uses_polaris_system_library_suffix(self, tmp_path):
         """Test Polaris generated inputs use the integrated system F33 artifact."""
@@ -194,8 +206,16 @@ class TestBurnupListExtraction:
         mock_get_burnups.return_value = mock_burnup_data
         
         file_list = [
-            {'output': Path('perm_000.out'), 'lib': Path('perm_000.f33')},
-            {'output': Path('perm_001.out'), 'lib': Path('perm_001.f33')},
+            {
+                'artifact_contract': 'TRITON',
+                'output': Path('perm_000.out'),
+                'lib': Path('perm_000.f33'),
+            },
+            {
+                'artifact_contract': 'TRITON',
+                'output': Path('perm_001.out'),
+                'lib': Path('perm_001.f33'),
+            },
         ]
         
         result = assemble._get_burnup_list("obiwan", file_list)
@@ -210,7 +230,11 @@ class TestBurnupListExtraction:
         """Test ARPDATA burnups come from the F33 library, not F71 cases."""
         mock_get_burnups.return_value = np.array([0.0, 10.0])
         file_list = [
-            {'output': Path('perm_000.out'), 'lib': Path('perm_000.f33')},
+            {
+                'artifact_contract': 'TRITON',
+                'output': Path('perm_000.out'),
+                'lib': Path('perm_000.f33'),
+            },
         ]
 
         assemble._get_burnup_list("obiwan", file_list)
@@ -225,8 +249,16 @@ class TestBurnupListExtraction:
             np.array([0.0, 4.99138, 99.8263]),
         ]
         file_list = [
-            {'output': Path('perm_000.out'), 'lib': Path('perm_000.f33')},
-            {'output': Path('perm_001.out'), 'lib': Path('perm_001.f33')},
+            {
+                'artifact_contract': 'TRITON',
+                'output': Path('perm_000.out'),
+                'lib': Path('perm_000.f33'),
+            },
+            {
+                'artifact_contract': 'TRITON',
+                'output': Path('perm_001.out'),
+                'lib': Path('perm_001.f33'),
+            },
         ]
 
         result = assemble._get_burnup_list("obiwan", file_list)
@@ -242,8 +274,16 @@ class TestBurnupListExtraction:
         ]
         
         file_list = [
-            {'output': Path('perm_000.out'), 'lib': Path('perm_000.f33')},
-            {'output': Path('perm_001.out'), 'lib': Path('perm_001.f33')},
+            {
+                'artifact_contract': 'TRITON',
+                'output': Path('perm_000.out'),
+                'lib': Path('perm_000.f33'),
+            },
+            {
+                'artifact_contract': 'TRITON',
+                'output': Path('perm_001.out'),
+                'lib': Path('perm_001.f33'),
+            },
         ]
         
         with pytest.raises(ValueError, match="High-order library burnups.*deviated"):

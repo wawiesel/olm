@@ -25,6 +25,7 @@
     "generate": {
         "_type": "scale.olm.generate.root:jt_expander",
         "template": "model/triton/pin-uox.jt.inp",
+        "artifact_contract": "TRITON",
         "comp": {
             "fuel":{
                 "_type": "scale.olm.generate.comp:uo2_nuregcr5625",

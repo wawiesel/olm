@@ -69,6 +69,39 @@ def test_jt_expander_records_scale_artifact_contract(tmp_path):
     assert '"artifact_contract": "Polaris"' in data_file.read_text()
 
 
+def test_jt_expander_schema_has_artifact_contract_enum():
+    schema = olm.generate.root._schema_jt_expander()
+
+    artifact_contract = schema["properties"]["artifact_contract"]
+    if "$ref" in artifact_contract:
+        ref_name = artifact_contract["$ref"].split("/")[-1]
+        artifact_contract = schema["$defs"][ref_name]
+    assert artifact_contract["enum"] == ["TRITON", "Polaris"]
+
+
+def test_jt_expander_rejects_artifact_contract_mismatch(tmp_path):
+    template = tmp_path / "model.jt.inp"
+    template.write_text("=t-depl\nend\n")
+
+    with pytest.raises(ValueError, match="Configured artifact_contract=Polaris"):
+        olm.generate.root.jt_expander(
+            template=template.name,
+            artifact_contract="Polaris",
+            static={"_type": "scale.olm.generate.static:pass_through"},
+            states={
+                "_type": "scale.olm.generate.states:full_hypercube",
+                "case": [1.0],
+            },
+            comp={"_type": "scale.olm.generate.static:pass_through"},
+            time={"_type": "scale.olm.generate.static:pass_through"},
+            _model={"name": "contract_mismatch"},
+            _env={
+                "config_file": str(tmp_path / "config.olm.json"),
+                "work_dir": str(tmp_path / "_work"),
+            },
+        )
+
+
 def test_jt_expander_uses_model_template_float_format(tmp_path):
     template = tmp_path / "model.jt.inp"
     template.write_text("value={{static.value}}")

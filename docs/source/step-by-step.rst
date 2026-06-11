@@ -13,7 +13,7 @@ Initialize a new reactor library directory as follows.
 
 .. code:: console
 
-    $ olm init --variant=uox_quick
+    $ olm init --variant=triton_pin_uox_quick uox_quick
     
     $ tree uox_quick
 
@@ -28,8 +28,8 @@ data that defines the reactor library, such as the maximum burnup to consider or
 The quick variants reference packaged templates such as
 :code:`model/triton/pin-uox.jt.inp` and :code:`report/scale-short.jt.rst`.
 Packaged template names are relative to :code:`scale/olm/templates`. Use
-:code:`olm init --variant=uox_quick --copy` to copy those templates locally as
-:code:`model.jt.inp` and :code:`report.jt.rst` for editing.
+:code:`olm init --variant=triton_pin_uox_quick --copy uox_quick` to copy those
+templates locally as :code:`model.jt.inp` and :code:`report.jt.rst` for editing.
 
 Inspect the files
 ~~~~~~~~~~~~~~~~~
@@ -304,5 +304,3 @@ Run the input with SCALE.
     
     $ $SCALE_DIR/bin/scalerte -m origami.inp
     
-
-

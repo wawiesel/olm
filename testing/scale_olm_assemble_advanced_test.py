@@ -108,9 +108,9 @@ class TestBurnupListProcessing:
         """Test burnup list extraction with consistent data."""
         mock_burnup = np.array([0.0, 1.0, 5.0, 10.0, 25.0, 50.0])
         file_list = [
-            {"output": "file1.out", "lib": "file1.f33"},
-            {"output": "file2.out", "lib": "file2.f33"},
-            {"output": "file3.out", "lib": "file3.f33"},
+            {"artifact_contract": "TRITON", "output": "file1.out", "lib": "file1.f33"},
+            {"artifact_contract": "TRITON", "output": "file2.out", "lib": "file2.f33"},
+            {"artifact_contract": "TRITON", "output": "file3.out", "lib": "file3.f33"},
         ]
 
         with patch.object(
@@ -126,8 +126,8 @@ class TestBurnupListProcessing:
         burnup1 = np.array([0.0, 1.0, 5.0, 10.0])
         burnup2 = np.array([0.0, 2.0, 6.0, 12.0])  # Different values
         file_list = [
-            {"output": "file1.out", "lib": "file1.f33"},
-            {"output": "file2.out", "lib": "file2.f33"},
+            {"artifact_contract": "TRITON", "output": "file1.out", "lib": "file1.f33"},
+            {"artifact_contract": "TRITON", "output": "file2.out", "lib": "file2.f33"},
         ]
 
         with patch.object(
@@ -139,7 +139,13 @@ class TestBurnupListProcessing:
     def test_get_burnup_list_single_file_advanced(self):
         """Test burnup list extraction with single file."""
         mock_burnup = np.array([0.0, 5.0, 15.0, 30.0])
-        file_list = [{"output": "single_file.out", "lib": "single_file.f33"}]
+        file_list = [
+            {
+                "artifact_contract": "TRITON",
+                "output": "single_file.out",
+                "lib": "single_file.f33",
+            }
+        ]
 
         with patch.object(
             core.Obiwan, "get_burnups_from_f33", return_value=mock_burnup

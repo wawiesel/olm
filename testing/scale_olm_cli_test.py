@@ -100,7 +100,7 @@ class TestOLMCLI:
 
         result = self.runner.invoke(
             main.olm_init,
-            ["--variant", "uox_quick", "--copy", str(config_dir)],
+            ["--variant", "triton_pin_uox_quick", "--copy", str(config_dir)],
         )
 
         assert result.exit_code == 0

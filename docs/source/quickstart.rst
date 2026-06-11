@@ -12,8 +12,8 @@ ending with a simple UOX ORIGEN reactor library.
 
 .. code:: console
 
-	# Initialize a configuration file for the uox_quick variant.
-	$ olm init --variant uox_quick
+	# Initialize a UOX quick configuration.
+	$ olm init --variant triton_pin_uox_quick uox_quick
 
   	# Create an ORIGEN library.
   	$ olm create -j6 uox_quick/config.olm.json
@@ -45,4 +45,3 @@ created library as shown below.
 		  SCALE 6.3.2 and later. **Using a UOX** ORIGEN reactor library in ORIGAMI
 		  as shown here only requires SCALE 6.2.4 at minimum. However, **using a MOX** ORIGEN
 		  reactor library in ORIGAMI requires SCALE 7.0.
-

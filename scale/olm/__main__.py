@@ -37,7 +37,7 @@ Create a reactor library locally at :code:`uox_quick/_work/arpdata.txt`.
 .. code:: console
 
   \b
-  $ olm init --variant uox_quick
+  $ olm init --variant triton_pin_uox_quick uox_quick
   $ olm create -j6 uox_quick/config.olm.json
 
 """,
@@ -112,20 +112,20 @@ Choose from one of the variants when you pass the --list option.
   \b
   $ olm init --list
 
-By default creates a directory called `mox_quick` with a config file that
-references packaged templates.
+Pass a directory name after the variant to choose a shorter local directory while
+still using the explicit packaged variant.
 
 .. code:: console
 
   \b
-  $ olm init --variant mox_quick
+  $ olm init --variant triton_pin_mox_quick mox_quick
 
 Pass --copy to copy editable template files into the initialized directory.
 
 .. code:: console
 
   \b
-  $ olm init --variant mox_quick --copy
+  $ olm init --variant triton_pin_mox_quick --copy mox_quick
 
 """,
 )
@@ -176,7 +176,7 @@ First create and install a reactor library to $HOME/.olm
 .. code:: console
 
   \b
-  $ olm init --variant uox_quick
+  $ olm init --variant triton_pin_uox_quick uox_quick
   $ olm create -j6 uox_quick/config.olm.json
   $ olm install --overwrite uox_quick/_work
   $ export SCALE_OLM_PATH=$HOME/.olm
@@ -334,7 +334,7 @@ Check a reactor library for quality.
 .. code:: console
 
   \b
-  $ olm init --variant uox_quick
+  $ olm init --variant triton_pin_uox_quick uox_quick
   $ olm check -j6 -s '{"_type": "GridGradient", "eps0": 1e-6}' data/w17x17.arc.h5
   $ cat check.json    # Default output file.
 

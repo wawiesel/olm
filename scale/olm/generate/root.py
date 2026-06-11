@@ -88,6 +88,7 @@ See the :obj:`jt_expander` for a concrete function which follows this specificat
 # this package.
 from typing import Union as _Union, Any, Literal
 import scale.olm.internal as internal
+import scale.olm.core as core
 
 __all__ = ["jt_expander"]
 
@@ -133,6 +134,7 @@ def jt_expander(
     states: _States,
     comp: _Union[_OneComp, _NestedComp],
     time: _Time,
+    artifact_contract: core.ScaleArtifactContract = None,
     _model={},
     _env={},
     dynamic: _Union[_Dynamic, None] = None,
@@ -197,7 +199,6 @@ def jt_expander(
 
     """
     import scale.olm.internal as internal
-    import scale.olm.core as core
     from pathlib import Path
     import numpy as np
     import math
@@ -322,6 +323,15 @@ def jt_expander(
             )
 
         data["_scale"] = core.ScaleInput.classify_text(filled_text)
+        if artifact_contract is not None:
+            artifact_contract = core.ScaleArtifactContract(artifact_contract).value
+            rendered_contract = data["_scale"]["artifact_contract"]
+            if rendered_contract != artifact_contract:
+                raise ValueError(
+                    f"Configured artifact_contract={artifact_contract} "
+                    "does not match rendered SCALE input "
+                    f"artifact_contract={rendered_contract} for input_file={input_file}"
+                )
 
         # Write the data file in the actual directory with input, hash, and SCALE
         # product metadata added.
