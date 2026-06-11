@@ -125,11 +125,11 @@ class TestFileHandling:
         with pytest.raises(ValueError, match="library file=.* does not exist"):
             assemble._get_files(work_dir, suffix, perms)
 
-    def test_get_files_uses_polaris_basis_library_suffix(self, tmp_path):
-        """Test Polaris generated inputs use the BASIS F33 library artifact."""
+    def test_get_files_uses_polaris_system_library_suffix(self, tmp_path):
+        """Test Polaris generated inputs use the integrated system F33 artifact."""
         input_file = tmp_path / "perm_000.inp"
         input_file.write_text("=polaris\nend\n")
-        (tmp_path / "perm_000.BASIS.f33").write_text("library")
+        (tmp_path / "perm_000.system.f33").write_text("library")
         (tmp_path / "perm_000.out").write_text("polaris finished. used 1 seconds.\n")
         (tmp_path / "perm_000.f71").write_text("f71")
 
@@ -140,8 +140,21 @@ class TestFileHandling:
             "BASIS",
         )
 
-        assert result[0]["lib"] == tmp_path / "perm_000.BASIS.f33"
+        assert result[0]["lib"] == tmp_path / "perm_000.system.f33"
         assert result[0]["artifact_contract"] == "Polaris"
+
+    def test_get_files_rejects_polaris_mix_lumping(self, tmp_path):
+        """Test Polaris assemble fails clearly for unsupported MIX material."""
+        input_file = tmp_path / "perm_000.inp"
+        input_file.write_text("=polaris\nend\n")
+
+        with pytest.raises(ValueError, match="Polaris material_lumping"):
+            assemble._get_files(
+                tmp_path,
+                ".mix0010.f33",
+                [{"input_file": "perm_000.inp"}],
+                "MIX10",
+            )
     
     def test_get_files_empty_perms(self):
         """Test file collection with empty permutations."""

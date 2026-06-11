@@ -210,7 +210,12 @@ def _perm_artifact_contract(work_dir, perm):
 
 def _library_suffix_for_artifact(default_suffix, artifact_contract, material_lumping):
     if artifact_contract == "Polaris":
-        return f".{material_lumping}.f33"
+        if material_lumping in ("BASIS", "SYSTEM"):
+            return ".system.f33"
+        raise ValueError(
+            "Polaris material_lumping currently supports BASIS or SYSTEM; "
+            f"got {material_lumping}"
+        )
     return default_suffix
 
 
