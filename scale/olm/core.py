@@ -50,6 +50,15 @@ class ScaleArtifactContract(str, Enum):
                 f"expected one of: {expected}"
             ) from None
 
+    @classmethod
+    def from_sequence(cls, sequence):
+        sequence = sequence.strip().lower()
+        if sequence.startswith(("t-depl", "t5-depl", "t6-depl")):
+            return cls.TRITON
+        if sequence.startswith("polaris"):
+            return cls.POLARIS
+        return None
+
 
 class TemplateManager:
     """Manage jinja templates.
@@ -1193,12 +1202,8 @@ class ThreadPoolExecutor:
 
 
 def _scale_product_name(sequence: str) -> str:
-    sequence = sequence.strip().lower()
-    if sequence.startswith(("t-depl", "t5-depl", "t6-depl")):
-        return ScaleArtifactContract.TRITON.value
-    if sequence.startswith("polaris"):
-        return ScaleArtifactContract.POLARIS.value
-    return "UNKNOWN"
+    artifact_contract = ScaleArtifactContract.from_sequence(sequence)
+    return artifact_contract.value if artifact_contract is not None else "UNKNOWN"
 
 
 class ScaleInput:
@@ -1218,17 +1223,25 @@ class ScaleInput:
     @staticmethod
     def classify_text(text: str) -> dict:
         sequences = ScaleInput.parse_sequence_records(text)
-        products = [_scale_product_name(sequence) for sequence in sequences]
-        known_products = [product for product in products if product != "UNKNOWN"]
-        artifact_contract = "UNKNOWN"
-        if known_products and len(set(known_products)) == 1:
-            artifact_contract = known_products[0]
+        contracts = []
+        for sequence in sequences:
+            contract = ScaleArtifactContract.from_sequence(sequence)
+            if contract is not None:
+                contracts.append(contract)
+
+        artifact_contract = None
+        if contracts and len(set(contracts)) == 1:
+            artifact_contract = contracts[0]
 
         return {
             "sequences": sequences,
-            "artifact_contract": artifact_contract,
+            "artifact_contract": (
+                artifact_contract.value
+                if artifact_contract is not None
+                else "UNKNOWN"
+            ),
             "material_lumping": "BASIS"
-            if artifact_contract in ScaleArtifactContract.values()
+            if artifact_contract is not None
             else None,
         }
 
