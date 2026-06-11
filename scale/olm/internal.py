@@ -196,12 +196,23 @@ def create(
                 f.write(json.dumps(output, indent=4))
 
 
+_INIT_VARIANT_ALIASES = {
+    "uox_quick": "triton_pin_uox_quick",
+    "mox_quick": "triton_pin_mox_quick",
+    "polaris_uox_quick": "polaris_bwr7x7_uox_quick",
+}
+
+
+def _resolve_init_variant(variant):
+    return _INIT_VARIANT_ALIASES.get(variant, variant)
+
+
 def _get_init_variants():
     init_path = Path(__file__).parent / "variants"
     logger.debug("Initialization variants located", init_path=init_path)
-    variants = [
+    variants = sorted(
         str(Path(v).relative_to(init_path)) for v in glob.glob(str(init_path / "*"))
-    ]
+    )
     return init_path, variants
 
 
@@ -221,8 +232,13 @@ def _write_init_variant(variant, config_dir, copy_files=False):
     config_path.mkdir(parents=True, exist_ok=True)
 
     init_path, variants = _get_init_variants()
+    variant = _resolve_init_variant(variant)
     if not variant in variants:
-        logger.error(f"Requested variant={variant} unknown!", known_variants=variants)
+        logger.error(
+            f"Requested variant={variant} unknown!",
+            known_variants=variants,
+            aliases=_INIT_VARIANT_ALIASES,
+        )
         return
     variant_path = init_path / variant
     c0 = variant_path / "config.olm.json"

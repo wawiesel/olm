@@ -18,7 +18,7 @@
 %    [{{key}}] {{src}}
 {% endfor -%}
 %  [Power]
-%    {{state.specific_power}} MW/MTU specific power
+%    {{state.specific_power}} MW/MTHM specific power
 %  [Other Info]
 {%- for nb in _.model.notes %}
 %    {{nb}}

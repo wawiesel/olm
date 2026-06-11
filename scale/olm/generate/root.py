@@ -301,12 +301,7 @@ def jt_expander(
         data_file = str(data_path.relative_to(work_path))
         data["_"] = {"model": _model, "data_hash": data_hash, "data_file": data_file}
 
-        # Write the data file in the actual directory with input and hash added. This
-        # is mainly so a user can see the data that is available for template expansion
-        # beside a copy of the template.
         input_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(data_path, "w") as f:
-            json.dump(data, f, indent=4)
 
         # Expand the template and write the input to disk.
         internal.logger.info("Writing permutation", index=i, input_file=input_file)
@@ -325,6 +320,13 @@ def jt_expander(
             filled_text = core.TemplateManager._tree_print(
                 data, float_format=float_format
             )
+
+        data["_scale"] = core.ScaleInput.classify_text(filled_text)
+
+        # Write the data file in the actual directory with input, hash, and SCALE
+        # product metadata added.
+        with open(data_path, "w") as f:
+            json.dump(data, f, indent=4)
 
         with open(input_path, "w") as f:
             f.write(filled_text)

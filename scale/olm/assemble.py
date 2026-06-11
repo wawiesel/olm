@@ -194,17 +194,41 @@ def _generate_thinned_burnup_list(keep_every, y_list, always_keep_ends=True):
     return thinned_burnup_list
 
 
-def _get_files(work_dir, suffix, perms):
+def _perm_artifact_contract(work_dir, perm):
+    scale_info = perm.get("_scale", {})
+    artifact_contract = scale_info.get("artifact_contract")
+    if artifact_contract:
+        return artifact_contract
+
+    input_file = work_dir / Path(perm["input_file"])
+    if input_file.exists():
+        return core.ScaleInput.classify_text(input_file.read_text())[
+            "artifact_contract"
+        ]
+    return "UNKNOWN"
+
+
+def _library_suffix_for_artifact(default_suffix, artifact_contract, material_lumping):
+    if artifact_contract == "Polaris":
+        return f".{material_lumping}.f33"
+    return default_suffix
+
+
+def _get_files(work_dir, suffix, perms, material_lumping="BASIS"):
     """Get list of files by using the generate.olm.json output and changing the suffix to the
     expected library file. Note this is in permutation order, not state space order."""
 
     file_list = list()
     for perm in perms:
         input = perm["input_file"]
+        artifact_contract = _perm_artifact_contract(work_dir, perm)
+        lib_suffix = _library_suffix_for_artifact(
+            suffix, artifact_contract, material_lumping
+        )
 
         # Convert from .inp to expected suffix.
         lib = work_dir / Path(input)
-        lib = lib.with_suffix(suffix)
+        lib = lib.with_suffix(lib_suffix)
         if not lib.exists():
             raise ValueError(f"library file={lib} does not exist!")
 
@@ -220,7 +244,14 @@ def _get_files(work_dir, suffix, perms):
                 f"f71 file={f71} does not exist! Maybe run was not complete successfully?"
             )
 
-        file_list.append({"lib": lib, "output": output, "f71": f71})
+        file_list.append(
+            {
+                "lib": lib,
+                "output": output,
+                "f71": f71,
+                "artifact_contract": artifact_contract,
+            }
+        )
 
         # Optional: if this was a Polaris run, a t16 file is also generated
         t16 = work_dir / Path(input).with_suffix(".t16")
@@ -396,7 +427,7 @@ def _get_arpinfo(
 
     # Get library,input,output in one place.
     suffix = _triton_material_lumping_suffix(material_lumping)
-    file_list = _get_files(work_dir, suffix, perms)
+    file_list = _get_files(work_dir, suffix, perms, material_lumping)
 
     # Initialize info based on fuel type.
     if fuel_type == "UOX":
@@ -548,7 +579,7 @@ def _process_libraries(
         generate = json.load(f)
     perms = generate["perms"]
 
-    caseid = _triton_material_lumping_caseid(material_lumping)
+    triton_caseid = _triton_material_lumping_caseid(material_lumping)
 
     # Use obiwan to perform most of the processes.
     points = list()
@@ -605,22 +636,26 @@ def _process_libraries(
         ii_json = new_lib.with_suffix(".ii.json")
         internal.logger.debug(f"Converting {f71} to {ii_json}")
 
-        # The case for the "system" in the f71.
-        # If the F71 is from TRITON, the "system" caseid is -2; otherwise, for
-        # Polaris, the "system" caseid is the integrated BASIS material
-        caseid = -2
-
         ii = json.loads(text)
+        output_file = (work_dir / perm["input_file"]).with_suffix(".out")
+        artifact_contract = _perm_artifact_contract(work_dir, perm)
+        if artifact_contract == "Polaris":
+            of = core.ScaleOutfile(output_file)
+            caseid = of.parse_polaris_state_table(of.outfile, material_lumping)
+        else:
+            caseid = triton_caseid
+
         if f"case({caseid})" not in ii["responses"]:
-            of = core.ScaleOutfile((work_dir / perm["input_file"]).with_suffix(".out"))
+            of = core.ScaleOutfile(output_file)
             prod_name = of.sequence_list[0]["product"]
-            if prod_name != "Polaris":
+            if prod_name == "Polaris":
+                caseid = of.parse_polaris_state_table(of.outfile, material_lumping)
+            if f"case({caseid})" not in ii["responses"]:
                 raise ValueError(
-                    "Cannot identify system basis case; case -2 not found in "
-                    "F71 table for TRITON, and identified product is "
-                    f"{prod_name}"
+                    "Cannot identify assembled material case; "
+                    f"case {caseid} not found in F71 table for "
+                    f"artifact_contract={artifact_contract} product={prod_name}"
                 )
-            caseid = of.parse_polaris_state_table(of.outfile)
 
         ii["responses"]["system"] = ii["responses"].pop(f"case({caseid})")
         ii = _truncate_ii_system_time(ii, replay_time_count)

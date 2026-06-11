@@ -564,7 +564,7 @@ class TestEnvironmentLoading:
         """Test init variants reference packaged templates instead of copying them."""
         config_dir = tmp_path / "variant"
 
-        internal._write_init_variant("uox_quick", config_dir)
+        internal._write_init_variant("triton_pin_uox_quick", config_dir)
 
         config = json.loads((config_dir / "config.olm.json").read_text())
         assert config["model"]["name"] == "uox_quick"
@@ -582,7 +582,9 @@ class TestEnvironmentLoading:
         """Test init variants can copy packaged templates for local editing."""
         config_dir = tmp_path / "variant"
 
-        internal._write_init_variant("uox_quick", config_dir, copy_files=True)
+        internal._write_init_variant(
+            "triton_pin_uox_quick", config_dir, copy_files=True
+        )
 
         config = json.loads((config_dir / "config.olm.json").read_text())
         assert config["generate"]["template"] == "model.jt.inp"
@@ -594,6 +596,42 @@ class TestEnvironmentLoading:
         ).read_text()
         assert (config_dir / "lumped0d-base.jt.inp").exists()
         assert "{{model.name}}" in (config_dir / "report.jt.rst").read_text()
+
+    def test_write_init_polaris_variant_can_copy_local_templates(self, tmp_path):
+        """Test Polaris init variant copies the packaged Polaris model template."""
+        config_dir = tmp_path / "polaris_variant"
+
+        internal._write_init_variant(
+            "polaris_bwr7x7_uox_quick", config_dir, copy_files=True
+        )
+
+        config = json.loads((config_dir / "config.olm.json").read_text())
+        assert config["model"]["name"] == "polaris_uox_quick"
+        assert config["generate"]["template"] == "model.jt.inp"
+        assert config["check"]["sequence"][0]["template"] == "check.jt.inp"
+        assert "=polaris" in (config_dir / "model.jt.inp").read_text()
+        assert 'extends "lumped0d-base.jt.inp"' in (
+            config_dir / "check.jt.inp"
+        ).read_text()
+
+    def test_examples_match_explicit_init_variants(self, tmp_path):
+        """Test repo examples are generated from the packaged quick variants."""
+        repo_root = Path(__file__).resolve().parents[1]
+        mappings = {
+            "triton_pin_uox_quick": "uox_quick",
+            "triton_pin_mox_quick": "mox_quick",
+            "polaris_bwr7x7_uox_quick": "polaris_uox_quick",
+        }
+
+        for variant, example in mappings.items():
+            config_dir = tmp_path / variant
+            internal._write_init_variant(variant, config_dir)
+
+            generated = json.loads((config_dir / "config.olm.json").read_text())
+            example_config = json.loads(
+                (repo_root / "examples" / example / "config.olm.json").read_text()
+            )
+            assert generated == example_config
 
 
 class TestMakefilePatterns:

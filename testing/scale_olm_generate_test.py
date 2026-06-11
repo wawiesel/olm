@@ -45,6 +45,30 @@ def test_jt_expander_uses_packaged_template(tmp_path):
     assert "den=1.040000000000e+01" in text
 
 
+def test_jt_expander_records_scale_artifact_contract(tmp_path):
+    template = tmp_path / "model.jt.inp"
+    template.write_text("=polaris\nend\n")
+
+    result = olm.generate.root.jt_expander(
+        template=template.name,
+        static={"_type": "scale.olm.generate.static:pass_through"},
+        states={"_type": "scale.olm.generate.states:full_hypercube", "case": [1.0]},
+        comp={"_type": "scale.olm.generate.static:pass_through"},
+        time={"_type": "scale.olm.generate.static:pass_through"},
+        _model={"name": "polaris_test"},
+        _env={
+            "config_file": str(tmp_path / "config.olm.json"),
+            "work_dir": str(tmp_path / "_work"),
+        },
+    )
+
+    perm = result["perms"][0]
+    data_file = tmp_path / "_work" / perm["_"]["data_file"]
+
+    assert perm["_scale"]["artifact_contract"] == "Polaris"
+    assert '"artifact_contract": "Polaris"' in data_file.read_text()
+
+
 def test_jt_expander_uses_model_template_float_format(tmp_path):
     template = tmp_path / "model.jt.inp"
     template.write_text("value={{static.value}}")

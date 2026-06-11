@@ -135,7 +135,7 @@ def _test_args_sequencer(with_state: bool = False):
                 "eps0": 1e-12,
                 "epsa": 1e-6,
                 "epsr": 1e-3,
-                "nuclide_compare": ["0092235", "0094239"],
+                "nuclide_compare": ["u235", "pu239"],
             },
         ],
     }

@@ -90,7 +90,9 @@ class TestOLMCLI:
         """Test listing available variants."""
         result = self.runner.invoke(main.olm_init, ['--list'])
         assert result.exit_code == 0
-        # Should list available variants without error
+        assert 'triton_pin_uox_quick' in result.output
+        assert 'triton_pin_mox_quick' in result.output
+        assert 'polaris_bwr7x7_uox_quick' in result.output
 
     def test_olm_init_copy_templates(self, tmp_path):
         """Test init --copy writes editable local template files."""

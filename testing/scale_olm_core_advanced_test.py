@@ -355,6 +355,26 @@ Some header text...
         assert core.ScaleOutfile.parse_polaris_state_table(outfile, "FUEL") == 11
         assert core.ScaleOutfile.parse_polaris_state_table(outfile, "CLAD") == -2
 
+    def test_scale_input_classifies_polaris_artifact_contract(self):
+        """Test SCALE input metadata extraction identifies Polaris inputs."""
+        result = core.ScaleInput.classify_text("=polaris\nend\n")
+
+        assert result == {
+            "sequences": ["polaris"],
+            "artifact_contract": "Polaris",
+            "material_lumping": "BASIS",
+        }
+
+    def test_scale_input_classifies_triton_artifact_contract(self):
+        """Test SCALE input metadata extraction identifies TRITON inputs."""
+        result = core.ScaleInput.classify_text("=t6-depl parm=(addnux=2)\nend\n")
+
+        assert result == {
+            "sequences": ["t6-depl"],
+            "artifact_contract": "TRITON",
+            "material_lumping": "BASIS",
+        }
+
     def test_get_runtime(self):
         """Test extracting runtime from SCALE output using real file."""
         sample_output = """
