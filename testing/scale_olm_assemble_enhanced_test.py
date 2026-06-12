@@ -601,7 +601,7 @@ class TestArpInfoMaster:
         """Test integrated ARP info processing for UOX."""
         work_dir = Path('/work')
         name = "test_reactor"
-        fuel_type = "UOX"
+        fuel_type = assemble._ArpdataFuelType.UOX
         dim_map = {"enrichment": 0, "mod_dens": 1}
         
         # Mock the generate.olm.json content with string keys (as from JSON)
@@ -681,7 +681,7 @@ class TestArpInfoMaster:
                 "obiwan",
                 work_dir,
                 "test_reactor",
-                "UOX",
+                assemble._ArpdataFuelType.UOX,
                 {"enrichment": "enrichment", "mod_dens": "mod_dens"},
                 assemble._MaterialLumping.from_value("MIX10"),
             )
@@ -695,16 +695,21 @@ class TestArpInfoMaster:
         assert result.material_lumping == "MIX10"
         assert result.caseid == 10
     
-    def test_get_arpinfo_invalid_fuel_type(self):
-        """Test error handling for invalid fuel type."""
-        work_dir = Path('/work')
-        name = "test_reactor"
-        fuel_type = "INVALID"
-        dim_map = {}
-        
-        with patch('builtins.open', mock_open(read_data='{"perms": []}')):
-            with pytest.raises(ValueError, match="Unknown fuel_type"):
-                assemble._get_arpinfo("obiwan", work_dir, name, fuel_type, dim_map)
+    def test_arpdata_fuel_type_parser(self):
+        """Test ARPDATA fuel type parsing accepts supported labels."""
+        assert (
+            assemble._ArpdataFuelType.from_value("UOX")
+            is assemble._ArpdataFuelType.UOX
+        )
+        assert (
+            assemble._ArpdataFuelType.from_value("mox")
+            is assemble._ArpdataFuelType.MOX
+        )
+
+    def test_arpdata_fuel_type_parser_rejects_unknown(self):
+        """Test invalid ARPDATA fuel type fails at the parser boundary."""
+        with pytest.raises(ValueError, match="Unknown fuel_type"):
+            assemble._ArpdataFuelType.from_value("INVALID")
 
 
 class TestCompositionSystem:
