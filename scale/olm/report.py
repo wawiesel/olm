@@ -63,12 +63,9 @@ def rst2pdf(
     if local_template_path.exists():
         template_path = local_template_path
     else:
-        try:
-            tm = core.TemplateManager(paths=[config_dir])
-            template_path = Path(tm.path(template))
-            template_paths = tm.paths
-        except KeyError as exc:
-            raise FileNotFoundError(template) from exc
+        tm = core.TemplateManager(paths=[config_dir])
+        template_path = Path(tm.path(template))
+        template_paths = tm.paths
     internal.logger.info("Initializing report", template=str(template_path))
     with open(template_path, "r") as f:
         template_text = f.read()

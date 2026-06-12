@@ -148,7 +148,10 @@ class TemplateManager:
         Returns:
             str: full path to the template
         """
-        return self.templates[name]
+        try:
+            return self.templates[name]
+        except KeyError as exc:
+            raise FileNotFoundError(name) from exc
 
     def expand(
         self,
@@ -167,7 +170,7 @@ class TemplateManager:
             str: text from the expanded template and data
         """
         return TemplateManager.expand_file(
-            self.templates[name],
+            self.path(name),
             data,
             search_paths=self.paths,
             float_format=float_format,

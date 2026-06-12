@@ -46,6 +46,13 @@ class TestTemplateManager:
 
         assert result == "ABC"
 
+    def test_path_rejects_missing_template(self, tmp_path):
+        """Test template lookup owns missing-template errors."""
+        manager = core.TemplateManager(paths=[tmp_path], include_env=False)
+
+        with pytest.raises(FileNotFoundError, match="missing.jt.inp"):
+            manager.path("missing.jt.inp")
+
     def test_expand_text_formats_float_substitutions_with_12_digit_exponents(self):
         """Test default template expansion renders floats consistently."""
         result = core.TemplateManager.expand_text(

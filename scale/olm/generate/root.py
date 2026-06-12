@@ -237,17 +237,11 @@ def jt_expander(
                 template_path = local_template_path
             else:
                 tm = core.TemplateManager(paths=[config_dir])
-                try:
-                    template_path = Path(tm.path(template))
-                except KeyError as exc:
-                    raise FileNotFoundError(template) from exc
+                template_path = Path(tm.path(template))
                 template_paths = tm.paths
         elif not template_path.exists():
             tm = core.TemplateManager()
-            try:
-                template_path = Path(tm.path(template))
-            except KeyError as exc:
-                raise FileNotFoundError(template) from exc
+            template_path = Path(tm.path(template))
             template_paths = tm.paths
         with open(template_path, "r") as f:
             template_text = f.read()
