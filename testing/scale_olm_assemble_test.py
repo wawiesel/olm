@@ -11,6 +11,7 @@ import tempfile
 import os
 import json
 from unittest.mock import Mock, patch, MagicMock
+from pydantic import ValidationError
 
 import scale.olm.assemble as assemble
 
@@ -75,17 +76,26 @@ class TestThinningFunction:
         result = assemble._generate_thinned_burnup_list(2, burnup_list)
         assert result == [0, 100]  # Both ends always kept
     
-    def test_generate_thinned_burnup_list_invalid_keep_every(self):
-        """Test error handling for invalid keep_every values."""
-        burnup_list = [0, 10, 20]
-        
-        # Test zero
-        with pytest.raises(ValueError, match="must be an integer >0"):
-            assemble._generate_thinned_burnup_list(0, burnup_list)
-        
-        # Test negative
-        with pytest.raises(ValueError, match="must be an integer >0"):
-            assemble._generate_thinned_burnup_list(-1, burnup_list)
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"keep_every": 0},
+            {"keep_every": -1},
+            {"burnup_rtol": 0.0},
+        ],
+    )
+    def test_arpdata_txt_rejects_invalid_thinning_options(self, kwargs):
+        """Test arpdata_txt validates thinning inputs at the public boundary."""
+        args = {
+            "fuel_type": "UOX",
+            "dim_map": {"mod_dens": "mod_dens", "enrichment": "enrichment"},
+            "keep_every": 1,
+            "dry_run": True,
+        }
+        args.update(kwargs)
+
+        with pytest.raises(ValidationError):
+            assemble.arpdata_txt(**args)
     
     @pytest.mark.parametrize("burnup_list,keep_every,expected", [
         ([0, 5, 10, 15, 20], 1, [0, 5, 10, 15, 20]),          # Keep all
@@ -121,6 +131,7 @@ class TestSchemaFunctions:
         assert args['fuel_type'] == 'UOX'
         assert 'dim_map' in args
         assert isinstance(args['dim_map'], dict)
+        assert args['keep_every'] == 1
         
         # Check dimension mapping structure
         assert 'mod_dens' in args['dim_map']

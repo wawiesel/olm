@@ -761,10 +761,6 @@ class LowOrderConsistency:
             plt.savefig(image, bbox_inches="tight")
             plt.close()
 
-    @staticmethod
-    def _metric_units(metric):
-        return LowOrderConsistencyMetric.from_value(metric).units
-
     def _amounts_to_grams_per_initial_hm(self, amounts):
         """Convert inventory amounts to grams per gram initial heavy metal.
 
@@ -1484,7 +1480,7 @@ class LowOrderConsistency:
         info.target_q_r = self.target_q_r
         info.target_q_ar = self.target_q_ar
         info.metric = self.metric.value
-        info.units = self._metric_units(self.metric)
+        info.units = self.metric.units
         info.nuclide_scaled_difference_min_abs_ylim = (
             self.nuclide_scaled_difference_min_abs_ylim
         )

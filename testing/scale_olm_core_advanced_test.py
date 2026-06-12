@@ -532,8 +532,8 @@ D - state definition present
 class TestArpInfo:
     """Test ARPDATA block parsing and invariants."""
 
-    def test_init_block_detects_uox_by_header(self):
-        """Parse a UOX ARPDATA block without depending on the library name."""
+    def test_init_block_defaults_to_uox(self):
+        """Parse a UOX ARPDATA block without a MOX block name."""
         arpinfo = core.ArpInfo()
 
         arpinfo.init_block(
@@ -554,12 +554,12 @@ class TestArpInfo:
         assert arpinfo.get_dims() == (1, 1)
         assert arpinfo.get_lib_by_index(0) == "plain_uox.f33"
 
-    def test_init_block_detects_mox_by_header(self):
-        """Parse a MOX ARPDATA block without depending on the library name."""
+    def test_init_block_detects_mox_by_name(self):
+        """Parse a MOX ARPDATA block from the MOX block name."""
         arpinfo = core.ArpInfo()
 
         arpinfo.init_block(
-            "plain_name",
+            "mox_plain",
             "\n".join(
                 [
                     "1 1 1 1 2",
@@ -578,6 +578,17 @@ class TestArpInfo:
         assert arpinfo.get_dims() == (1, 1, 1)
         assert arpinfo.get_lib_by_index(0) == "plain_mox.f33"
 
+    def test_infer_block_fuel_type_name_fallbacks(self):
+        """Infer legacy ARPDATA block fuel type from block names."""
+        assert (
+            core.ArpInfo._infer_block_fuel_type("mox_legacy")
+            is core.ArpInfoFuelType.MOX
+        )
+        assert (
+            core.ArpInfo._infer_block_fuel_type("plain_legacy")
+            is core.ArpInfoFuelType.UOX
+        )
+
     def test_init_block_rejects_unsupported_fuel_type_at_boundary(self):
         """Reject unsupported ARPDATA block types before object state is usable."""
         arpinfo = core.ArpInfo()
@@ -591,6 +602,67 @@ class TestArpInfo:
 
         with pytest.raises(ValueError, match="expected one of: UOX, MOX"):
             arpinfo.fuel_type = "invalid"
+
+    def test_fuel_type_requires_initialization(self):
+        """Reject fuel-type reads before ArpInfo has established its invariant."""
+        arpinfo = core.ArpInfo()
+
+        with pytest.raises(ValueError, match="has not been initialized"):
+            _ = arpinfo.fuel_type
+
+    def test_init_uox_uses_normalized_fuel_type(self):
+        """Initialize UOX data with the core fuel-type enum internally."""
+        arpinfo = core.ArpInfo()
+
+        arpinfo.init_uox("uox", ["uox.h5"], [4.95], [0.723])
+
+        assert arpinfo.fuel_type == "UOX"
+        assert arpinfo._fuel_type is core.ArpInfoFuelType.UOX
+        assert arpinfo.get_dims() == (1, 1)
+        assert arpinfo.interpvars_by_index(0) == {
+            "enrichment": 4.95,
+            "mod_dens": 0.723,
+        }
+
+    def test_init_mox_uses_normalized_fuel_type(self):
+        """Initialize MOX data with the core fuel-type enum internally."""
+        arpinfo = core.ArpInfo()
+
+        arpinfo.init_mox("mox", ["mox.h5"], [55.0], [6.0], [0.723])
+
+        assert arpinfo.fuel_type == "MOX"
+        assert arpinfo._fuel_type is core.ArpInfoFuelType.MOX
+        assert arpinfo.get_dims() == (1, 1, 1)
+        assert arpinfo.interpvars_by_index(0) == {
+            "pu239_frac": 55.0,
+            "pu_frac": 6.0,
+            "mod_dens": 0.723,
+        }
+
+    def test_init_uox_rejects_library_grid_size_mismatch(self):
+        """Reject UOX library lists that do not fill the interpolation grid."""
+        arpinfo = core.ArpInfo()
+
+        with pytest.raises(ValueError, match="number of permutations 1"):
+            arpinfo.init_uox(
+                "uox",
+                ["uox.h5"],
+                [4.0, 5.0],
+                [0.723],
+            )
+
+    def test_init_mox_rejects_library_grid_size_mismatch(self):
+        """Reject MOX library lists that do not fill the interpolation grid."""
+        arpinfo = core.ArpInfo()
+
+        with pytest.raises(ValueError, match="number of permutations 1"):
+            arpinfo.init_mox(
+                "mox",
+                ["mox.h5"],
+                [55.0, 60.0],
+                [6.0],
+                [0.723],
+            )
 
 
 class TestReactorLibraryUtilities:

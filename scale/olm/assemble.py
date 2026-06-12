@@ -10,40 +10,12 @@ import numpy as np
 import subprocess
 import datetime
 from dataclasses import dataclass
-from enum import Enum
-from typing import Literal
+from pydantic import Field, validate_call
+from typing import Annotated, Literal
 
 __all__ = ["arpdata_txt"]
 
 _TYPE_ARPDATA_TXT = "scale.olm.assemble:arpdata_txt"
-
-
-class _ArpdataFuelType(str, Enum):
-    UOX = "UOX"
-    MOX = "MOX"
-
-    @classmethod
-    def values(cls):
-        return tuple(fuel_type.value for fuel_type in cls)
-
-    @classmethod
-    def from_value(cls, value):
-        if isinstance(value, cls):
-            return value
-        try:
-            return cls(str(value).strip().upper())
-        except ValueError:
-            expected = ", ".join(cls.values())
-            raise ValueError(
-                f"Unknown fuel_type={value}; expected one of: {expected}"
-            ) from None
-
-    @property
-    def arpinfo_builder(self):
-        return {
-            _ArpdataFuelType.UOX: _get_arpinfo_uox,
-            _ArpdataFuelType.MOX: _get_arpinfo_mox,
-        }[self]
 
 
 def _schema_arpdata_txt(with_state: bool = False):
@@ -57,16 +29,18 @@ def _test_args_arpdata_txt(with_state: bool = False):
         "dry_run": False,
         "fuel_type": "UOX",
         "dim_map": {"mod_dens": "mod_dens", "enrichment": "enrichment"},
+        "keep_every": 1,
         "burnup_rtol": 2.0e-2,
         "material_lumping": "BASIS",
     }
 
 
+@validate_call
 def arpdata_txt(
     fuel_type: str,
     dim_map: dict,
-    keep_every: int,
-    burnup_rtol: float = 2.0e-2,
+    keep_every: Annotated[int, Field(gt=0)],
+    burnup_rtol: Annotated[float, Field(gt=0.0)] = 2.0e-2,
     material_lumping: str = "BASIS",
     _model: dict = {},
     _env: dict = {},
@@ -96,7 +70,7 @@ def arpdata_txt(
 
     # Get working directory.
     work_path = Path(_env["work_dir"])
-    fuel_type = _ArpdataFuelType.from_value(fuel_type)
+    fuel_type = core.ArpInfoFuelType.from_value(fuel_type)
     material_lumping = _MaterialLumping.from_value(material_lumping)
 
     # Get library info data structure.
@@ -201,11 +175,6 @@ def archive(model):
 def _generate_thinned_burnup_list(keep_every, y_list, always_keep_ends=True):
     """Generate a thinned list using every point (1), every other point (2),
     every third point (3), etc."""
-
-    if not keep_every > 0:
-        raise ValueError(
-            "The thinning parameter keep_every={keep_every} must be an integer >0!"
-        )
 
     thinned_burnup_list = list()
     j = 0
@@ -395,9 +364,6 @@ def _require_assembled_case(ii, caseid, artifact_contract, output_file):
 
 def _get_burnup_list(obiwan, file_list, burnup_rtol=2.0e-2):
     """Extract the ARPDATA burnup axis from each selected high-order library."""
-    if burnup_rtol <= 0.0:
-        raise ValueError(f"burnup_rtol must be > 0.0; got {burnup_rtol}")
-
     burnup_list = []
     burnup_arrays = []
     previous_library_file = ""
@@ -488,7 +454,7 @@ def _get_arpinfo(
     obiwan,
     work_dir,
     name,
-    fuel_type: _ArpdataFuelType,
+    fuel_type: core.ArpInfoFuelType,
     dim_map,
     material_lumping=_DEFAULT_MATERIAL_LUMPING,
     burnup_rtol=2.0e-2,
@@ -504,7 +470,11 @@ def _get_arpinfo(
     # Get library,input,output in one place.
     file_list = _get_files(work_dir, perms, material_lumping)
 
-    arpinfo = fuel_type.arpinfo_builder(name, perms, file_list, dim_map)
+    arpinfo_builder = {
+        core.ArpInfoFuelType.UOX: _get_arpinfo_uox,
+        core.ArpInfoFuelType.MOX: _get_arpinfo_mox,
+    }[fuel_type]
+    arpinfo = arpinfo_builder(name, perms, file_list, dim_map)
 
     # Get the ARPDATA burnups from the F33 libraries. The matching F71 files are
     # read later only for inventory metadata and interval-average powers.

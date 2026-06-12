@@ -56,6 +56,7 @@
         "                \"mod_dens\": \"mod_dens\",",
         "                \"enrichment\": \"enrichment\"",
         "            },",
+        "            \"keep_every\": 1,",
         "            \"burnup_rtol\": 0.02,",
         "            \"material_lumping\": \"BASIS\"",
         "        }",
