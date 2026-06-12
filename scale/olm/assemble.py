@@ -334,6 +334,35 @@ def _burnups_from_file_info(obiwan, file_info):
         return core.Obiwan.get_burnups_from_f33(obiwan, file_info["lib"])
 
 
+def _assembled_caseid_for_artifact(output_file, artifact_contract, material_lumping):
+    if artifact_contract == core.ScaleArtifactContract.TRITON:
+        return material_lumping.caseid
+
+    if artifact_contract == core.ScaleArtifactContract.POLARIS:
+        if material_lumping.value == "SYSTEM":
+            return material_lumping.caseid
+        caseid = core.ScaleOutfile.parse_polaris_state_table(
+            output_file, material_lumping.value
+        )
+        if caseid == -2:
+            raise ValueError(
+                f"Cannot identify Polaris material_lumping={material_lumping.value} "
+                f"case from output file={output_file}"
+            )
+        return caseid
+
+
+def _require_assembled_case(ii, caseid, artifact_contract, output_file):
+    response_key = f"case({caseid})"
+    if response_key not in ii["responses"]:
+        raise ValueError(
+            "Cannot identify assembled material case; "
+            f"case {caseid} not found in F71 table for "
+            f"artifact_contract={artifact_contract.value} output_file={output_file}"
+        )
+    return response_key
+
+
 def _get_burnup_list(obiwan, file_list, burnup_rtol=2.0e-2):
     """Extract the ARPDATA burnup axis from each selected high-order library."""
     if burnup_rtol <= 0.0:
@@ -606,8 +635,6 @@ def _process_libraries(
         generate = json.load(f)
     perms = generate["perms"]
 
-    triton_caseid = material_lumping.caseid
-
     # Use obiwan to perform most of the processes.
     points = list()
     for i in range(arpinfo.num_libs()):
@@ -666,27 +693,13 @@ def _process_libraries(
         ii = json.loads(text)
         output_file = (work_dir / perm["input_file"]).with_suffix(".out")
         artifact_contract = _get_artifact_contract(perm)
-        if artifact_contract == core.ScaleArtifactContract.POLARIS:
-            of = core.ScaleOutfile(output_file)
-            caseid = of.parse_polaris_state_table(of.outfile, material_lumping.value)
-        else:
-            caseid = triton_caseid
-
-        if f"case({caseid})" not in ii["responses"]:
-            of = core.ScaleOutfile(output_file)
-            prod_name = of.sequence_list[0]["product"]
-            if prod_name == "Polaris":
-                caseid = of.parse_polaris_state_table(
-                    of.outfile, material_lumping.value
-                )
-            if f"case({caseid})" not in ii["responses"]:
-                raise ValueError(
-                    "Cannot identify assembled material case; "
-                    f"case {caseid} not found in F71 table for "
-                    f"artifact_contract={artifact_contract.value} product={prod_name}"
-                )
-
-        ii["responses"]["system"] = ii["responses"].pop(f"case({caseid})")
+        caseid = _assembled_caseid_for_artifact(
+            output_file, artifact_contract, material_lumping
+        )
+        response_key = _require_assembled_case(
+            ii, caseid, artifact_contract, output_file
+        )
+        ii["responses"]["system"] = ii["responses"].pop(response_key)
         ii = _truncate_ii_system_time(ii, replay_time_count)
         with open(ii_json, "w") as f:
             f.write(json.dumps(ii, indent=4))

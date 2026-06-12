@@ -220,6 +220,98 @@ class TestBurnupListExtraction:
 
         with pytest.raises(ValueError, match="BASIS, SYSTEM, or MIX<N>"):
             assemble._MaterialLumping.from_value("MIX0")
+
+    def test_assembled_caseid_for_triton_uses_material_lumping(self):
+        """Test TRITON assembled case lookup uses the parsed material lumping."""
+        material_lumping = assemble._MaterialLumping.from_value("MIX10")
+
+        with patch(
+            "scale.olm.core.ScaleOutfile.parse_polaris_state_table"
+        ) as mock_parse_polaris:
+            caseid = assemble._assembled_caseid_for_artifact(
+                Path("case.out"),
+                core.ScaleArtifactContract.TRITON,
+                material_lumping,
+            )
+
+        assert caseid == 10
+        mock_parse_polaris.assert_not_called()
+
+    def test_assembled_caseid_for_polaris_uses_state_table(self, tmp_path):
+        """Test Polaris assembled case lookup uses the selected material class."""
+        output_file = tmp_path / "polaris.out"
+        output_file.write_text(
+            """
+|          Integrated edits for each material class      |
+|-----|-----|--------------------|-----------|-----------|
+|  13 |  25 |              BASIS | 0.000e+00 | 0.000e+00 |
+"""
+        )
+
+        caseid = assemble._assembled_caseid_for_artifact(
+            output_file,
+            core.ScaleArtifactContract.POLARIS,
+            assemble._MaterialLumping.from_value("BASIS"),
+        )
+
+        assert caseid == 13
+
+    def test_assembled_caseid_for_polaris_system_uses_system_case(self):
+        """Test explicit Polaris SYSTEM selection uses the F71 system case."""
+        with patch(
+            "scale.olm.core.ScaleOutfile.parse_polaris_state_table"
+        ) as mock_parse_polaris:
+            caseid = assemble._assembled_caseid_for_artifact(
+                Path("polaris.out"),
+                core.ScaleArtifactContract.POLARIS,
+                assemble._MaterialLumping.from_value("SYSTEM"),
+            )
+
+        assert caseid == -2
+        mock_parse_polaris.assert_not_called()
+
+    def test_assembled_caseid_for_polaris_rejects_missing_material(self, tmp_path):
+        """Test Polaris material-class lookup does not fall back to system."""
+        output_file = tmp_path / "polaris.out"
+        output_file.write_text(
+            """
+|          Integrated edits for each material class      |
+|-----|-----|--------------------|-----------|-----------|
+|  11 |  21 |               FUEL | 0.000e+00 | 0.000e+00 |
+"""
+        )
+
+        with pytest.raises(ValueError, match="Cannot identify Polaris"):
+            assemble._assembled_caseid_for_artifact(
+                output_file,
+                core.ScaleArtifactContract.POLARIS,
+                assemble._MaterialLumping.from_value("BASIS"),
+            )
+
+    def test_require_assembled_case_returns_response_key(self):
+        """Test assembled case validation returns the exact response key."""
+        ii = {"responses": {"case(10)": {}}}
+
+        response_key = assemble._require_assembled_case(
+            ii,
+            10,
+            core.ScaleArtifactContract.TRITON,
+            Path("case.out"),
+        )
+
+        assert response_key == "case(10)"
+
+    def test_require_assembled_case_rejects_missing_case(self):
+        """Test missing F71 case errors without product reclassification."""
+        ii = {"responses": {"case(-2)": {}}}
+
+        with pytest.raises(ValueError, match="artifact_contract=Polaris"):
+            assemble._require_assembled_case(
+                ii,
+                13,
+                core.ScaleArtifactContract.POLARIS,
+                Path("polaris.out"),
+            )
     
     @patch('scale.olm.core.Obiwan.get_burnups_from_f33')
     def test_get_burnup_list_basic(self, mock_get_burnups):
