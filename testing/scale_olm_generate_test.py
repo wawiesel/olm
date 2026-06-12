@@ -243,6 +243,34 @@ def test_mox_composition_validation_rejects_unknown_zone_set():
         )
 
 
+def test_mox_composition_validation_requires_zone_pu_fracs_with_zone_list():
+    with pytest.raises(ValueError, match="zone_pu_fracs must be provided"):
+        olm.generate.comp.mox_multizone_2023(
+            state={"pu239_frac": 70.0, "pu_frac": 5.0},
+            zone_names=["inner", "edge"],
+            zone_pins=[100, 44],
+        )
+
+
+def test_mox_composition_validation_rejects_zone_fraction_length_mismatch():
+    with pytest.raises(ValueError, match="same length as zone_names"):
+        olm.generate.comp.mox_multizone_2023(
+            state={"pu239_frac": 70.0, "pu_frac": 5.0},
+            zone_names=["inner", "edge"],
+            zone_pins=[100, 44],
+            zone_pu_fracs=[1.0],
+        )
+
+
+def test_mox_composition_validation_rejects_zone_pin_length_mismatch():
+    with pytest.raises(ValueError, match="same length as zone_pins"):
+        olm.generate.comp.mox_multizone_2023(
+            state={"pu239_frac": 70.0, "pu_frac": 5.0},
+            zone_names="PWR2016",
+            zone_pins=[81, 9, 9],
+        )
+
+
 def test_mox_composition_validation_rejects_empty_uo2_iso_vector():
     with pytest.raises(ValidationError):
         olm.generate.comp.mox_ornltm2003_2(
