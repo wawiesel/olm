@@ -13,6 +13,7 @@ import copy
 import os
 import shutil
 import scale.olm.internal as internal
+from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import List, Union, Dict, Literal, Annotated, Optional
 
@@ -109,6 +110,34 @@ class LowOrderConsistencyConvergence(BaseModel):
                 "or equal to convergence.nburn_start."
             )
         return self
+
+
+class LowOrderConsistencyMetric(str, Enum):
+    GRAMS_PER_INITIAL_HM = "grams_per_initial_hm"
+    ATOM_FRACTION = "atom_fraction"
+
+    @classmethod
+    def values(cls):
+        return tuple(metric.value for metric in cls)
+
+    @classmethod
+    def from_value(cls, value):
+        try:
+            return cls(value)
+        except ValueError:
+            expected = ", ".join(cls.values())
+            raise ValueError(
+                f"Unsupported LowOrderConsistency metric={value}; "
+                f"expected one of: {expected}"
+            ) from None
+
+    @property
+    def units(self):
+        return {
+            LowOrderConsistencyMetric.GRAMS_PER_INITIAL_HM: "g/gIHM",
+            LowOrderConsistencyMetric.ATOM_FRACTION: "atom fraction",
+        }[self]
+
 
 # -----------------------------------------------------------------------------------------
 
@@ -527,16 +556,16 @@ class LowOrderConsistency:
         for k, v in inspect.signature(fn).parameters.items():
             if k.startswith("_"):
                 continue
-            defaults[k] = v.default
+            defaults[k] = v.default.value if isinstance(v.default, Enum) else v.default
         return defaults
 
     def __init__(
         self,
         name: str = "",
         template: str = "",
-        metric: Literal[
-            "grams_per_initial_hm", "atom_fraction"
-        ] = "grams_per_initial_hm",
+        metric: LowOrderConsistencyMetric = (
+            LowOrderConsistencyMetric.GRAMS_PER_INITIAL_HM
+        ),
         eps0: Annotated[float, Field(ge=0.0)] = 1e-12,
         epsa: Annotated[float, Field(ge=0.0)] = 1e-6,
         epsr: Annotated[float, Field(ge=0.0)] = 1e-3,
@@ -556,7 +585,7 @@ class LowOrderConsistency:
         self._model = _model
         self.name = name
         self.nuclide_compare = nuclide_compare
-        self.metric = metric
+        self.metric = LowOrderConsistencyMetric.from_value(metric)
         self.eps0 = eps0
         self.epsa = epsa
         self.epsr = epsr
@@ -734,10 +763,7 @@ class LowOrderConsistency:
 
     @staticmethod
     def _metric_units(metric):
-        return {
-            "grams_per_initial_hm": "g/gIHM",
-            "atom_fraction": "atom fraction",
-        }[metric]
+        return LowOrderConsistencyMetric.from_value(metric).units
 
     def _amounts_to_grams_per_initial_hm(self, amounts):
         """Convert inventory amounts to grams per gram initial heavy metal.
@@ -985,7 +1011,7 @@ class LowOrderConsistency:
 
     def _absolute_difference_ylabel(self):
         label = r"$\log_{10} |hi-lo|$"
-        if self.metric == "grams_per_initial_hm":
+        if self.metric is LowOrderConsistencyMetric.GRAMS_PER_INITIAL_HM:
             return label + " [g/gIHM]"
         return label
 
@@ -1433,7 +1459,7 @@ class LowOrderConsistency:
         hi_amount = np.asarray(self.hi_list, dtype=float)
         lo_amount = np.asarray(self.lo_list, dtype=float)
 
-        if self.metric == "atom_fraction":
+        if self.metric is LowOrderConsistencyMetric.ATOM_FRACTION:
             return (
                 self._amounts_to_atom_fraction(lo_amount),
                 self._amounts_to_atom_fraction(hi_amount),
@@ -1457,7 +1483,7 @@ class LowOrderConsistency:
         info.epsr = self.epsr
         info.target_q_r = self.target_q_r
         info.target_q_ar = self.target_q_ar
-        info.metric = self.metric
+        info.metric = self.metric.value
         info.units = self._metric_units(self.metric)
         info.nuclide_scaled_difference_min_abs_ylim = (
             self.nuclide_scaled_difference_min_abs_ylim
