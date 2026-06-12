@@ -259,15 +259,34 @@ _MOX_MULTIZONE_PRESETS = {
 }
 
 
-def _mox_multizone_data(zone_names, zone_pu_fracs):
+def _mox_multizone_data(zone_names, zone_pu_fracs, zone_pins):
     if not isinstance(zone_names, str):
-        return zone_names, zone_pu_fracs
+        if zone_pu_fracs is None:
+            raise ValueError(
+                "zone_pu_fracs must be provided when zone_names is a list."
+            )
+        zone_names = list(zone_names)
+        zone_pu_fracs = list(zone_pu_fracs)
+    else:
+        preset_name = zone_names
+        if preset_name not in _MOX_MULTIZONE_PRESETS:
+            expected = "/".join(_MOX_MULTIZONE_PRESETS)
+            raise ValueError(f"zone_names={preset_name} must be {expected}")
 
-    if zone_names not in _MOX_MULTIZONE_PRESETS:
-        expected = "/".join(_MOX_MULTIZONE_PRESETS)
-        raise ValueError(f"zone_names={zone_names} must be {expected}")
+        zone_names = list(_MOX_MULTIZONE_NAMES)
+        zone_pu_fracs = list(_MOX_MULTIZONE_PRESETS[preset_name])
 
-    return list(_MOX_MULTIZONE_NAMES), list(_MOX_MULTIZONE_PRESETS[zone_names])
+    if len(zone_pu_fracs) != len(zone_names):
+        raise ValueError(
+            "zone_pu_fracs must have the same length as zone_names; "
+            f"got {len(zone_pu_fracs)} and {len(zone_names)}."
+        )
+    if len(zone_pu_fracs) != len(zone_pins):
+        raise ValueError(
+            "zone_pu_fracs must have the same length as zone_pins; "
+            f"got {len(zone_pu_fracs)} and {len(zone_pins)}."
+        )
+    return zone_names, zone_pu_fracs
 
 
 def _schema_mox_multizone_2023(with_state: bool = False):
@@ -418,10 +437,9 @@ def mox_multizone_2023(
     5.0
 
     """
-    zone_names, zone_pu_fracs = _mox_multizone_data(zone_names, zone_pu_fracs)
-
-    assert len(zone_pu_fracs) == len(zone_names)
-    assert len(zone_pu_fracs) == len(zone_pins)
+    zone_names, zone_pu_fracs = _mox_multizone_data(
+        zone_names, zone_pu_fracs, zone_pins
+    )
     data = {}
 
     # Get a base MOX composition to calculate Pu/HM ratios.
