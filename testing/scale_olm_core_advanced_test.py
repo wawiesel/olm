@@ -701,9 +701,57 @@ class TestNuclideInventory:
         np.testing.assert_array_equal(u235_moles, expected)
 
         # Test grams
-        u235_grams = sample_inventory.get_amount("u235", units="GRAMS")
+        u235_grams = sample_inventory.get_amount(
+            "u235", units=core.NuclideInventoryAmountUnit.GRAMS
+        )
         expected_grams = expected * 235.044  # moles * mass
         np.testing.assert_array_almost_equal(u235_grams, expected_grams)
+
+    def test_get_amount_rejects_unknown_units(self, sample_inventory):
+        """Test amount unit parsing rejects unsupported labels."""
+        with pytest.raises(
+            ValueError, match="Unsupported NuclideInventory amount_units"
+        ):
+            sample_inventory.get_amount("u235", units="KILOGRAMS")
+
+    def test_get_time_converts_units(self, sample_inventory):
+        """Test time unit conversion from internal seconds."""
+        np.testing.assert_array_equal(
+            sample_inventory.get_time(units="SECONDS"),
+            np.array([0, 100, 200, 300]),
+        )
+        np.testing.assert_allclose(
+            sample_inventory.get_time(units=core.NuclideInventoryTimeUnit.MINUTES),
+            np.array([0, 100, 200, 300]) / 60.0,
+        )
+
+    def test_get_time_rejects_unknown_units(self, sample_inventory):
+        """Test time unit parsing rejects unsupported labels."""
+        with pytest.raises(ValueError, match="Unsupported NuclideInventory time_units"):
+            sample_inventory.get_time(units="FORTNIGHTS")
+
+    def test_constructor_rejects_noncanonical_storage_units(
+        self, sample_composition_manager
+    ):
+        """Test inventory construction fails unless storage units are canonical."""
+        time = np.array([0.0])
+        amount = {"0092235": np.array([1.0])}
+
+        with pytest.raises(ValueError, match="stores time internally in SECONDS"):
+            core.NuclideInventory(
+                sample_composition_manager,
+                time,
+                amount,
+                time_units="DAYS",
+            )
+
+        with pytest.raises(ValueError, match="stores amounts internally in MOLES"):
+            core.NuclideInventory(
+                sample_composition_manager,
+                time,
+                amount,
+                amount_units="GRAMS",
+            )
 
 
 class TestMathematicalAlgorithms:

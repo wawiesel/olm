@@ -2779,6 +2779,68 @@ t-depl finished. used 35.2481 seconds.""",
     )
 
 
+class NuclideInventoryTimeUnit(str, Enum):
+    DAYS = "DAYS"
+    HOURS = "HOURS"
+    MINUTES = "MINUTES"
+    SECONDS = "SECONDS"
+    YEARS = "YEARS"
+
+    @classmethod
+    def values(cls):
+        return tuple(unit.value for unit in cls)
+
+    @classmethod
+    def from_value(cls, value):
+        if isinstance(value, cls):
+            return value
+        try:
+            return cls(str(value).strip().upper())
+        except ValueError:
+            expected = ", ".join(cls.values())
+            raise ValueError(
+                f"Unsupported NuclideInventory time_units={value}; "
+                f"expected one of: {expected}"
+            ) from None
+
+    @property
+    def scale_from_seconds(self):
+        return {
+            NuclideInventoryTimeUnit.DAYS: 1.0 / 86400.0,
+            NuclideInventoryTimeUnit.HOURS: 1.0 / 3600.0,
+            NuclideInventoryTimeUnit.MINUTES: 1.0 / 60.0,
+            NuclideInventoryTimeUnit.SECONDS: 1.0,
+            NuclideInventoryTimeUnit.YEARS: 1.0 / (86400.0 * 365.25),
+        }[self]
+
+
+class NuclideInventoryAmountUnit(str, Enum):
+    GRAMS = "GRAMS"
+    MOLES = "MOLES"
+
+    @classmethod
+    def values(cls):
+        return tuple(unit.value for unit in cls)
+
+    @classmethod
+    def from_value(cls, value):
+        if isinstance(value, cls):
+            return value
+        try:
+            return cls(str(value).strip().upper())
+        except ValueError:
+            expected = ", ".join(cls.values())
+            raise ValueError(
+                f"Unsupported NuclideInventory amount_units={value}; "
+                f"expected one of: {expected}"
+            ) from None
+
+    def multiplier(self, composition_manager, nuclide_id):
+        if self is NuclideInventoryAmountUnit.GRAMS:
+            return composition_manager.mass(nuclide_id)
+        return 1.0
+
+
 class NuclideInventory:
     """Manages a time-dependent nuclide inventory."""
 
@@ -2790,8 +2852,18 @@ class NuclideInventory:
         time_units="SECONDS",
         amount_units="MOLES",
     ):
-        assert time_units == "SECONDS"
-        assert amount_units == "MOLES"
+        self.time_units = NuclideInventoryTimeUnit.from_value(time_units)
+        self.amount_units = NuclideInventoryAmountUnit.from_value(amount_units)
+        if self.time_units is not NuclideInventoryTimeUnit.SECONDS:
+            raise ValueError(
+                "NuclideInventory stores time internally in SECONDS; "
+                f"got time_units={time_units}"
+            )
+        if self.amount_units is not NuclideInventoryAmountUnit.MOLES:
+            raise ValueError(
+                "NuclideInventory stores amounts internally in MOLES; "
+                f"got amount_units={amount_units}"
+            )
         self.composition_manager = composition_manager
         self.time = time
         self.nuclide_amount = nuclide_amount
@@ -2837,26 +2909,14 @@ class NuclideInventory:
 
     def get_amount(self, nuclide, units="MOLES"):
         id = self.composition_manager.izzzaaa(nuclide)
-        if units == "GRAMS":
-            d = self.composition_manager.mass(id)
-        elif units == "MOLES":
-            d = 1.0
-        else:
-            raise ValueError(f"amount units {units} not recognized!")
+        d = NuclideInventoryAmountUnit.from_value(units).multiplier(
+            self.composition_manager, id
+        )
         amount = np.array(self.nuclide_amount[id]) * d
         return amount
 
     def get_time(self, units="SECONDS"):
-        time_conv = {
-            "DAYS": 1.0 / 86400.0,
-            "HOURS": 1.0 / 3600.0,
-            "MINUTES": 1.0 / 60.0,
-            "SECONDS": 1.0,
-            "YEARS": 1.0 / (86400.0 * 365.25),
-        }
-        assert units.upper() in time_conv
-        c = time_conv[units.upper()]
-        return self.time * c
+        return self.time * NuclideInventoryTimeUnit.from_value(units).scale_from_seconds
 
     def get_nuclides(self,nice_label=False):
         """Return the nuclides in this system"""
