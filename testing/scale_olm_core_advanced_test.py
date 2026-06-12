@@ -529,6 +529,70 @@ D - state definition present
         )
 
 
+class TestArpInfo:
+    """Test ARPDATA block parsing and invariants."""
+
+    def test_init_block_detects_uox_by_header(self):
+        """Parse a UOX ARPDATA block without depending on the library name."""
+        arpinfo = core.ArpInfo()
+
+        arpinfo.init_block(
+            "plain_name",
+            "\n".join(
+                [
+                    "1 1 2",
+                    "4.95",
+                    "0.723",
+                    "'plain_uox.f33'",
+                    "0.0 1000.0",
+                    "",
+                ]
+            ),
+        )
+
+        assert arpinfo.fuel_type == "UOX"
+        assert arpinfo.get_dims() == (1, 1)
+        assert arpinfo.get_lib_by_index(0) == "plain_uox.f33"
+
+    def test_init_block_detects_mox_by_header(self):
+        """Parse a MOX ARPDATA block without depending on the library name."""
+        arpinfo = core.ArpInfo()
+
+        arpinfo.init_block(
+            "plain_name",
+            "\n".join(
+                [
+                    "1 1 1 1 2",
+                    "6.0",
+                    "55.0",
+                    "1",
+                    "0.723",
+                    "'plain_mox.f33'",
+                    "0.0 1000.0",
+                    "",
+                ]
+            ),
+        )
+
+        assert arpinfo.fuel_type == "MOX"
+        assert arpinfo.get_dims() == (1, 1, 1)
+        assert arpinfo.get_lib_by_index(0) == "plain_mox.f33"
+
+    def test_init_block_rejects_unsupported_fuel_type_at_boundary(self):
+        """Reject unsupported ARPDATA block types before object state is usable."""
+        arpinfo = core.ArpInfo()
+
+        with pytest.raises(ValueError, match="ArpInfo\\.fuel_type=ACT unknown"):
+            arpinfo.init_block("act_library", "1 1 1 1\n")
+
+    def test_fuel_type_assignment_rejects_unknown_values(self):
+        """Reject invalid fuel-type assignments at the ArpInfo boundary."""
+        arpinfo = core.ArpInfo()
+
+        with pytest.raises(ValueError, match="expected one of: UOX, MOX"):
+            arpinfo.fuel_type = "invalid"
+
+
 class TestReactorLibraryUtilities:
     """Test ReactorLibrary utility functions with minimal mocking."""
 
