@@ -70,6 +70,16 @@ class TestFunctionHandling:
         with pytest.raises(ValueError, match="separated by a single colon"):
             internal._get_function_handle("invalid_format")
 
+    def test_fn_redirect_rejects_missing_function_handle(self):
+        """Test redirect fails at function-handle resolution."""
+        with pytest.raises(ValueError, match="Function handle json:not_a_function"):
+            internal._fn_redirect("json:not_a_function")
+
+    def test_get_schema_rejects_missing_schema_function(self):
+        """Test schema lookup owns missing schema-function errors."""
+        with pytest.raises(ValueError, match="No schema function associated"):
+            internal._get_schema("json:loads")
+
 
 class TestUtilityFunctions:
     """Test utility functions with real calculations."""

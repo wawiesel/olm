@@ -1909,14 +1909,29 @@ class ScaleRunner:
         return str(input_file), data
 
 
+class ArpInfoFuelType(str, Enum):
+    UOX = "UOX"
+    MOX = "MOX"
+
+    @classmethod
+    def values(cls):
+        return tuple(fuel_type.value for fuel_type in cls)
+
+    @classmethod
+    def from_value(cls, value):
+        if isinstance(value, cls):
+            return value
+        try:
+            return cls(str(value).strip().upper())
+        except ValueError:
+            expected = ", ".join(cls.values())
+            raise ValueError(
+                f"ArpInfo.fuel_type={value} unknown; expected one of: {expected}"
+            ) from None
+
+
 class ArpInfo:
-    """
-    Handle the ARPDATA.TXT format for ORIGEN reactor libraries.
-
-
-    """
-
-    _SUPPORTED_FUEL_TYPES = ("UOX", "MOX")
+    """Handle the ARPDATA.TXT format for ORIGEN reactor libraries."""
 
     def __init__(self):
         self.name = ""
@@ -1926,39 +1941,26 @@ class ArpInfo:
         self.block = ""
         self.burnup_list = []
 
-    @classmethod
-    def _parse_fuel_type(cls, value):
-        raw_value = value.value if isinstance(value, Enum) else value
-        label = str(raw_value).strip().upper()
-        if label in cls._SUPPORTED_FUEL_TYPES:
-            return label
-        expected = ", ".join(cls._SUPPORTED_FUEL_TYPES)
-        raise ValueError(
-            f"ArpInfo.fuel_type={value} unknown; expected one of: {expected}"
-        )
-
     @staticmethod
-    def _infer_block_fuel_type(name, block):
-        header = next((line.split() for line in block.splitlines() if line.split()), [])
-        if len(header) == 5:
-            return "MOX"
-        if len(header) == 3:
-            return "UOX"
+    def _infer_block_fuel_type(name):
         if name.startswith("mox_"):
-            return "MOX"
+            return ArpInfoFuelType.MOX
         if name.startswith("act_"):
             return "ACT"
-        return "UOX"
+        return ArpInfoFuelType.UOX
 
     @property
     def fuel_type(self):
-        if self._fuel_type is None:
-            raise ValueError("ArpInfo.fuel_type has not been initialized")
-        return self._fuel_type
+        return self._fuel_type_kind().value
 
     @fuel_type.setter
     def fuel_type(self, value):
-        self._fuel_type = self._parse_fuel_type(value)
+        self._fuel_type = ArpInfoFuelType.from_value(value)
+
+    def _fuel_type_kind(self):
+        if self._fuel_type is None:
+            raise ValueError("ArpInfo.fuel_type has not been initialized")
+        return self._fuel_type
 
     def init_block(self, name, block):
         """Initialize data from a single block of arpdata WITHOUT the ! line"""
@@ -1966,12 +1968,12 @@ class ArpInfo:
         self.name = name
         self.block = block
 
-        self.fuel_type = self._infer_block_fuel_type(name, block)
+        self.fuel_type = self._infer_block_fuel_type(name)
 
         self.lib_list = []
 
         tokens = self.block.split()
-        if self.fuel_type == "UOX":
+        if self._fuel_type_kind() is ArpInfoFuelType.UOX:
             ne = int(tokens[0])
             nm = int(tokens[1])
             nb = int(tokens[2])
@@ -2024,21 +2026,14 @@ class ArpInfo:
 
         # Convert to interpolation space, assuming correct set up.
         self.name = name
-        self.fuel_type = "UOX"
+        self.fuel_type = ArpInfoFuelType.UOX
         self.enrichment_list = sorted(set(enrichment_list))
         self.mod_dens_list = sorted(set(mod_dens_list))
         self.burnup_list = []
         self.block = ""
 
         # Initialize permutation_index storage.
-        n = self.num_libs()
-        self.perm_index = [None] * n
-        self.lib_list = [None] * n
-        nperm = len(lib_list)
-        if nperm != n:
-            raise ValueError(
-                f"number of permutations {nperm} must match number of libraries in the grid {n}"
-            )
+        n = self._initialize_library_grid(lib_list)
 
         # Lists come in in permutation order.
         for k in range(n):
@@ -2058,7 +2053,7 @@ class ArpInfo:
 
         # Convert to interpolation space, assuming correct set up.
         self.name = name
-        self.fuel_type = "MOX"
+        self.fuel_type = ArpInfoFuelType.MOX
         self.pu239_frac_list = sorted(set(pu239_frac_list))
         self.pu_frac_list = sorted(set(pu_frac_list))
         self.mod_dens_list = sorted(set(mod_dens_list))
@@ -2066,14 +2061,7 @@ class ArpInfo:
         self.block = ""
 
         # Initialize permutation_index storage.
-        n = self.num_libs()
-        self.perm_index = [None] * n
-        self.lib_list = [None] * n
-        nperm = len(lib_list)
-        if nperm != n:
-            raise ValueError(
-                f"number of permutations {nperm} must match number of libraries in the grid {n}"
-            )
+        n = self._initialize_library_grid(lib_list)
 
         # Lists come in in permutation order.
         for k in range(n):
@@ -2090,8 +2078,20 @@ class ArpInfo:
             self.perm_index[i] = k
             self.lib_list[i] = lib_list[k]
 
+    def _initialize_library_grid(self, lib_list):
+        n = self.num_libs()
+        nperm = len(lib_list)
+        if nperm != n:
+            raise ValueError(
+                f"number of permutations {nperm} must match number of "
+                f"libraries in the grid {n}"
+            )
+        self.perm_index = [None] * n
+        self.lib_list = [None] * n
+        return n
+
     def get_canonical_filename(self, dim, ext):
-        if self.fuel_type == "UOX":
+        if self._fuel_type_kind() is ArpInfoFuelType.UOX:
             (ie, im) = dim
             e = self.enrichment_list[ie]
             m = self.mod_dens_list[im]
@@ -2152,7 +2152,7 @@ class ArpInfo:
 
     def get_dims(self):
         """Get the total dimension size."""
-        if self.fuel_type == "UOX":
+        if self._fuel_type_kind() is ArpInfoFuelType.UOX:
             ne = len(self.enrichment_list)
             nm = len(self.mod_dens_list)
             return (ne, nm)
@@ -2164,7 +2164,7 @@ class ArpInfo:
 
     def get_space(self):
         """Get the dictionary that describes this point in space."""
-        if self.fuel_type == "UOX":
+        if self._fuel_type_kind() is ArpInfoFuelType.UOX:
             return {
                 "mod_dens": {
                     "grid": self.mod_dens_list,
@@ -2204,8 +2204,7 @@ class ArpInfo:
         # Initialize new arpinfo with restricted data.
         arpinfo = ArpInfo()
 
-        # UOX option
-        if self.fuel_type=="UOX":
+        if self._fuel_type_kind() is ArpInfoFuelType.UOX:
             (ne,nm) = self.get_dims()
             nb = len(self.burnup_list)
             ie_list = range(ne)
@@ -2258,7 +2257,7 @@ class ArpInfo:
 
     def interpvars_by_index(self, i):
         """Get the interpolation variables from the flat index."""
-        if self.fuel_type == "UOX":
+        if self._fuel_type_kind() is ArpInfoFuelType.UOX:
             (ie, im) = self.get_dim_by_index(i)
             return {
                 "enrichment": self.enrichment_list[ie],
@@ -2275,7 +2274,7 @@ class ArpInfo:
     def get_arpdata(self):
         """Return the arpdata.txt file block for this data."""
         entry = ""
-        if self.fuel_type == "UOX":
+        if self._fuel_type_kind() is ArpInfoFuelType.UOX:
             ne = len(self.enrichment_list)
             nm = len(self.mod_dens_list)
             nb = len(self.burnup_list)

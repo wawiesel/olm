@@ -575,22 +575,34 @@ def _get_function_handle(mod_fn):
         return None
 
 
+def _require_function_handle(mod_fn):
+    fn_handle = _get_function_handle(mod_fn)
+    if fn_handle is None:
+        raise ValueError(f"Function handle {mod_fn} not found.")
+    return fn_handle
+
+
 def _indent(text, i):
     space = " " * i
     return space.join(("\n" + text.lstrip()).splitlines(True))
 
 
+def _get_schema_function(_type: str):
+    mod, schema_fn = _type.split(":")
+    schema_type = mod + ":_schema_" + schema_fn
+    try:
+        return _require_function_handle(schema_type)
+    except ValueError:
+        raise ValueError(
+            f"No schema function associated with {_type}! Should be called "
+            f"{schema_type}. You can try to infer with `olm schema --infer '{_type}'."
+        ) from None
+
+
 def _get_schema(_type: str, with_state: bool = False):
     """Get the schema for the type."""
 
-    # Search for a hard-coded schema.
-    mod, schema_fn = _type.split(":")
-    _schema = mod + ":_schema_" + schema_fn
-    fn = _get_function_handle(_schema)
-    if fn == None:
-        raise ValueError(
-            f"No schema function associated with {_type}! Should be called {_schema}. You can try to infer with `olm schema --infer '{_type}'."
-        )
+    fn = _get_schema_function(_type)
     return fn(with_state=with_state)
 
 
@@ -606,7 +618,7 @@ def _infer_schema(_type: str, _exclude: Set[str] = set(), with_state: bool = Fal
 
     # Use inspect to get required arguments.
     required = {}
-    fn = _get_function_handle(_type)
+    fn = _require_function_handle(_type)
     for k, v in inspect.signature(fn).parameters.items():
         required[k] = v.default is v.empty
 
@@ -677,7 +689,7 @@ def _get_schema_description(_type: str):
     # Get example arguments, format as string and indent properly.
     fn_path = _type.replace(":", ".")
     mod, fn_name = _type.split(":")
-    test_fn = _get_function_handle(mod + ":_test_args_" + fn_name)
+    test_fn = _require_function_handle(mod + ":_test_args_" + fn_name)
     args = test_fn()
     section = mod.replace("scale.olm.", "").replace(".", "/")
     description += (
@@ -697,7 +709,7 @@ def _get_schema_description(_type: str):
         description += "\n"
 
         # Get example output
-        fn = _get_function_handle(_type)
+        fn = _require_function_handle(_type)
         out = fn(**args)
         if isinstance(out, dict):
             if "_input" in out:
@@ -741,7 +753,7 @@ def schema(
 def _fn_redirect(_type, **x):
     """Uses the _type input to find a function handle of that name, then executes with all the
     data except the _type."""
-    fn_x = _get_function_handle(_type)
+    fn_x = _require_function_handle(_type)
     return fn_x(**x)
 
 

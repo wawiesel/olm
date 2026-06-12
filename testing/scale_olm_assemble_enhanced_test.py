@@ -601,7 +601,7 @@ class TestArpInfoMaster:
         """Test integrated ARP info processing for UOX."""
         work_dir = Path('/work')
         name = "test_reactor"
-        fuel_type = assemble._ArpdataFuelType.UOX
+        fuel_type = core.ArpInfoFuelType.UOX
         dim_map = {"enrichment": 0, "mod_dens": 1}
         
         # Mock the generate.olm.json content with string keys (as from JSON)
@@ -656,6 +656,53 @@ class TestArpInfoMaster:
         assert result.caseid == -2
 
     @patch('scale.olm.assemble._get_burnup_list')
+    @patch('scale.olm.assemble._get_arpinfo_mox')
+    @patch('scale.olm.assemble._get_files')
+    def test_get_arpinfo_mox_integration(
+        self, mock_get_files, mock_get_arpinfo_mox, mock_get_burnup_list
+    ):
+        """Test integrated ARP info processing selects the MOX builder."""
+        work_dir = Path('/work')
+        mock_generate_data = {"perms": [{"input_file": "perm_000.inp", "state": {}}]}
+        mock_file_list = [
+            {
+                "lib": Path('/work/perm_000.system.f33'),
+                "output": Path('/work/perm_000.out'),
+                "f71": Path('/work/perm_000.f71'),
+            },
+        ]
+        mock_get_files.return_value = mock_file_list
+        mock_arpinfo = Mock()
+        mock_get_arpinfo_mox.return_value = mock_arpinfo
+        mock_get_burnup_list.return_value = np.array([0.0, 10.0])
+
+        with patch('builtins.open', mock_open(read_data=json.dumps(mock_generate_data))):
+            result = assemble._get_arpinfo(
+                "obiwan",
+                work_dir,
+                "test_reactor",
+                core.ArpInfoFuelType.MOX,
+                {
+                    "pu239_frac": "pu239_frac",
+                    "pu_frac": "pu_frac",
+                    "mod_dens": "mod_dens",
+                },
+            )
+
+        mock_get_arpinfo_mox.assert_called_once_with(
+            "test_reactor",
+            mock_generate_data["perms"],
+            mock_file_list,
+            {
+                "pu239_frac": "pu239_frac",
+                "pu_frac": "pu_frac",
+                "mod_dens": "mod_dens",
+            },
+        )
+        mock_get_burnup_list.assert_called_once_with("obiwan", mock_file_list, 2.0e-2)
+        assert result is mock_arpinfo
+
+    @patch('scale.olm.assemble._get_burnup_list')
     @patch('scale.olm.assemble._get_arpinfo_uox')
     @patch('scale.olm.assemble._get_files')
     def test_get_arpinfo_uses_mix_material_lumping(
@@ -681,7 +728,7 @@ class TestArpInfoMaster:
                 "obiwan",
                 work_dir,
                 "test_reactor",
-                assemble._ArpdataFuelType.UOX,
+                core.ArpInfoFuelType.UOX,
                 {"enrichment": "enrichment", "mod_dens": "mod_dens"},
                 assemble._MaterialLumping.from_value("MIX10"),
             )
@@ -698,18 +745,22 @@ class TestArpInfoMaster:
     def test_arpdata_fuel_type_parser(self):
         """Test ARPDATA fuel type parsing accepts supported labels."""
         assert (
-            assemble._ArpdataFuelType.from_value("UOX")
-            is assemble._ArpdataFuelType.UOX
+            core.ArpInfoFuelType.from_value("UOX")
+            is core.ArpInfoFuelType.UOX
         )
         assert (
-            assemble._ArpdataFuelType.from_value("mox")
-            is assemble._ArpdataFuelType.MOX
+            core.ArpInfoFuelType.from_value("mox")
+            is core.ArpInfoFuelType.MOX
+        )
+        assert (
+            core.ArpInfoFuelType.from_value(core.ArpInfoFuelType.UOX)
+            is core.ArpInfoFuelType.UOX
         )
 
     def test_arpdata_fuel_type_parser_rejects_unknown(self):
         """Test invalid ARPDATA fuel type fails at the parser boundary."""
-        with pytest.raises(ValueError, match="Unknown fuel_type"):
-            assemble._ArpdataFuelType.from_value("INVALID")
+        with pytest.raises(ValueError, match="ArpInfo\\.fuel_type=INVALID unknown"):
+            core.ArpInfoFuelType.from_value("INVALID")
 
 
 class TestCompositionSystem:

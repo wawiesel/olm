@@ -300,6 +300,32 @@ class TestLowOrderConsistency:
             if os.path.exists(image_path):
                 os.unlink(image_path)
 
+    def test_make_time_quality_plot_with_convergence_history(self, tmp_path):
+        """Test q-score time plots include convergence-history overlays."""
+        image_path = tmp_path / "time-quality.png"
+
+        check.LowOrderConsistency.make_time_quality_plot(
+            image_path,
+            time=[0.0, 86400.0, 172800.0],
+            q_r=[1.0, 0.98, 0.97],
+            q_ar=[1.0, 0.99, 0.985],
+            target_q_r=0.95,
+            target_q_ar=0.96,
+            convergence_history=[
+                {
+                    "time_quality": [
+                        {"time_days": 0.0, "q_r": 1.0, "q_ar": 1.0},
+                        {"time_days": 1.0, "q_r": 0.94, "q_ar": 0.95},
+                        {"time_days": 2.0, "q_r": 0.93, "q_ar": 0.94},
+                    ]
+                },
+                {"time_quality": []},
+            ],
+        )
+
+        assert image_path.exists()
+        assert image_path.stat().st_size > 0
+
     @patch('scale.olm.core.RelAbsHistogram.plot_hist')
     @patch.object(check.LowOrderConsistency, 'make_time_quality_plot')
     def test_time_quality_failure_fails_check(
@@ -570,6 +596,62 @@ class TestLowOrderConsistency:
         assert mock_plot_hist.call_args.kwargs['epsr'] == loc.epsr
         assert mock_plot_hist.call_args.kwargs['epsa'] == loc.epsa
         assert mock_plot_hist.call_args.kwargs['eps0'] == loc.eps0
+
+    @patch.object(check.LowOrderConsistency, 'make_scaled_difference_plot')
+    @patch.object(check.LowOrderConsistency, 'make_time_quality_plot')
+    @patch('scale.olm.core.RelAbsHistogram.plot_hist')
+    def test_info_populates_nuclide_compare_data(
+        self, mock_plot_hist, mock_time_quality_plot, mock_scaled_plot, tmp_path
+    ):
+        """Test detailed nuclide comparison data is included in check info."""
+        loc = check.LowOrderConsistency(
+            _dry_run=True,
+            nuclide_compare=['u235'],
+        )
+        loc.run_success = True
+        loc.time_list = [0.0, 86400.0]
+        loc.hi_list = [np.array([[2.0, 3.0], [4.0, 1.0]])]
+        loc.lo_list = [np.array([[1.0, 4.0], [5.0, 2.0]])]
+        loc.names = ['0092235', '0008016']
+        loc.composition_manager = so.core.CompositionManager({
+            '0092235': {
+                'mass': 235.0,
+                'atomicNumber': 92,
+                'element': 'U',
+                'isomericState': 0,
+                'massNumber': 235,
+            },
+            '0008016': {
+                'mass': 16.0,
+                'atomicNumber': 8,
+                'element': 'O',
+                'isomericState': 0,
+                'massNumber': 16,
+            },
+        })
+        loc.initialhm_list = [2.0]
+        hi_ii_json = tmp_path / 'hi.ii.json'
+        lo_ii_json = tmp_path / 'lo.ii.json'
+        loc.ii_json_list = [(hi_ii_json, lo_ii_json)]
+        loc.work_path = tmp_path
+        loc.check_path = tmp_path
+
+        info = loc.info()
+
+        u235 = info.nuclide_compare['u235']
+        assert u235['nuclide_index'] == 0
+        assert u235['nuclide_izzzaaa'] == '0092235'
+        assert u235['time'] == loc.time_list
+        assert u235['image'] == str(tmp_path / 'u235-scaled-difference.png')
+        assert u235['perms'][0]['hi_ii_json'] == 'hi.ii.json'
+        assert u235['perms'][0]['lo_ii_json'] == 'lo.ii.json'
+        np.testing.assert_allclose(
+            u235['perms'][0]['scaled_difference'],
+            [-0.25, 0.25],
+        )
+        mock_scaled_plot.assert_called_once()
+        mock_time_quality_plot.assert_called_once()
+        mock_plot_hist.assert_called_once()
 
     def test_convergence_range_checks(self):
         """Test LowOrderConsistency rejects inverted convergence ranges."""
@@ -937,6 +1019,10 @@ class TestSchemaFunctions:
         metric_schema = schema['properties']['metric']
         if '$ref' in metric_schema:
             metric_schema = schema['$defs'][metric_schema['$ref'].rsplit('/', 1)[-1]]
+        elif 'allOf' in metric_schema and '$ref' in metric_schema['allOf'][0]:
+            metric_schema = schema['$defs'][
+                metric_schema['allOf'][0]['$ref'].rsplit('/', 1)[-1]
+            ]
         assert metric_schema['enum'] == [
             'grams_per_initial_hm',
             'atom_fraction',

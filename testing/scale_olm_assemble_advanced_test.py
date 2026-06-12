@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
+from pydantic import ValidationError
 
 import scale.olm.assemble as assemble
 import scale.olm.core as core
@@ -72,16 +73,16 @@ class TestBurnupThinning:
         expected_no_ends = [2.0, 5.0]  # Corrected: follows pattern without forcing ends
         assert result == expected_no_ends
     
-    def test_generate_thinned_burnup_list_invalid_parameters_advanced(self):
-        """Test error handling for invalid parameters."""
-        burnup_list = [0.0, 1.0, 2.0, 3.0, 4.0]
-        
-        # Test invalid keep_every values
-        with pytest.raises(ValueError, match="must be an integer >0"):
-            assemble._generate_thinned_burnup_list(0, burnup_list)
-        
-        with pytest.raises(ValueError, match="must be an integer >0"):
-            assemble._generate_thinned_burnup_list(-1, burnup_list)
+    @pytest.mark.parametrize("keep_every", [0, -1])
+    def test_arpdata_txt_rejects_invalid_keep_every_advanced(self, keep_every):
+        """Test arpdata_txt rejects invalid thinning at the public boundary."""
+        with pytest.raises(ValidationError):
+            assemble.arpdata_txt(
+                fuel_type="UOX",
+                dim_map={"mod_dens": "mod_dens", "enrichment": "enrichment"},
+                keep_every=keep_every,
+                dry_run=True,
+            )
     
     @pytest.mark.parametrize("keep_every,input_size,expected_size_range", [
         (1, 100, (100, 100)),  # No thinning
