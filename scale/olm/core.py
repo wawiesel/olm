@@ -1921,6 +1921,9 @@ class ArpInfo:
         self.block = ""
         self.burnup_list = []
 
+    def _raise_unsupported_fuel_type(self):
+        raise ValueError(f"ArpInfo.fuel_type={self.fuel_type} unknown (UOX/MOX)")
+
     def init_block(self, name, block):
         """Initialize data from a single block of arpdata WITHOUT the ! line"""
 
@@ -1973,9 +1976,7 @@ class ArpInfo:
                 s += 1
             self.burnup_list = [float(x) for x in tokens[s : s + nb]]
         else:
-            raise ValueError(
-                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
-            )
+            self._raise_unsupported_fuel_type()
 
     @staticmethod
     def parse_arpdata(file):
@@ -2082,9 +2083,7 @@ class ArpInfo:
                 ext,
             )
         else:
-            raise ValueError(
-                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
-            )
+            self._raise_unsupported_fuel_type()
 
     def set_canonical_filenames(self, ext):
         # We can keep track of filename counts so we are sure we don't create a duplicate.
@@ -2109,14 +2108,9 @@ class ArpInfo:
 
     def get_lib_by_index(self, i):
         """Get the library by flat index."""
-        if self.fuel_type == "UOX":
-            return self.lib_list[i]
-        elif self.fuel_type == "MOX":
-            return self.lib_list[i]
-        else:
-            raise ValueError(
-                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
-            )
+        if self.fuel_type not in ("UOX", "MOX"):
+            self._raise_unsupported_fuel_type()
+        return self.lib_list[i]
 
     def get_index_by_dim(self, dim):
         """Get the flat index by a dimensional tuple."""
@@ -2144,9 +2138,7 @@ class ArpInfo:
             nm = len(self.mod_dens_list)
             return (nm, ne, np)
         else:
-            raise ValueError(
-                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
-            )
+            self._raise_unsupported_fuel_type()
 
     def get_space(self):
         """Get the dictionary that describes this point in space."""
@@ -2173,9 +2165,7 @@ class ArpInfo:
                 "burnup": {"grid": self.burnup_list, "desc": ""},
             }
         else:
-            raise ValueError(
-                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
-            )
+            self._raise_unsupported_fuel_type()
 
     @staticmethod
     def _find_closest(old_list, new_list):
@@ -2230,7 +2220,7 @@ class ArpInfo:
         elif self.fuel_type=="MOX":
             raise ValueError(f"MOX restrict not yet implemented.")
         else:
-            raise ValueError(f"fuel_type must be MOX or UOX, found: {self.fuel_type}")
+            self._raise_unsupported_fuel_type()
         return arpinfo
 
 
@@ -2244,14 +2234,9 @@ class ArpInfo:
 
     def interptags_by_index(self, i):
         """Get the interpolation tags from the flat index."""
-        if self.fuel_type == "UOX" or self.fuel_type == "MOX":
-            d = self.interpvars_by_index(i)
-            y = ["{}={}".format(x, d[x]) for x in d]
-            return ",".join(y)
-        else:
-            raise ValueError(
-                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
-            )
+        d = self.interpvars_by_index(i)
+        y = ["{}={}".format(x, d[x]) for x in d]
+        return ",".join(y)
 
     def interpvars_by_index(self, i):
         """Get the interpolation variables from the flat index."""
@@ -2269,9 +2254,7 @@ class ArpInfo:
                 "mod_dens": self.mod_dens_list[im],
             }
         else:
-            raise ValueError(
-                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
-            )
+            self._raise_unsupported_fuel_type()
 
     def get_arpdata(self):
         """Return the arpdata.txt file block for this data."""
@@ -2300,9 +2283,7 @@ class ArpInfo:
                 entry += "'{}'\n".format(self.lib_list[i])
             entry += "\n".join([str(x) for x in self.burnup_list])
         else:
-            raise ValueError(
-                "ArpInfo.fuel_type={} unknown (UOX/MOX)".format(self.fuel_type)
-            )
+            self._raise_unsupported_fuel_type()
 
         self.block = entry
         return "!{}\n{}".format(self.name, self.block)
