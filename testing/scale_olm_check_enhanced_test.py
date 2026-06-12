@@ -217,6 +217,13 @@ class TestLowOrderConsistency:
         assert set(params.keys()) == expected_keys
         assert params['metric'] == 'grams_per_initial_hm'
         assert params['nuclide_scaled_difference_min_abs_ylim'] is None
+
+    def test_rejects_unknown_metric_at_boundary(self):
+        """Test invalid LowOrderConsistency metrics fail during construction."""
+        with pytest.raises(
+            ValueError, match="Unsupported LowOrderConsistency metric"
+        ):
+            check.LowOrderConsistency(metric="invalid", _dry_run=True)
         
     def test_describe_params_enhanced_loc(self):
         """Test that describe_params returns helpful descriptions."""
@@ -927,7 +934,10 @@ class TestSchemaFunctions:
         """Test schema generation for LowOrderConsistency."""
         schema = check._schema_LowOrderConsistency()
         assert isinstance(schema, dict)
-        assert schema['properties']['metric']['enum'] == [
+        metric_schema = schema['properties']['metric']
+        if '$ref' in metric_schema:
+            metric_schema = schema['$defs'][metric_schema['$ref'].rsplit('/', 1)[-1]]
+        assert metric_schema['enum'] == [
             'grams_per_initial_hm',
             'atom_fraction',
         ]
