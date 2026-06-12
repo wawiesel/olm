@@ -10,11 +10,40 @@ import numpy as np
 import subprocess
 import datetime
 from dataclasses import dataclass
+from enum import Enum
 from typing import Literal
 
 __all__ = ["arpdata_txt"]
 
 _TYPE_ARPDATA_TXT = "scale.olm.assemble:arpdata_txt"
+
+
+class _ArpdataFuelType(str, Enum):
+    UOX = "UOX"
+    MOX = "MOX"
+
+    @classmethod
+    def values(cls):
+        return tuple(fuel_type.value for fuel_type in cls)
+
+    @classmethod
+    def from_value(cls, value):
+        if isinstance(value, cls):
+            return value
+        try:
+            return cls(str(value).strip().upper())
+        except ValueError:
+            expected = ", ".join(cls.values())
+            raise ValueError(
+                f"Unknown fuel_type={value}; expected one of: {expected}"
+            ) from None
+
+    @property
+    def arpinfo_builder(self):
+        return {
+            _ArpdataFuelType.UOX: _get_arpinfo_uox,
+            _ArpdataFuelType.MOX: _get_arpinfo_mox,
+        }[self]
 
 
 def _schema_arpdata_txt(with_state: bool = False):
@@ -67,6 +96,7 @@ def arpdata_txt(
 
     # Get working directory.
     work_path = Path(_env["work_dir"])
+    fuel_type = _ArpdataFuelType.from_value(fuel_type)
     material_lumping = _MaterialLumping.from_value(material_lumping)
 
     # Get library info data structure.
@@ -454,25 +484,11 @@ def _get_arpinfo_mox(name, perms, file_list, dim_map):
     return arpinfo
 
 
-def _arpinfo_builder_for_fuel_type(fuel_type):
-    builders = {
-        "UOX": _get_arpinfo_uox,
-        "MOX": _get_arpinfo_mox,
-    }
-    try:
-        return builders[fuel_type]
-    except KeyError:
-        expected = ", ".join(builders)
-        raise ValueError(
-            f"Unknown fuel_type={fuel_type}; expected one of: {expected}"
-        ) from None
-
-
 def _get_arpinfo(
     obiwan,
     work_dir,
     name,
-    fuel_type,
+    fuel_type: _ArpdataFuelType,
     dim_map,
     material_lumping=_DEFAULT_MATERIAL_LUMPING,
     burnup_rtol=2.0e-2,
@@ -488,9 +504,7 @@ def _get_arpinfo(
     # Get library,input,output in one place.
     file_list = _get_files(work_dir, perms, material_lumping)
 
-    arpinfo = _arpinfo_builder_for_fuel_type(fuel_type)(
-        name, perms, file_list, dim_map
-    )
+    arpinfo = fuel_type.arpinfo_builder(name, perms, file_list, dim_map)
 
     # Get the ARPDATA burnups from the F33 libraries. The matching F71 files are
     # read later only for inventory metadata and interval-average powers.
