@@ -252,6 +252,22 @@ def mox_ornltm2003_2(
 
 # -----------------------------------------------------------------------------------------
 _TYPE_MOX_MULTIZONE_2023 = "scale.olm.generate.comp:mox_multizone_2023"
+_MOX_MULTIZONE_NAMES = ["inner", "iedge", "edge", "corner"]
+_MOX_MULTIZONE_PRESETS = {
+    "BWR2016": [1.0, 0.75, 0.50, 0.30],
+    "PWR2016": [1.0, 0.90, 0.68, 0.50],
+}
+
+
+def _mox_multizone_data(zone_names, zone_pu_fracs):
+    if not isinstance(zone_names, str):
+        return zone_names, zone_pu_fracs
+
+    if zone_names not in _MOX_MULTIZONE_PRESETS:
+        expected = "/".join(_MOX_MULTIZONE_PRESETS)
+        raise ValueError(f"zone_names={zone_names} must be {expected}")
+
+    return list(_MOX_MULTIZONE_NAMES), list(_MOX_MULTIZONE_PRESETS[zone_names])
 
 
 def _schema_mox_multizone_2023(with_state: bool = False):
@@ -402,14 +418,7 @@ def mox_multizone_2023(
     5.0
 
     """
-    if isinstance(zone_names, str):
-        if zone_names == "BWR2016":
-            zone_pu_fracs = [1.0, 0.75, 0.50, 0.30]
-        elif zone_names == "PWR2016":
-            zone_pu_fracs = [1.0, 0.90, 0.68, 0.50]
-        else:
-            raise ValueError(f"zone_names={zone_names} must be BWR2016/PWR2016")
-        zone_names = ["inner", "iedge", "edge", "corner"]
+    zone_names, zone_pu_fracs = _mox_multizone_data(zone_names, zone_pu_fracs)
 
     assert len(zone_pu_fracs) == len(zone_names)
     assert len(zone_pu_fracs) == len(zone_pins)
