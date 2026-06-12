@@ -1916,16 +1916,49 @@ class ArpInfo:
 
     """
 
+    _SUPPORTED_FUEL_TYPES = ("UOX", "MOX")
+
     def __init__(self):
         self.name = ""
         self.lib_list = None
         self.perm_index = None
-        self.fuel_type = ""
+        self._fuel_type = None
         self.block = ""
         self.burnup_list = []
 
-    def _raise_unsupported_fuel_type(self):
-        raise ValueError(f"ArpInfo.fuel_type={self.fuel_type} unknown (UOX/MOX)")
+    @classmethod
+    def _parse_fuel_type(cls, value):
+        raw_value = value.value if isinstance(value, Enum) else value
+        label = str(raw_value).strip().upper()
+        if label in cls._SUPPORTED_FUEL_TYPES:
+            return label
+        expected = ", ".join(cls._SUPPORTED_FUEL_TYPES)
+        raise ValueError(
+            f"ArpInfo.fuel_type={value} unknown; expected one of: {expected}"
+        )
+
+    @staticmethod
+    def _infer_block_fuel_type(name, block):
+        header = next((line.split() for line in block.splitlines() if line.split()), [])
+        if len(header) == 5:
+            return "MOX"
+        if len(header) == 3:
+            return "UOX"
+        if name.startswith("mox_"):
+            return "MOX"
+        if name.startswith("act_"):
+            return "ACT"
+        return "UOX"
+
+    @property
+    def fuel_type(self):
+        if self._fuel_type is None:
+            raise ValueError("ArpInfo.fuel_type has not been initialized")
+        return self._fuel_type
+
+    @fuel_type.setter
+    def fuel_type(self, value):
+        self._fuel_type = self._parse_fuel_type(value)
 
     def init_block(self, name, block):
         """Initialize data from a single block of arpdata WITHOUT the ! line"""
@@ -1933,12 +1966,7 @@ class ArpInfo:
         self.name = name
         self.block = block
 
-        if self.name.startswith("mox_"):
-            self.fuel_type = "MOX"
-        elif self.name.startswith("act_"):
-            self.fuel_type = "ACT"
-        else:
-            self.fuel_type = "UOX"
+        self.fuel_type = self._infer_block_fuel_type(name, block)
 
         self.lib_list = []
 
@@ -1957,8 +1985,7 @@ class ArpInfo:
                 self.lib_list.append(filename)
                 s += 1
             self.burnup_list = [float(x) for x in tokens[s : s + nb]]
-
-        elif self.fuel_type == "MOX":
+        else:
             np = int(tokens[0])
             ne = int(tokens[1])
             nd = int(tokens[2])
@@ -1978,8 +2005,6 @@ class ArpInfo:
                 self.lib_list.append(filename)
                 s += 1
             self.burnup_list = [float(x) for x in tokens[s : s + nb]]
-        else:
-            self._raise_unsupported_fuel_type()
 
     @staticmethod
     def parse_arpdata(file):
@@ -2073,20 +2098,18 @@ class ArpInfo:
             return "{}_e{:04d}w{:04d}{}".format(
                 self.name, int(100 * e), int(1000 * m), ext
             )
-        elif self.fuel_type == "MOX":
-            (im, ie, ip) = dim
-            m = self.mod_dens_list[im]
-            e = self.pu239_frac_list[ie]
-            p = self.pu_frac_list[ip]
-            return "{}_e{:04d}v{:04d}w{:04d}{}".format(
-                self.name,
-                int(100 * p),
-                int(100 * e),
-                int(1000 * m),
-                ext,
-            )
-        else:
-            self._raise_unsupported_fuel_type()
+
+        (im, ie, ip) = dim
+        m = self.mod_dens_list[im]
+        e = self.pu239_frac_list[ie]
+        p = self.pu_frac_list[ip]
+        return "{}_e{:04d}v{:04d}w{:04d}{}".format(
+            self.name,
+            int(100 * p),
+            int(100 * e),
+            int(1000 * m),
+            ext,
+        )
 
     def set_canonical_filenames(self, ext):
         # We can keep track of filename counts so we are sure we don't create a duplicate.
@@ -2111,8 +2134,6 @@ class ArpInfo:
 
     def get_lib_by_index(self, i):
         """Get the library by flat index."""
-        if self.fuel_type not in ("UOX", "MOX"):
-            self._raise_unsupported_fuel_type()
         return self.lib_list[i]
 
     def get_index_by_dim(self, dim):
@@ -2135,13 +2156,11 @@ class ArpInfo:
             ne = len(self.enrichment_list)
             nm = len(self.mod_dens_list)
             return (ne, nm)
-        elif self.fuel_type == "MOX":
-            np = len(self.pu_frac_list)
-            ne = len(self.pu239_frac_list)
-            nm = len(self.mod_dens_list)
-            return (nm, ne, np)
-        else:
-            self._raise_unsupported_fuel_type()
+
+        np = len(self.pu_frac_list)
+        ne = len(self.pu239_frac_list)
+        nm = len(self.mod_dens_list)
+        return (nm, ne, np)
 
     def get_space(self):
         """Get the dictionary that describes this point in space."""
@@ -2160,15 +2179,13 @@ class ArpInfo:
                     "desc": "energy release/burnup (MWd/MTIHM)",
                 },
             }
-        elif self.fuel_type == "MOX":
-            return {
-                "mod_dens": {"grid": self.mod_dens_list, "desc": ""},
-                "pu_frac": {"grid": self.pu_frac_list, "desc": ""},
-                "pu239_frac": {"grid": self.pu239_frac_list, "desc": ""},
-                "burnup": {"grid": self.burnup_list, "desc": ""},
-            }
-        else:
-            self._raise_unsupported_fuel_type()
+
+        return {
+            "mod_dens": {"grid": self.mod_dens_list, "desc": ""},
+            "pu_frac": {"grid": self.pu_frac_list, "desc": ""},
+            "pu239_frac": {"grid": self.pu239_frac_list, "desc": ""},
+            "burnup": {"grid": self.burnup_list, "desc": ""},
+        }
 
     @staticmethod
     def _find_closest(old_list, new_list):
@@ -2220,10 +2237,8 @@ class ArpInfo:
             arpinfo.init_uox(self.name,new_lib_list,new_enrichment_list,new_mod_dens_list)
             arpinfo.burnup_list = new_burnup_list
 
-        elif self.fuel_type=="MOX":
-            raise ValueError(f"MOX restrict not yet implemented.")
         else:
-            self._raise_unsupported_fuel_type()
+            raise ValueError(f"MOX restrict not yet implemented.")
         return arpinfo
 
 
@@ -2249,15 +2264,13 @@ class ArpInfo:
                 "enrichment": self.enrichment_list[ie],
                 "mod_dens": self.mod_dens_list[im],
             }
-        elif self.fuel_type == "MOX":
-            (im, ie, ip) = self.get_dim_by_index(i)
-            return {
-                "pu239_frac": self.pu239_frac_list[ie],
-                "pu_frac": self.pu_frac_list[ip],
-                "mod_dens": self.mod_dens_list[im],
-            }
-        else:
-            self._raise_unsupported_fuel_type()
+
+        (im, ie, ip) = self.get_dim_by_index(i)
+        return {
+            "pu239_frac": self.pu239_frac_list[ie],
+            "pu_frac": self.pu_frac_list[ip],
+            "mod_dens": self.mod_dens_list[im],
+        }
 
     def get_arpdata(self):
         """Return the arpdata.txt file block for this data."""
@@ -2272,7 +2285,7 @@ class ArpInfo:
             for i in range(ne * nm):
                 entry += "'{}'\n".format(self.lib_list[i])
             entry += "\n".join([str(x) for x in self.burnup_list])
-        elif self.fuel_type == "MOX":
+        else:
             np = len(self.pu_frac_list)
             ne = len(self.pu239_frac_list)
             nm = len(self.mod_dens_list)
@@ -2285,8 +2298,6 @@ class ArpInfo:
             for i in range(nm * np * ne):
                 entry += "'{}'\n".format(self.lib_list[i])
             entry += "\n".join([str(x) for x in self.burnup_list])
-        else:
-            self._raise_unsupported_fuel_type()
 
         self.block = entry
         return "!{}\n{}".format(self.name, self.block)
