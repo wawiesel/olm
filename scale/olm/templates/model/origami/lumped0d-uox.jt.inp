@@ -1,9 +1,10 @@
 {% extends "lumped0d-base.jt.inp" %}
 {% block fuelcomp %}
+{% set gd2o3_wtpct=comp.system.gd2o3_wtpct|default(0.0) %}
 fuelcomp{
     stdcomp(fuel){ base=uo2
         iso[ 92234={{comp.system.uo2.iso.u234}} 92235={{comp.system.uo2.iso.u235}} 92236={{comp.system.uo2.iso.u236}} 92238={{comp.system.uo2.iso.u238}} ]
     }
-    mix(1){ comps[fuel=100] }
+    mix(1){ comps[fuel={{100.0-gd2o3_wtpct}} Gd2O3={{gd2o3_wtpct}}] }
 }
 {% endblock %}
