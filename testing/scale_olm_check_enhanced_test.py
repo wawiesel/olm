@@ -610,6 +610,7 @@ class TestLowOrderConsistency:
         )
         loc.run_success = True
         loc.time_list = [0.0, 86400.0]
+        loc.burnup_list = [0.0, 10000.0]
         loc.hi_list = [np.array([[2.0, 3.0], [4.0, 1.0]])]
         loc.lo_list = [np.array([[1.0, 4.0], [5.0, 2.0]])]
         loc.names = ['0092235', '0008016']

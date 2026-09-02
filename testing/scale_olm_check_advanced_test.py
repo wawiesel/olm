@@ -96,9 +96,9 @@ class TestLowOrderConsistencyUtils:
     def test_make_scaled_difference_plot_with_mock_data(self):
         """Test scaled-difference plot creation with mocked matplotlib."""
         with patch('matplotlib.pyplot.figure'), \
-             patch('matplotlib.pyplot.fill_between'), \
+             patch('matplotlib.pyplot.fill_between') as mock_fill, \
              patch('matplotlib.pyplot.plot'), \
-             patch('matplotlib.pyplot.xlabel'), \
+             patch('matplotlib.pyplot.xlabel') as mock_xlabel, \
              patch('matplotlib.pyplot.ylabel'), \
              patch('matplotlib.pyplot.legend'), \
              patch('matplotlib.pyplot.savefig') as mock_save, \
@@ -107,7 +107,7 @@ class TestLowOrderConsistencyUtils:
             # Test data
             identifier = "U-235"
             image = "/tmp/test_plot.png"
-            time = [0, 86400, 172800]  # 0, 1, 2 days in seconds
+            burnup = [0, 10000, 20000]
             min_scaled_difference = [-0.01, -0.02, -0.01]
             max_scaled_difference = [0.01, 0.02, 0.01]
             max_abs_scaled_difference = 0.02
@@ -132,7 +132,7 @@ class TestLowOrderConsistencyUtils:
             check.LowOrderConsistency.make_scaled_difference_plot(
                 identifier,
                 image,
-                time,
+                burnup,
                 min_scaled_difference,
                 max_scaled_difference,
                 max_abs_scaled_difference,
@@ -141,6 +141,8 @@ class TestLowOrderConsistencyUtils:
             
             # Verify savefig was called with correct image path
             mock_save.assert_called_once_with(image, bbox_inches="tight")
+            np.testing.assert_allclose(mock_fill.call_args.args[0], [0, 10, 20])
+            mock_xlabel.assert_called_once_with("burnup (GWd/MTIHM)")
 
 
 class TestSequencerFunction:

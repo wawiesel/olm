@@ -501,6 +501,7 @@ def _get_comp_system(ii_data):
 
     x = dict()
     total_mass = 0.0
+    gd2o3_mass = 0.0
     for i in range(len(nuclide_list)):
         name = nuclide_list[i]
         data = data_map[name]
@@ -509,6 +510,8 @@ def _get_comp_system(ii_data):
         mass = amount * molar_mass
         total_mass += mass
         z = data["atomicNumber"]
+        if z == 64:
+            gd2o3_mass += mass + 1.5 * amount * 15.9994
         e = data["element"]
         m = data["isomericState"]
         a = data["massNumber"]
@@ -524,6 +527,7 @@ def _get_comp_system(ii_data):
     comp = core.CompositionManager.calculate_hm_oxide_breakdown(x)
     comp["info"] = core.CompositionManager.approximate_hm_info(comp)
     comp["density"] = total_mass / volume
+    comp["gd2o3_wtpct"] = 100.0 * gd2o3_mass / total_mass if total_mass else 0.0
 
     return comp
 
@@ -533,8 +537,7 @@ def _get_replay_burndata_count(perm):
     padding_gwd = float(time.get("final_burnup_padding_gwd", 0.0))
     if padding_gwd < 0.0:
         raise ValueError(
-            "final_burnup_padding_gwd must be >= 0.0; "
-            f"got {padding_gwd}"
+            "final_burnup_padding_gwd must be >= 0.0; " f"got {padding_gwd}"
         )
     if padding_gwd == 0.0:
         return None

@@ -633,7 +633,7 @@ class LowOrderConsistency:
     def make_scaled_difference_plot(
         identifier,
         image,
-        time,
+        burnup,
         min_scaled_difference,
         max_scaled_difference,
         max_abs_scaled_difference,
@@ -647,7 +647,7 @@ class LowOrderConsistency:
             plt.figure(figsize=LowOrderConsistency._PLOT_FIGSIZE)
             color = core.NuclideInventory._nuclide_color(identifier)
             plt.fill_between(
-                np.asarray(time) / 86400.0,
+                np.asarray(burnup) / 1000.0,
                 100 * np.asarray(min_scaled_difference),
                 100 * np.asarray(max_scaled_difference),
                 alpha=0.3,
@@ -656,7 +656,7 @@ class LowOrderConsistency:
 
             for perm in perms:
                 plt.plot(
-                    np.asarray(time) / 86400.0,
+                    np.asarray(burnup) / 1000.0,
                     100 * np.asarray(perm["scaled_difference"]),
                     "k-",
                     alpha=0.4,
@@ -664,7 +664,7 @@ class LowOrderConsistency:
 
             max_abs_ylim = max(float(max_abs_scaled_difference), float(min_abs_ylim))
             plt.ylim(-100.0 * max_abs_ylim, 100.0 * max_abs_ylim)
-            plt.xlabel("time (days)")
+            plt.xlabel("burnup (GWd/MTIHM)")
             plt.ylabel(LowOrderConsistency._scaled_difference_ylabel())
             plt.legend(
                 [
@@ -1569,7 +1569,7 @@ class LowOrderConsistency:
             LowOrderConsistency.make_scaled_difference_plot(
                 label,
                 image,
-                d["time"],
+                self.burnup_list,
                 d["min_scaled_difference"],
                 d["max_scaled_difference"],
                 d["max_abs_scaled_difference"],

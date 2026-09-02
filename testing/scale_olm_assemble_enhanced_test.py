@@ -14,68 +14,70 @@ import subprocess
 
 class TestBurnupProcessing:
     """Test burnup list processing functions."""
-    
+
     def test_generate_thinned_burnup_list_keep_every(self):
         """Test burnup thinning with keep_every parameter."""
         y_list = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
-        
+
         # Keep every 2nd element
         result = assemble._generate_thinned_burnup_list(2, y_list)
         expected = [0, 10, 20, 30, 40, 50]  # every 2nd + endpoints
         assert result == expected
-        
+
         # Keep every 3rd element
         result = assemble._generate_thinned_burnup_list(3, y_list)
         expected = [0, 15, 30, 45, 50]  # every 3rd + endpoints
         assert result == expected
-        
+
     def test_generate_thinned_burnup_list_no_keep_ends(self):
         """Test burnup thinning without keeping endpoints."""
         y_list = [0, 5, 10, 15, 20, 25, 30]
-        
-        result = assemble._generate_thinned_burnup_list(2, y_list, always_keep_ends=False)
+
+        result = assemble._generate_thinned_burnup_list(
+            2, y_list, always_keep_ends=False
+        )
         # Let's look at the actual algorithm behavior
         # rm starts at keep_every = 2
         # j=0: y=0, rm=2 >= 2, keep, rm=0
-        # j=1: y=5, rm=1 < 2, skip, rm=2  
+        # j=1: y=5, rm=1 < 2, skip, rm=2
         # j=2: y=10, rm=2 >= 2, skip, rm=0  (no wait, this says rm=0, so should keep!)
         # Let me check the algorithm more carefully...
         expected = [5, 15, 25]  # Based on actual algorithm behavior
         assert result == expected
-        
+
     def test_generate_thinned_burnup_list_edge_cases_enhanced(self):
         """Test burnup thinning edge cases."""
         # Empty list
         result = assemble._generate_thinned_burnup_list(1, [])
         assert result == []
-        
+
         # Single element
         result = assemble._generate_thinned_burnup_list(1, [42])
         assert result == [42]
-        
+
         # Two elements
         result = assemble._generate_thinned_burnup_list(1, [0, 10])
         assert result == [0, 10]
-        
+
         # Keep every element (keep_every=1)
         y_list = [0, 5, 10, 15, 20]
         result = assemble._generate_thinned_burnup_list(1, y_list)
         assert result == y_list
-        
+
         # Large keep_every value
         y_list = [0, 5, 10, 15, 20]
         result = assemble._generate_thinned_burnup_list(10, y_list)
         assert result == [0, 20]  # only endpoints
-    
+
     def test_generate_thinned_burnup_list_preserves_order(self):
         """Test that burnup thinning preserves monotonic order."""
         y_list = [0, 2, 5, 8, 12, 18, 25, 35, 50]
-        
+
         result = assemble._generate_thinned_burnup_list(3, y_list)
-        
+
         # Result should be monotonically increasing
-        assert all(result[i] <= result[i+1] for i in range(len(result)-1))
-        
+        assert all(result[i] <= result[i + 1] for i in range(len(result) - 1))
+
         # Should include first and last
         assert result[0] == y_list[0]
         assert result[-1] == y_list[-1]
@@ -83,42 +85,44 @@ class TestBurnupProcessing:
 
 class TestFileHandling:
     """Test file handling utility functions."""
-    
-    @patch('scale.olm.assemble.Path.exists')
+
+    @patch("scale.olm.assemble.Path.exists")
     def test_get_files_basic(self, mock_exists):
         """Test basic file collection functionality."""
         # Mock that files exist
         mock_exists.return_value = True
 
-        work_dir = Path('/work')
+        work_dir = Path("/work")
         # Correct format: perms should be list of dicts with input_file keys
         perms = [
-            {'input_file': 'perm_000.inp', '_scale': {'artifact_contract': 'TRITON'}},
-            {'input_file': 'perm_001.inp', '_scale': {'artifact_contract': 'TRITON'}},
-            {'input_file': 'perm_002.inp', '_scale': {'artifact_contract': 'TRITON'}},
+            {"input_file": "perm_000.inp", "_scale": {"artifact_contract": "TRITON"}},
+            {"input_file": "perm_001.inp", "_scale": {"artifact_contract": "TRITON"}},
+            {"input_file": "perm_002.inp", "_scale": {"artifact_contract": "TRITON"}},
         ]
 
         result = assemble._get_files(work_dir, perms)
 
         assert len(result) == 3
         for file_info in result:
-            assert 'lib' in file_info
-            assert 'output' in file_info
-            assert 'f71' in file_info
-            assert 't16' in file_info
-            assert str(file_info['lib']).endswith('.system.f33')
-            assert str(file_info['output']).endswith('.out')
-            assert str(file_info['f71']).endswith('.f71')
-            assert str(file_info['t16']).endswith('.t16')
-        
-    @patch('scale.olm.assemble.Path.exists')
+            assert "lib" in file_info
+            assert "output" in file_info
+            assert "f71" in file_info
+            assert "t16" in file_info
+            assert str(file_info["lib"]).endswith(".system.f33")
+            assert str(file_info["output"]).endswith(".out")
+            assert str(file_info["f71"]).endswith(".f71")
+            assert str(file_info["t16"]).endswith(".t16")
+
+    @patch("scale.olm.assemble.Path.exists")
     def test_get_files_missing_files(self, mock_exists):
         """Test file collection with missing files."""
         # Mock that files don't exist
         mock_exists.return_value = False
 
-        work_dir = Path('/work')
-        perms = [{'input_file': 'perm_000.inp', '_scale': {'artifact_contract': 'TRITON'}}]
+        work_dir = Path("/work")
+        perms = [
+            {"input_file": "perm_000.inp", "_scale": {"artifact_contract": "TRITON"}}
+        ]
 
         with pytest.raises(ValueError, match="library file=.* does not exist"):
             assemble._get_files(work_dir, perms)
@@ -127,20 +131,20 @@ class TestFileHandling:
         """Test assemble rejects unknown SCALE artifact contracts."""
         perms = [
             {
-                'input_file': 'perm_000.inp',
-                '_scale': {'artifact_contract': 'UNKNOWN'},
+                "input_file": "perm_000.inp",
+                "_scale": {"artifact_contract": "UNKNOWN"},
             }
         ]
 
         with pytest.raises(ValueError, match="Unsupported SCALE artifact_contract"):
-            assemble._get_files(Path('/work'), perms)
+            assemble._get_files(Path("/work"), perms)
 
     def test_get_files_requires_artifact_contract_metadata(self):
         """Test assemble requires generated SCALE artifact metadata."""
-        perms = [{'input_file': 'perm_000.inp'}]
+        perms = [{"input_file": "perm_000.inp"}]
 
         with pytest.raises(ValueError, match="_scale\\.artifact_contract"):
-            assemble._get_files(Path('/work'), perms)
+            assemble._get_files(Path("/work"), perms)
 
     def test_get_files_uses_polaris_system_library_suffix(self, tmp_path):
         """Test Polaris generated inputs use the integrated system F33 artifact."""
@@ -180,10 +184,10 @@ class TestFileHandling:
                 ],
                 assemble._MaterialLumping.from_value("MIX10"),
             )
-    
+
     def test_get_files_empty_perms(self):
         """Test file collection with empty permutations."""
-        work_dir = Path('/work')
+        work_dir = Path("/work")
         perms = []
 
         result = assemble._get_files(work_dir, perms)
@@ -312,50 +316,50 @@ class TestBurnupListExtraction:
                 core.ScaleArtifactContract.POLARIS,
                 Path("polaris.out"),
             )
-    
-    @patch('scale.olm.core.Obiwan.get_burnups_from_f33')
+
+    @patch("scale.olm.core.Obiwan.get_burnups_from_f33")
     def test_get_burnup_list_basic(self, mock_get_burnups):
         """Test burnup extraction from F33 library files."""
         mock_burnup_data = np.array([0.0, 5.0, 10.0, 15.0, 20.0])
         mock_get_burnups.return_value = mock_burnup_data
-        
+
         file_list = [
             {
-                'artifact_contract': core.ScaleArtifactContract.TRITON,
-                'output': Path('perm_000.out'),
-                'lib': Path('perm_000.f33'),
+                "artifact_contract": core.ScaleArtifactContract.TRITON,
+                "output": Path("perm_000.out"),
+                "lib": Path("perm_000.f33"),
             },
             {
-                'artifact_contract': core.ScaleArtifactContract.TRITON,
-                'output': Path('perm_001.out'),
-                'lib': Path('perm_001.f33'),
+                "artifact_contract": core.ScaleArtifactContract.TRITON,
+                "output": Path("perm_001.out"),
+                "lib": Path("perm_001.f33"),
             },
         ]
-        
+
         result = assemble._get_burnup_list("obiwan", file_list)
-        
+
         np.testing.assert_array_equal(result, mock_burnup_data)
         assert mock_get_burnups.call_count == 2
-        mock_get_burnups.assert_any_call("obiwan", Path('perm_000.f33'))
-        mock_get_burnups.assert_any_call("obiwan", Path('perm_001.f33'))
+        mock_get_burnups.assert_any_call("obiwan", Path("perm_000.f33"))
+        mock_get_burnups.assert_any_call("obiwan", Path("perm_001.f33"))
 
-    @patch('scale.olm.core.Obiwan.get_burnups_from_f33')
+    @patch("scale.olm.core.Obiwan.get_burnups_from_f33")
     def test_get_burnup_list_uses_library_path(self, mock_get_burnups):
         """Test ARPDATA burnups come from the F33 library, not F71 cases."""
         mock_get_burnups.return_value = np.array([0.0, 10.0])
         file_list = [
             {
-                'artifact_contract': core.ScaleArtifactContract.TRITON,
-                'output': Path('perm_000.out'),
-                'lib': Path('perm_000.f33'),
+                "artifact_contract": core.ScaleArtifactContract.TRITON,
+                "output": Path("perm_000.out"),
+                "lib": Path("perm_000.f33"),
             },
         ]
 
         assemble._get_burnup_list("obiwan", file_list)
 
-        mock_get_burnups.assert_called_once_with("obiwan", Path('perm_000.f33'))
+        mock_get_burnups.assert_called_once_with("obiwan", Path("perm_000.f33"))
 
-    @patch('scale.olm.core.Obiwan.get_burnups_from_f33')
+    @patch("scale.olm.core.Obiwan.get_burnups_from_f33")
     def test_get_burnup_list_averages_tolerated_f33_grids(self, mock_get_burnups):
         """Test common ARPDATA grid averages F33 grids within tolerance."""
         mock_get_burnups.side_effect = [
@@ -364,46 +368,46 @@ class TestBurnupListExtraction:
         ]
         file_list = [
             {
-                'artifact_contract': core.ScaleArtifactContract.TRITON,
-                'output': Path('perm_000.out'),
-                'lib': Path('perm_000.f33'),
+                "artifact_contract": core.ScaleArtifactContract.TRITON,
+                "output": Path("perm_000.out"),
+                "lib": Path("perm_000.f33"),
             },
             {
-                'artifact_contract': core.ScaleArtifactContract.TRITON,
-                'output': Path('perm_001.out'),
-                'lib': Path('perm_001.f33'),
+                "artifact_contract": core.ScaleArtifactContract.TRITON,
+                "output": Path("perm_001.out"),
+                "lib": Path("perm_001.f33"),
             },
         ]
 
         result = assemble._get_burnup_list("obiwan", file_list)
 
         np.testing.assert_allclose(result, [0.0, 4.96395, 99.2786])
-    
-    @patch('scale.olm.core.Obiwan.get_burnups_from_f33')
+
+    @patch("scale.olm.core.Obiwan.get_burnups_from_f33")
     def test_get_burnup_list_inconsistent_burnups(self, mock_get_burnups):
         """Test burnup extraction with inconsistent F33 burnup lists."""
         mock_get_burnups.side_effect = [
             np.array([0.0, 5.0, 10.0]),
-            np.array([0.0, 5.0, 15.0])  # Different!
+            np.array([0.0, 5.0, 15.0]),  # Different!
         ]
-        
+
         file_list = [
             {
-                'artifact_contract': core.ScaleArtifactContract.TRITON,
-                'output': Path('perm_000.out'),
-                'lib': Path('perm_000.f33'),
+                "artifact_contract": core.ScaleArtifactContract.TRITON,
+                "output": Path("perm_000.out"),
+                "lib": Path("perm_000.f33"),
             },
             {
-                'artifact_contract': core.ScaleArtifactContract.TRITON,
-                'output': Path('perm_001.out'),
-                'lib': Path('perm_001.f33'),
+                "artifact_contract": core.ScaleArtifactContract.TRITON,
+                "output": Path("perm_001.out"),
+                "lib": Path("perm_001.f33"),
             },
         ]
-        
+
         with pytest.raises(ValueError, match="High-order library burnups.*deviated"):
             assemble._get_burnup_list("obiwan", file_list)
 
-    @patch('scale.olm.core.Obiwan.get_burnups_from_f33')
+    @patch("scale.olm.core.Obiwan.get_burnups_from_f33")
     def test_get_burnup_list_uses_polaris_t16_burnups(
         self, mock_get_f33_burnups, tmp_path
     ):
@@ -446,7 +450,7 @@ class TestBurnupListExtraction:
 
         with pytest.raises(ValueError, match="requires a t16 file"):
             assemble._get_burnup_list("obiwan", file_list)
-    
+
     def test_get_burnup_list_empty_files(self):
         """Test burnup extraction with empty file list."""
         result = assemble._get_burnup_list("obiwan", [])
@@ -457,23 +461,29 @@ class TestReplayPaddingTruncation:
     """Test generated padding is excluded from assembled replay artifacts."""
 
     def test_get_replay_burndata_count_uses_only_final_padding(self):
-        assert assemble._get_replay_burndata_count(
-            {
-                "time": {
-                    "burndata": [{"burn": 1.0}, {"burn": 2.0}],
-                    "replay_burndata_count": 1,
+        assert (
+            assemble._get_replay_burndata_count(
+                {
+                    "time": {
+                        "burndata": [{"burn": 1.0}, {"burn": 2.0}],
+                        "replay_burndata_count": 1,
+                    }
                 }
-            }
-        ) is None
+            )
+            is None
+        )
 
-        assert assemble._get_replay_burndata_count(
-            {
-                "time": {
-                    "final_burnup_padding_gwd": 1.0,
-                    "burndata": [{"burn": 1.0}, {"burn": 2.0}, {"burn": 0.1}],
+        assert (
+            assemble._get_replay_burndata_count(
+                {
+                    "time": {
+                        "final_burnup_padding_gwd": 1.0,
+                        "burndata": [{"burn": 1.0}, {"burn": 2.0}, {"burn": 0.1}],
+                    }
                 }
-            }
-        ) == 2
+            )
+            == 2
+        )
 
     def test_truncate_history_burndata_keeps_replay_intervals(self):
         history = {
@@ -525,8 +535,8 @@ class TestReplayPaddingTruncation:
 
 class TestArpInfoProcessing:
     """Test ARP info processing functions."""
-    
-    @patch('scale.olm.core.ArpInfo')
+
+    @patch("scale.olm.core.ArpInfo")
     def test_get_arpinfo_uox_basic(self, mock_arpinfo_class):
         """Test UOX ARP info processing."""
         name = "test_uox"
@@ -540,70 +550,76 @@ class TestArpInfoProcessing:
             {"lib": Path("/work/perm_001.arp")},
         ]
         dim_map = {"enrichment": 0, "mod_dens": 1}
-        
+
         # Mock ArpInfo instance
         mock_arpinfo = Mock()
         mock_arpinfo_class.return_value = mock_arpinfo
-        
+
         result = assemble._get_arpinfo_uox(name, perms, file_list, dim_map)
-        
+
         # Verify ArpInfo was created and init_uox was called
         mock_arpinfo_class.assert_called_once()
         mock_arpinfo.init_uox.assert_called_once_with(
             name,
             [Path("/work/perm_000.arp"), Path("/work/perm_001.arp")],
             [2.6, 3.5],  # enrichments
-            [0.7, 0.8]   # mod_dens
+            [0.7, 0.8],  # mod_dens
         )
         assert result == mock_arpinfo
-    
-    @patch('scale.olm.core.ArpInfo')
+
+    @patch("scale.olm.core.ArpInfo")
     def test_get_arpinfo_mox_basic(self, mock_arpinfo_class):
         """Test MOX ARP info processing."""
         name = "test_mox"
         # Correct format for MOX perms
         perms = [
-            {"state": {0: 0.6, 1: 2.5, 2: 0.7}},  # pu239_frac=0.6, pu_frac=2.5, mod_dens=0.7
-            {"state": {0: 0.65, 1: 3.0, 2: 0.8}}, # pu239_frac=0.65, pu_frac=3.0, mod_dens=0.8
+            {
+                "state": {0: 0.6, 1: 2.5, 2: 0.7}
+            },  # pu239_frac=0.6, pu_frac=2.5, mod_dens=0.7
+            {
+                "state": {0: 0.65, 1: 3.0, 2: 0.8}
+            },  # pu239_frac=0.65, pu_frac=3.0, mod_dens=0.8
         ]
         file_list = [
             {"lib": Path("/work/perm_000.arp")},
             {"lib": Path("/work/perm_001.arp")},
         ]
         dim_map = {"pu239_frac": 0, "pu_frac": 1, "mod_dens": 2}
-        
+
         # Mock ArpInfo instance
         mock_arpinfo = Mock()
         mock_arpinfo_class.return_value = mock_arpinfo
-        
+
         result = assemble._get_arpinfo_mox(name, perms, file_list, dim_map)
-        
+
         # Verify ArpInfo was created and init_mox was called
         mock_arpinfo_class.assert_called_once()
         mock_arpinfo.init_mox.assert_called_once_with(
             name,
             [Path("/work/perm_000.arp"), Path("/work/perm_001.arp")],
-            [0.6, 0.65],   # pu239_frac
-            [2.5, 3.0],    # pu_frac
-            [0.7, 0.8]     # mod_dens
+            [0.6, 0.65],  # pu239_frac
+            [2.5, 3.0],  # pu_frac
+            [0.7, 0.8],  # mod_dens
         )
         assert result == mock_arpinfo
 
 
 class TestArpInfoMaster:
     """Test the main ARP info processing function."""
-    
-    @patch('scale.olm.assemble._get_burnup_list')
-    @patch('scale.olm.assemble._get_arpinfo_uox')
-    @patch('scale.olm.assemble._get_files')
-    @patch('builtins.open', new_callable=mock_open)
-    def test_get_arpinfo_uox_integration(self, mock_file_open, mock_get_files, mock_get_arpinfo_uox, mock_get_burnup_list):
+
+    @patch("scale.olm.assemble._get_burnup_list")
+    @patch("scale.olm.assemble._get_arpinfo_uox")
+    @patch("scale.olm.assemble._get_files")
+    @patch("builtins.open", new_callable=mock_open)
+    def test_get_arpinfo_uox_integration(
+        self, mock_file_open, mock_get_files, mock_get_arpinfo_uox, mock_get_burnup_list
+    ):
         """Test integrated ARP info processing for UOX."""
-        work_dir = Path('/work')
+        work_dir = Path("/work")
         name = "test_reactor"
         fuel_type = core.ArpInfoFuelType.UOX
         dim_map = {"enrichment": 0, "mod_dens": 1}
-        
+
         # Mock the generate.olm.json content with string keys (as from JSON)
         mock_generate_data = {
             "perms": [
@@ -612,42 +628,44 @@ class TestArpInfoMaster:
             ]
         }
         mock_file_open.return_value.read.return_value = json.dumps(mock_generate_data)
-        
+
         # Mock file discovery
         mock_file_list = [
             {
-                "lib": Path('/work/perm_000.system.f33'),
-                "output": Path('/work/perm_000.out'),
-                "f71": Path('/work/perm_000.f71'),
+                "lib": Path("/work/perm_000.system.f33"),
+                "output": Path("/work/perm_000.out"),
+                "f71": Path("/work/perm_000.f71"),
             },
             {
-                "lib": Path('/work/perm_001.system.f33'),
-                "output": Path('/work/perm_001.out'),
-                "f71": Path('/work/perm_001.f71'),
+                "lib": Path("/work/perm_001.system.f33"),
+                "output": Path("/work/perm_001.out"),
+                "f71": Path("/work/perm_001.f71"),
             },
         ]
         mock_get_files.return_value = mock_file_list
-        
+
         # Mock ArpInfo processing
         mock_arpinfo = Mock()
         mock_arpinfo.burnup_list = None
         mock_get_arpinfo_uox.return_value = mock_arpinfo
-        
+
         # Mock burnup list extraction
         mock_burnup_list = np.array([0, 10, 20, 30])
         mock_get_burnup_list.return_value = mock_burnup_list
-        
+
         result = assemble._get_arpinfo("obiwan", work_dir, name, fuel_type, dim_map)
-        
+
         # Verify the full workflow
         mock_get_files.assert_called_once_with(
             work_dir,
             mock_generate_data["perms"],
             assemble._MaterialLumping.from_value("BASIS"),
         )
-        mock_get_arpinfo_uox.assert_called_once_with(name, mock_generate_data["perms"], mock_file_list, dim_map)
+        mock_get_arpinfo_uox.assert_called_once_with(
+            name, mock_generate_data["perms"], mock_file_list, dim_map
+        )
         mock_get_burnup_list.assert_called_once_with("obiwan", mock_file_list, 2.0e-2)
-        
+
         # Verify result
         assert result == mock_arpinfo
         assert result.burnup_list is mock_burnup_list
@@ -655,20 +673,20 @@ class TestArpInfoMaster:
         assert result.material_lumping == "BASIS"
         assert result.caseid == -2
 
-    @patch('scale.olm.assemble._get_burnup_list')
-    @patch('scale.olm.assemble._get_arpinfo_mox')
-    @patch('scale.olm.assemble._get_files')
+    @patch("scale.olm.assemble._get_burnup_list")
+    @patch("scale.olm.assemble._get_arpinfo_mox")
+    @patch("scale.olm.assemble._get_files")
     def test_get_arpinfo_mox_integration(
         self, mock_get_files, mock_get_arpinfo_mox, mock_get_burnup_list
     ):
         """Test integrated ARP info processing selects the MOX builder."""
-        work_dir = Path('/work')
+        work_dir = Path("/work")
         mock_generate_data = {"perms": [{"input_file": "perm_000.inp", "state": {}}]}
         mock_file_list = [
             {
-                "lib": Path('/work/perm_000.system.f33'),
-                "output": Path('/work/perm_000.out'),
-                "f71": Path('/work/perm_000.f71'),
+                "lib": Path("/work/perm_000.system.f33"),
+                "output": Path("/work/perm_000.out"),
+                "f71": Path("/work/perm_000.f71"),
             },
         ]
         mock_get_files.return_value = mock_file_list
@@ -676,7 +694,9 @@ class TestArpInfoMaster:
         mock_get_arpinfo_mox.return_value = mock_arpinfo
         mock_get_burnup_list.return_value = np.array([0.0, 10.0])
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(mock_generate_data))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(mock_generate_data))
+        ):
             result = assemble._get_arpinfo(
                 "obiwan",
                 work_dir,
@@ -702,14 +722,14 @@ class TestArpInfoMaster:
         mock_get_burnup_list.assert_called_once_with("obiwan", mock_file_list, 2.0e-2)
         assert result is mock_arpinfo
 
-    @patch('scale.olm.assemble._get_burnup_list')
-    @patch('scale.olm.assemble._get_arpinfo_uox')
-    @patch('scale.olm.assemble._get_files')
+    @patch("scale.olm.assemble._get_burnup_list")
+    @patch("scale.olm.assemble._get_arpinfo_uox")
+    @patch("scale.olm.assemble._get_files")
     def test_get_arpinfo_uses_mix_material_lumping(
         self, mock_get_files, mock_get_arpinfo_uox, mock_get_burnup_list
     ):
         """Test MIX<N> assemble selection uses matching library suffix and F71 case."""
-        work_dir = Path('/work')
+        work_dir = Path("/work")
         mock_generate_data = {"perms": [{"input_file": "perm_000.inp", "state": {}}]}
         mock_file_list = [
             {
@@ -723,7 +743,9 @@ class TestArpInfoMaster:
         mock_get_arpinfo_uox.return_value = mock_arpinfo
         mock_get_burnup_list.return_value = np.array([0.0, 10.0])
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(mock_generate_data))):
+        with patch(
+            "builtins.open", mock_open(read_data=json.dumps(mock_generate_data))
+        ):
             result = assemble._get_arpinfo(
                 "obiwan",
                 work_dir,
@@ -741,17 +763,11 @@ class TestArpInfoMaster:
         mock_get_burnup_list.assert_called_once_with("obiwan", mock_file_list, 2.0e-2)
         assert result.material_lumping == "MIX10"
         assert result.caseid == 10
-    
+
     def test_arpdata_fuel_type_parser(self):
         """Test ARPDATA fuel type parsing accepts supported labels."""
-        assert (
-            core.ArpInfoFuelType.from_value("UOX")
-            is core.ArpInfoFuelType.UOX
-        )
-        assert (
-            core.ArpInfoFuelType.from_value("mox")
-            is core.ArpInfoFuelType.MOX
-        )
+        assert core.ArpInfoFuelType.from_value("UOX") is core.ArpInfoFuelType.UOX
+        assert core.ArpInfoFuelType.from_value("mox") is core.ArpInfoFuelType.MOX
         assert (
             core.ArpInfoFuelType.from_value(core.ArpInfoFuelType.UOX)
             is core.ArpInfoFuelType.UOX
@@ -766,50 +782,75 @@ class TestArpInfoMaster:
 class TestCompositionSystem:
     """Test composition system processing."""
 
-    @patch('scale.olm.core.CompositionManager.calculate_hm_oxide_breakdown')
-    @patch('scale.olm.core.CompositionManager.approximate_hm_info')
-    def test_get_comp_system_basic_enhanced(self, mock_approximate_hm_info, mock_calculate_breakdown):
+    @patch("scale.olm.core.CompositionManager.calculate_hm_oxide_breakdown")
+    @patch("scale.olm.core.CompositionManager.approximate_hm_info")
+    def test_get_comp_system_basic_enhanced(
+        self, mock_approximate_hm_info, mock_calculate_breakdown
+    ):
         """Test basic composition system extraction."""
         # Mock the breakdown calculation
         mock_breakdown = {"u235": 100.0, "u238": 900.0}
         mock_calculate_breakdown.return_value = mock_breakdown
-        
+
         # Mock the hm info approximation
         mock_hm_info = {"enrichment": 2.5}
         mock_approximate_hm_info.return_value = mock_hm_info
-        
+
         # Mock ii_data structure (reactor history data)
         ii_data = {
             "responses": {
                 "system": {
                     "volume": 1000.0,
-                    "amount": [[100.0, 900.0, 200.0]],  # Initial amounts
-                    "nuclideVectorHash": "hash123"
+                    "amount": [[100.0, 900.0, 200.0, 2.0]],  # Initial amounts
+                    "nuclideVectorHash": "hash123",
                 }
             },
             "data": {
                 "nuclides": {
-                    "u235": {"mass": 235.0, "atomicNumber": 92, "element": "U", "isomericState": 0, "massNumber": 235},
-                    "u238": {"mass": 238.0, "atomicNumber": 92, "element": "U", "isomericState": 0, "massNumber": 238},
-                    "o16": {"mass": 16.0, "atomicNumber": 8, "element": "O", "isomericState": 0, "massNumber": 16}
+                    "u235": {
+                        "mass": 235.0,
+                        "atomicNumber": 92,
+                        "element": "U",
+                        "isomericState": 0,
+                        "massNumber": 235,
+                    },
+                    "u238": {
+                        "mass": 238.0,
+                        "atomicNumber": 92,
+                        "element": "U",
+                        "isomericState": 0,
+                        "massNumber": 238,
+                    },
+                    "o16": {
+                        "mass": 16.0,
+                        "atomicNumber": 8,
+                        "element": "O",
+                        "isomericState": 0,
+                        "massNumber": 16,
+                    },
+                    "gd157": {
+                        "mass": 157.0,
+                        "atomicNumber": 64,
+                        "element": "Gd",
+                        "isomericState": 0,
+                        "massNumber": 157,
+                    },
                 }
             },
             "definitions": {
-                "nuclideVectors": {
-                    "hash123": ["u235", "u238", "o16"]
-                }
-            }
+                "nuclideVectors": {"hash123": ["u235", "u238", "o16", "gd157"]}
+            },
         }
-        
+
         result = assemble._get_comp_system(ii_data)
-        
+
         # Should return a composition dictionary
         assert isinstance(result, dict)
-        
+
         # Should have called the composition manager functions
         mock_calculate_breakdown.assert_called_once()
         mock_approximate_hm_info.assert_called_once_with(mock_breakdown)
-        
+
         # Should include the calculated info and density
         assert result is mock_breakdown
         assert result["info"] == mock_hm_info
@@ -818,101 +859,107 @@ class TestCompositionSystem:
         # The density calculation may use different logic than simple mass/volume
         assert isinstance(result["density"], (int, float))
         assert result["density"] > 0
-    
+        assert result["gd2o3_wtpct"] == pytest.approx(
+            100.0
+            * (2.0 * 157.0 + 3.0 * 15.9994)
+            / (100.0 * 235.0 + 900.0 * 238.0 + 200.0 * 16.0 + 2.0 * 157.0)
+        )
+
     def test_get_comp_system_empty_data(self):
         """Test composition system with minimal data."""
         ii_data = {
             "responses": {
-                "system": {
-                    "volume": 1.0,
-                    "amount": [[]],
-                    "nuclideVectorHash": "empty"
-                }
+                "system": {"volume": 1.0, "amount": [[]], "nuclideVectorHash": "empty"}
             },
             "data": {"nuclides": {}},
-            "definitions": {"nuclideVectors": {"empty": []}}
+            "definitions": {"nuclideVectors": {"empty": []}},
         }
-        
-        with patch('scale.olm.core.CompositionManager.calculate_hm_oxide_breakdown') as mock_breakdown:
-            with patch('scale.olm.core.CompositionManager.approximate_hm_info') as mock_hm_info:
+
+        with patch(
+            "scale.olm.core.CompositionManager.calculate_hm_oxide_breakdown"
+        ) as mock_breakdown:
+            with patch(
+                "scale.olm.core.CompositionManager.approximate_hm_info"
+            ) as mock_hm_info:
                 mock_breakdown.return_value = {}
                 mock_hm_info.return_value = {}
-                
+
                 result = assemble._get_comp_system(ii_data)
-                
+
                 assert isinstance(result, dict)
                 assert result["density"] == 0.0  # no mass
+                assert result["gd2o3_wtpct"] == 0.0
 
 
 class TestSchemaFunctions:
     """Test schema generation functions."""
-    
+
     def test_schema_arpdata_txt_enhanced(self):
         """Test schema generation for arpdata_txt."""
         schema = assemble._schema_arpdata_txt()
         assert isinstance(schema, dict)
-        
+
         schema_with_state = assemble._schema_arpdata_txt(with_state=True)
         assert isinstance(schema_with_state, dict)
-    
+
     def test_test_args_arpdata_txt_enhanced(self):
         """Test test arguments generation for arpdata_txt."""
         args = assemble._test_args_arpdata_txt()
-        
+
         assert isinstance(args, dict)
-        assert '_type' in args
-        assert args['_type'] == 'scale.olm.assemble:arpdata_txt'
+        assert "_type" in args
+        assert args["_type"] == "scale.olm.assemble:arpdata_txt"
 
 
 class TestIntegrationScenarios:
     """Test integration scenarios and edge cases."""
-    
+
     def test_burnup_processing_consistency(self):
         """Test that burnup processing maintains consistency across functions."""
         # Create a realistic burnup sequence
         original_burnups = [0, 2, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
-        
+
         # Test thinning with different parameters
         thinned_2 = assemble._generate_thinned_burnup_list(2, original_burnups)
         thinned_3 = assemble._generate_thinned_burnup_list(3, original_burnups)
-        
+
         # Both should include endpoints
         assert thinned_2[0] == original_burnups[0]
         assert thinned_2[-1] == original_burnups[-1]
         assert thinned_3[0] == original_burnups[0]
         assert thinned_3[-1] == original_burnups[-1]
-        
+
         # Thinned lists should be subsets of original
         assert all(burnup in original_burnups for burnup in thinned_2)
         assert all(burnup in original_burnups for burnup in thinned_3)
-        
+
         # More aggressive thinning should result in fewer points
         assert len(thinned_3) <= len(thinned_2)
-    
+
     def test_parameter_extraction_edge_cases(self):
         """Test parameter extraction with edge case naming."""
         # Test UOX parameter extraction with various formats
         test_perms_uox = [
             "enr2.6_mod0.723",
-            "enr3.5_mod0.800", 
+            "enr3.5_mod0.800",
             "enr4.25_mod0.65",
         ]
-        
+
         # Should extract numerical values correctly
         enrichments = []
         mod_densities = []
-        
+
         for perm in test_perms_uox:
-            parts = perm.split('_')
-            enr_part = [p for p in parts if p.startswith('enr')][0]
-            mod_part = [p for p in parts if p.startswith('mod')][0]
-            
-            enrichment = float(enr_part.replace('enr', ''))
-            mod_dens = float(mod_part.replace('mod', ''))
-            
+            parts = perm.split("_")
+            enr_part = [p for p in parts if p.startswith("enr")][0]
+            mod_part = [p for p in parts if p.startswith("mod")][0]
+
+            enrichment = float(enr_part.replace("enr", ""))
+            mod_dens = float(mod_part.replace("mod", ""))
+
             enrichments.append(enrichment)
             mod_densities.append(mod_dens)
-        
+
         # Verify extracted values are reasonable
         assert all(0 < enr < 10 for enr in enrichments)
         assert all(0 < mod < 2 for mod in mod_densities)

@@ -235,6 +235,8 @@ def jt_expander(
             local_template_path = config_dir / template
             if local_template_path.exists():
                 template_path = local_template_path
+                search_path = Path(local_template_path).parent.parent
+                template_paths = core.TemplateManager._template_search_paths(src_path=local_template_path,search_paths=[search_path])
             else:
                 tm = core.TemplateManager(paths=[config_dir])
                 template_path = Path(tm.path(template))
@@ -301,6 +303,7 @@ def jt_expander(
         input_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Expand the template and write the input to disk.
+        internal.logger.info("Template search paths",  search_paths=template_paths)
         internal.logger.info("Writing permutation", index=i, input_file=input_file)
         if template_text != "":
             filled_text = core.TemplateManager.expand_text(

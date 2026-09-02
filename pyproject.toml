@@ -1,6 +1,6 @@
 [project]
 name = "scale-olm"
-version = "0.14.3"
+version = "0.15.0"
 description = "ORIGEN Library Manager: A tool for building and managing ORIGEN reactor data libraries"
 authors = [
     { name = "William Wieselquist", email = "ww5@ornl.gov" },
@@ -30,7 +30,7 @@ dependencies = [
     "tqdm",
     "typing-extensions",
 ]
-requires-python = ">=3.9,<3.13"
+requires-python = ">=3.9,<=3.13.5"
 
 [project.optional-dependencies]
 test = [
